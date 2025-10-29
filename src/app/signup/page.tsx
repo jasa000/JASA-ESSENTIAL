@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PenSquare } from 'lucide-react';
+import { PenSquare, Home, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
@@ -28,6 +28,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -80,7 +81,15 @@ export default function SignupPage() {
 
   return (
     <>
-      <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+      <div className="container relative flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+        <div className="absolute right-4 top-4">
+            <Button asChild variant="ghost" size="icon">
+                <Link href="/">
+                    <Home className="h-6 w-6" />
+                    <span className="sr-only">Home</span>
+                </Link>
+            </Button>
+        </div>
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
              <Link href="/" className="mx-auto flex w-fit items-center gap-2">
@@ -124,12 +133,23 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} onChange={(e) => {
-                          field.onChange(e);
-                          setPassword(e.target.value);
-                        }} disabled={loading}/>
-                      </FormControl>
+                      <div className="relative">
+                        <FormControl>
+                          <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} onChange={(e) => {
+                            field.onChange(e);
+                            setPassword(e.target.value);
+                          }} disabled={loading}/>
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

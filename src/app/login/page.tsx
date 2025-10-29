@@ -9,12 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PenSquare } from 'lucide-react';
+import { PenSquare, Home, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { useState } from 'react';
+import { useAuth } from '@/context/auth-provider';
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -26,7 +27,9 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
+  const { user } = useAuth();
+  
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
     defaultValues: { email: '', password: '' },
@@ -36,7 +39,18 @@ export default function LoginPage() {
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      
+      if (!userCredential.user.emailVerified) {
+         toast({
+          variant: "destructive",
+          title: "Email Not Verified",
+          description: "Please verify your email before logging in. You can request a new verification link.",
+        });
+        setLoading(false);
+        return;
+      }
+
       toast({
         title: "Login Successful",
         description: "Welcome back! You are now logged in.",
@@ -74,9 +88,79 @@ export default function LoginPage() {
     }
   }
 
+  async function handlePasswordReset() {
+    const email = emailForm.getValues("email");
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Email Required",
+        description: "Please enter your email address to reset your password.",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your inbox (and spam folder) for a link to reset your password.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Password Reset Failed",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+  
+  async function handleResendVerification() {
+    if (auth.currentUser && !auth.currentUser.emailVerified) {
+      setLoading(true);
+      try {
+        await sendEmailVerification(auth.currentUser);
+        toast({
+          title: "Verification Email Sent",
+          description: "A new verification link has been sent to your email. Please check your inbox or spam folder.",
+          duration: 9000,
+        });
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Failed to Resend Verification",
+          description: error.message,
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else if (auth.currentUser?.emailVerified) {
+       toast({
+        title: "Email Already Verified",
+        description: "Your email is already verified. You can log in.",
+      });
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Not Logged In",
+        description: "Please log in first to resend the verification email.",
+      });
+    }
+  }
+
+
   return (
     <>
-      <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+      <div className="container relative flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+        <div className="absolute right-4 top-4">
+            <Button asChild variant="ghost" size="icon">
+                <Link href="/">
+                    <Home className="h-6 w-6" />
+                    <span className="sr-only">Home</span>
+                </Link>
+            </Button>
+        </div>
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <Link href="/" className="mx-auto flex w-fit items-center gap-2">
@@ -107,13 +191,34 @@ export default function LoginPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} disabled={loading} />
-                      </FormControl>
+                       <div className="relative">
+                        <FormControl>
+                          <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} disabled={loading} />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                 <div className="flex items-center justify-between text-sm">
+                    <Button type="button" variant="link" className="p-0 font-normal" onClick={handlePasswordReset} disabled={loading}>
+                        Forgot Password?
+                    </Button>
+                    {!user?.emailVerified && (
+                        <Button type="button" variant="link" className="p-0 font-normal" onClick={handleResendVerification} disabled={loading}>
+                            Resend verification
+                        </Button>
+                    )}
+                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Logging in...' : 'Login with Email'}
                 </Button>
