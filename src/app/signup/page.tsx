@@ -14,8 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from 'firebase/auth';
-import { useState, useEffect } from 'react';
+import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, updateProfile, ConfirmationResult } from 'firebase/auth';
+import { useState, useEffect, useRef } from 'react';
 import PasswordStrength from '@/components/password-strength';
 
 const emailSchema = z.object({
@@ -34,17 +34,17 @@ const phoneSchema = z.object({
 declare global {
     interface Window {
         recaptchaVerifier?: RecaptchaVerifier;
-        confirmationResult?: any;
     }
 }
 
 export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const countryCode = "+91";
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -61,16 +61,17 @@ export default function SignupPage() {
         if (window.recaptchaVerifier) {
             window.recaptchaVerifier.clear();
         }
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-            'callback': (response: any) => {
-              // reCAPTCHA solved, allow signInWithPhoneNumber.
-            }
-        });
+        if (recaptchaContainerRef.current) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+                'size': 'invisible',
+                'callback': () => {
+                  // reCAPTCHA solved, allow signInWithPhoneNumber.
+                }
+            });
+        }
     }
   }
 
-  // Add a div for reCAPTCHA
   useEffect(() => {
     setupRecaptcha();
   }, []);
@@ -105,6 +106,9 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
+      if (!window.recaptchaVerifier) {
+          setupRecaptcha();
+      }
       const appVerifier = window.recaptchaVerifier!;
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
@@ -114,7 +118,7 @@ export default function SignupPage() {
         description: `An OTP has been sent to ${fullPhoneNumber}. Please enter it to complete registration.`
       });
     } catch (error: any) {
-      console.error(error);
+      console.error("OTP Error:", error);
       setupRecaptcha(); // Reset reCAPTCHA on error
       toast({
         variant: 'destructive',
@@ -175,7 +179,7 @@ export default function SignupPage() {
 
   return (
     <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
-      <div id="recaptcha-container" className="my-4"></div>
+      <div id="recaptcha-container" ref={recaptchaContainerRef} className="my-4"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
            <Link href="/" className="mx-auto flex w-fit items-center gap-2">
@@ -280,7 +284,9 @@ export default function SignupPage() {
                               disabled={loading}
                             />
                           </FormControl>
-                           <Button id="get-otp-button" type="button" variant="outline" onClick={() => handleGetOtp(field.value)} disabled={loading}>Get OTP</Button>
+                           <Button id="get-otp-button" type="button" variant="outline" onClick={() => handleGetOtp(field.value)} disabled={loading}>
+                            {loading ? 'Sending...' : 'Get OTP'}
+                           </Button>
                         </div>
                          <FormMessage />
                       </FormItem>
@@ -334,3 +340,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
