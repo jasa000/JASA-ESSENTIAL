@@ -13,7 +13,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, LogIn, UserPlus } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn } from "lucide-react"
 import Link from "next/link"
 
 export default function AppSidebar() {
