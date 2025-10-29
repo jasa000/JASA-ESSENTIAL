@@ -79,7 +79,7 @@ export default function AppSidebar() {
              {user ? (
                 <>
                     <SidebarMenuItem>
-                        <SidebarMenuButton tooltip="Settings" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <SidebarMenuButton tooltip="Settings" size="icon" asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
                             <Link href="/profile">
                                 <Settings />
                             </Link>
@@ -110,14 +110,14 @@ export default function AppSidebar() {
              ) : (
                 <>
                     <SidebarMenuItem>
-                         <SidebarMenuButton tooltip="Sign Up" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                         <SidebarMenuButton tooltip="Sign Up" size="icon" asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
                             <Link href="/signup">
                                 <UserPlus />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                       <SidebarMenuButton tooltip="Login" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                       <SidebarMenuButton tooltip="Login" size="icon" asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
                             <Link href="/login">
                                 <LogIn />
                             </Link>
