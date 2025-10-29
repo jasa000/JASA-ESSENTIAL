@@ -5,6 +5,7 @@ export type Product = {
   brand?: string;
   description: string;
   price: number;
+  category: 'stationary' | 'books' | 'xerox' | 'electronics';
   rating?: number;
   image: {
     src: string;
