@@ -25,7 +25,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, LayoutGrid, ShoppingCart, User, Moon, ShieldCheck } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -149,11 +149,35 @@ export default function AppSidebar() {
          <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
             <SidebarGroupLabel className="text-white/90">USER ACCESS</SidebarGroupLabel>
             <SidebarMenu>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <Link href="/stationary">
+                            <Notebook />
+                            <span>Stationary</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                        <Link href="/">
-                            <LayoutGrid />
-                            <span>Products</span>
+                        <Link href="/books">
+                            <Book />
+                            <span>Books</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <Link href="/xerox">
+                            <Printer />
+                            <span>Xerox</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <Link href="/electronics">
+                            <CircuitBoard />
+                            <span>Electronic Kit</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
