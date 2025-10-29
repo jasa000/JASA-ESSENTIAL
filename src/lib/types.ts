@@ -40,14 +40,13 @@ export type UserProfile = {
   mobile?: string;
   altMobiles?: string[];
   altEmails?: string[];
-  address?: {
+  addresses?: {
+    type: 'Home' | 'Work';
     line1?: string;
     line2?: string;
     city?: string;
     state?: string;
     postalCode?: string;
-  };
+  }[];
   createdAt: Date;
 }
-
-    
