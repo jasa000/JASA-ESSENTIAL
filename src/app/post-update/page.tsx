@@ -41,7 +41,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const postSchema = z.object({
@@ -190,14 +190,30 @@ export default function PostUpdatePage() {
                            <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                               <div className="flex items-center space-x-2">
-                                <Switch
-                                    id={`active-switch-${post.id}`}
-                                    checked={post.isActive}
-                                    onCheckedChange={() => handleToggleActive(post)}
-                                    aria-label="Toggle post active status"
-                                />
-                               </div>
+                               <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                   <div className="flex items-center space-x-2">
+                                     <Switch
+                                        id={`active-switch-${post.id}`}
+                                        checked={post.isActive}
+                                        aria-label="Toggle post active status"
+                                    />
+                                   </div>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            You are about to change the post status to {post.isActive ? "'Inactive'" : "'Active'"}.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleToggleActive(post)}>Confirm</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                               </AlertDialog>
+
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon">
@@ -232,5 +248,3 @@ export default function PostUpdatePage() {
     </div>
   );
 }
-
-    
