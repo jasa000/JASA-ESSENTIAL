@@ -1,7 +1,7 @@
 
 "use client";
 
-import { LogIn, LogOut, Search, ShoppingCart, User, PenSquare } from 'lucide-react';
+import { LogIn, LogOut, Search, ShoppingCart, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
@@ -43,8 +43,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
            <SidebarTrigger />
            <Link href="/" className="flex items-center gap-2">
-            <PenSquare className="h-8 w-8 text-sky-blue" />
-            <span className="hidden font-headline text-lg font-bold sm:inline-block">
+            <span className="font-headline text-lg font-bold">
               Jasa Essentials
             </span>
           </Link>
