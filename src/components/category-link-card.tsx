@@ -24,9 +24,9 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
   return (
     <Link href={category.href} className="group block w-full">
       <Card className={cn(
-        "relative w-full overflow-hidden rounded-lg border-2 border-transparent bg-card p-2 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 md:p-4",
-        "dark:bg-gray-800 dark:hover:border-primary",
-        "hover:border-primary"
+        "relative w-full overflow-hidden rounded-lg border-2 p-2 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 md:p-4",
+        "bg-gray-900 text-gray-100 border-transparent hover:border-primary",
+        "dark:bg-gray-100 dark:text-gray-900 dark:hover:border-primary"
       )}>
         <div 
            className="shining-card-animation"
