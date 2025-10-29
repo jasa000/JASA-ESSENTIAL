@@ -68,7 +68,7 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: "Welcome back! You are now logged in.",
       });
       router.push('/');
     } catch (error: any) {
@@ -92,13 +92,16 @@ export default function LoginPage() {
       const appVerifier = window.recaptchaVerifier;
       const result = await signInWithPhoneNumber(auth, `+${phoneNumber}`, appVerifier);
       setConfirmationResult(result);
-      toast({ title: "OTP Sent!", description: "Check your phone for the OTP." });
+      toast({ 
+        title: "OTP Sent!", 
+        description: "An OTP has been sent to your phone. Please check your messages and enter it to continue." 
+      });
     } catch (error: any) {
       console.error(error);
       toast({
         variant: 'destructive',
         title: 'Failed to send OTP',
-        description: error.message,
+        description: "Could not send OTP. Please check the phone number and try again.",
       });
     } finally {
       setLoading(false);
@@ -115,14 +118,14 @@ export default function LoginPage() {
       await confirmationResult.confirm(values.otp);
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: "Welcome back! You are now logged in.",
       });
       router.push('/');
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "The OTP is incorrect.",
+        description: "The OTP is incorrect. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -136,7 +139,7 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: "Welcome back! You have signed in with Google.",
       });
       router.push('/');
     } catch (error: any) {
@@ -228,13 +231,13 @@ export default function LoginPage() {
                       <FormItem>
                         <FormLabel>OTP</FormLabel>
                         <FormControl>
-                          <Input type="text" placeholder="123456" {...field} disabled={loading} />
+                          <Input type="text" placeholder="123456" {...field} disabled={loading || !confirmationResult} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading || !confirmationResult}>
                      {loading ? 'Logging in...' : 'Login with Phone'}
                   </Button>
                 </form>

@@ -14,8 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from 'firebase/auth';
 import { useState, useEffect } from 'react';
+import PasswordStrength from '@/components/password-strength';
 
 const emailSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -41,6 +42,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [password, setPassword] = useState('');
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -54,7 +56,7 @@ export default function SignupPage() {
 
   // Add a div for reCAPTCHA
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
@@ -68,10 +70,12 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      await updateProfile(userCredential.user, { displayName: values.name });
       await sendEmailVerification(userCredential.user);
       toast({
-        title: "Account Created!",
-        description: "A verification link has been sent to your email. Please check your inbox or spam folder.",
+        title: "Account Created! Please Verify Your Email.",
+        description: "A verification link has been sent to your email. Please check your inbox or spam folder to continue.",
+        duration: 9000,
       });
       router.push('/login');
     } catch (error: any) {
@@ -95,13 +99,16 @@ export default function SignupPage() {
       const appVerifier = window.recaptchaVerifier;
       const result = await signInWithPhoneNumber(auth, `+${phoneNumber}`, appVerifier);
       setConfirmationResult(result);
-      toast({ title: "OTP Sent!", description: "Check your phone for the OTP." });
+      toast({ 
+        title: "OTP Sent!", 
+        description: "An OTP has been sent to your phone. Please enter it to complete registration." 
+      });
     } catch (error: any) {
       console.error(error);
       toast({
         variant: 'destructive',
         title: 'Failed to send OTP',
-        description: error.message,
+        description: "Could not send OTP. Please check the phone number and try again.",
       });
     } finally {
       setLoading(false);
@@ -115,18 +122,19 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-        await confirmationResult.confirm(values.otp);
-        toast({
-            title: "Account Created!",
-            description: "You have successfully signed up with your phone number.",
-        });
-        router.push('/login');
+      const userCredential = await confirmationResult.confirm(values.otp);
+      await updateProfile(userCredential.user, { displayName: values.name });
+      toast({
+          title: "Account Created!",
+          description: "You have successfully signed up with your phone number.",
+      });
+      router.push('/login');
     } catch (error: any) {
         console.error(error);
         toast({
             variant: 'destructive',
             title: 'Sign Up Failed',
-            description: 'The OTP might be incorrect.',
+            description: 'The OTP might be incorrect. Please try again.',
         });
     } finally {
         setLoading(false);
@@ -140,7 +148,7 @@ export default function SignupPage() {
       await signInWithPopup(auth, provider);
       toast({
         title: "Sign Up Successful",
-        description: "Welcome!",
+        description: "Welcome! You have successfully signed up with Google.",
       });
       router.push('/');
     } catch (error: any) {
@@ -207,12 +215,16 @@ export default function SignupPage() {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} disabled={loading}/>
+                          <Input type="password" placeholder="••••••••" {...field} onChange={(e) => {
+                            field.onChange(e);
+                            setPassword(e.target.value);
+                          }} disabled={loading}/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <PasswordStrength password={password} />
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Creating Account...' : 'Create Account with Email'}
                   </Button>
@@ -258,13 +270,13 @@ export default function SignupPage() {
                       <FormItem>
                         <FormLabel>OTP</FormLabel>
                         <FormControl>
-                          <Input type="text" placeholder="123456" {...field} disabled={loading}/>
+                          <Input type="text" placeholder="123456" {...field} disabled={loading || !confirmationResult}/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading || !confirmationResult}>
                     {loading ? 'Creating Account...' : 'Create Account with Phone'}
                   </Button>
                 </form>
