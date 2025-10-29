@@ -36,7 +36,7 @@ export type UserProfile = {
   uid: string;
   name: string;
   email: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'admin' | 'seller' | 'delivery';
   mobile?: string;
   altMobiles?: string[];
   altEmails?: string[];
@@ -48,7 +48,7 @@ export type UserProfile = {
     state?: string;
     postalCode?: string;
   }[];
-  createdAt: Date;
+  createdAt: any; // Firestore timestamp can be complex, using 'any' for simplicity
 }
 
 export type Post = {

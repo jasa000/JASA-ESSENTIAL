@@ -1,5 +1,12 @@
 
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/auth-provider";
+import { useRouter } from "next/navigation";
+import { getAllUsers } from "@/lib/users";
+import type { UserProfile } from "@/lib/types";
+
 import {
   Card,
   CardContent,
@@ -13,8 +20,95 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ManageUsersPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user || user.role !== "admin") {
+        router.push("/");
+      }
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user?.role === "admin") {
+      const fetchUsers = async () => {
+        setLoading(true);
+        const allUsers = await getAllUsers();
+        setUsers(allUsers);
+        setLoading(false);
+      };
+      fetchUsers();
+    }
+  }, [user]);
+
+  const renderUserTable = (role: UserProfile["role"]) => {
+    const filteredUsers = users.filter((u) => u.role === role);
+
+    if (loading) {
+      return (
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      );
+    }
+    
+    if (filteredUsers.length === 0) {
+      return <p>No users found with this role.</p>;
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Joined</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredUsers.map((u) => (
+            <TableRow key={u.uid}>
+              <TableCell>{u.name}</TableCell>
+              <TableCell>{u.email}</TableCell>
+              <TableCell>{u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+  
+  if (authLoading || user?.role !== 'admin') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
+          Manage Users
+        </h1>
+        <p className="mt-4 text-muted-foreground">
+          Loading...
+        </p>
+      </div>
+    );
+  }
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
@@ -35,11 +129,11 @@ export default function ManageUsersPage() {
             <CardHeader>
               <CardTitle>Users</CardTitle>
               <CardDescription>
-                Manage all registered users.
+                Manage all registered users with the 'user' role.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p>User management interface goes here.</p>
+            <CardContent>
+              {renderUserTable("user")}
             </CardContent>
           </Card>
         </TabsContent>
@@ -48,11 +142,11 @@ export default function ManageUsersPage() {
             <CardHeader>
               <CardTitle>Sellers</CardTitle>
               <CardDescription>
-                Manage all registered sellers.
+                Manage all registered users with the 'seller' role.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p>Seller management interface goes here.</p>
+            <CardContent>
+              {renderUserTable("seller")}
             </CardContent>
           </Card>
         </TabsContent>
@@ -61,11 +155,11 @@ export default function ManageUsersPage() {
             <CardHeader>
               <CardTitle>Delivery Personnel</CardTitle>
               <CardDescription>
-                Manage all delivery personnel.
+                 Manage all registered users with the 'delivery' role.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p>Delivery personnel management interface goes here.</p>
+            <CardContent>
+              {renderUserTable("delivery")}
             </CardContent>
           </Card>
         </TabsContent>
@@ -74,11 +168,11 @@ export default function ManageUsersPage() {
             <CardHeader>
               <CardTitle>Admin</CardTitle>
               <CardDescription>
-                Manage all administrators.
+                 Manage all registered users with the 'admin' role.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p>Admin management interface goes here.</p>
+            <CardContent>
+              {renderUserTable("admin")}
             </CardContent>
           </Card>
         </TabsContent>
