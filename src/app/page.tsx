@@ -7,6 +7,7 @@ import BannerCard from '@/components/banner-card';
 import WelcomeCard from '@/components/welcome-card';
 import imageData from '@/lib/placeholder-images.json';
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import PostCarousel from "@/components/post-carousel";
 
 
 export default function Home() {
@@ -24,6 +25,7 @@ export default function Home() {
   return (
     <div className="flex flex-col">
        <WelcomeCard />
+       <PostCarousel />
        <div className="container mx-auto px-4 py-8">
          <Carousel
           plugins={[plugin.current]}

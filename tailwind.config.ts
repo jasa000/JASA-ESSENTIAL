@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -96,13 +97,18 @@ export default {
         'shining-fast': {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
+        },
+        'border-glow': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'blink': 'blink 1s step-end infinite',
-        'shining-fast': 'shining-fast 1s ease-in-out infinite'
+        'shining-fast': 'shining-fast 1s ease-in-out infinite',
+        'border-glow': 'border-glow 4s ease-in-out infinite',
       },
     },
   },
