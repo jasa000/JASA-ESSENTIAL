@@ -2,51 +2,51 @@
   "placeholderImages": [
     {
       "id": "product-1",
-      "description": "A classic Moleskine notebook.",
-      "imageUrl": "https://images.unsplash.com/photo-1700864781908-5e7fe069ae1e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxub3RlYm9vayUyMHBlbnxlbnwwfHx8fDE3NjE3MTI2MjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "notebook pen"
+      "description": "A scientific calculator.",
+      "imageUrl": "https://images.unsplash.com/photo-1737919156017-2a2a7c9b71cf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzY2llbnRpZmljJTIwY2FsY3VsYXRvcnxlbnwwfHx8fDE3NjE3MTE3Nzh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "scientific calculator"
     },
     {
       "id": "product-2",
-      "description": "A set of high-quality fountain pens.",
-      "imageUrl": "https://images.unsplash.com/photo-1471107340929-a87cd0f5b5f3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmb3VudGFpbiUyMHBlbnxlbnwwfHx8fDE3NjE2NjgwNjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "fountain pen"
+      "description": "A bottle of ink.",
+      "imageUrl": "https://images.unsplash.com/photo-1551192335-89a2ee84bf34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxpbmslMjBib3R0bGV8ZW58MHx8fHwxNzYxNjUwNzg5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "ink bottle"
     },
     {
       "id": "product-3",
-      "description": "A minimalist desk organizer.",
-      "imageUrl": "https://images.unsplash.com/photo-1639916991657-e74ba7546b28?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxkZXNrJTIwb3JnYW5pemVyfGVufDB8fHx8MTc2MTcyMDk2MXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "desk organizer"
+      "description": "A scientific calculator from another brand.",
+      "imageUrl": "https://images.unsplash.com/photo-1626266061368-46a8f578ddd6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYWxjdWxhdG9yfGVufDB8fHx8MTc2MTcxNzc5OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "calculator"
     },
     {
       "id": "product-4",
-      "description": "Premium watercolor paper pad.",
-      "imageUrl": "https://images.unsplash.com/photo-1616410731303-6affae095a0a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx3YXRlcmNvbG9yJTIwcGFwZXJ8ZW58MHx8fHwxNzYxNjg0NDI4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "watercolor paper"
+      "description": "A ball point pen.",
+      "imageUrl": "https://images.unsplash.com/photo-1621596392014-89b1eaf98bb2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxiYWxscG9pbnQlMjBwZW58ZW58MHx8fHwxNzYxNjUwNzg5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "ballpoint pen"
     },
     {
-      "id": "product-5",
-      "description": "A set of colorful sticky notes.",
-      "imageUrl": "https://images.unsplash.com/photo-1580934174026-8142803ebb5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzdGlja3klMjBub3Rlc3xlbnwwfHx8fDE3NjE2NTk4MTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "sticky notes"
+      "id": "category-1",
+      "description": "A collection of stationary items in a cup.",
+      "imageUrl": "https://i.imgur.com/gC5sH3S.png",
+      "imageHint": "stationery"
     },
     {
-      "id": "product-6",
-      "description": "An elegant brass ruler.",
-      "imageUrl": "https://images.unsplash.com/photo-1642420719668-6ff753d2b467?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxicmFzcyUyMHJ1bGVyfGVufDB8fHx8MTc2MTcyMDk2MXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "brass ruler"
+      "id": "category-2",
+      "description": "A stack of books.",
+      "imageUrl": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxib29rc3xlbnwwfHx8fDE3NjE2Njg2Mzh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "books"
     },
     {
-      "id": "product-7",
-      "description": "A vintage-style wax seal kit.",
-      "imageUrl": "https://images.unsplash.com/photo-1578531504112-0dcd95eda450?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx3YXglMjBzZWFsfGVufDB8fHx8MTc2MTY3OTg2NXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "wax seal"
+      "id": "category-3",
+      "description": "A photocopier machine.",
+      "imageUrl": "https://images.unsplash.com/photo-1612814266697-e5814f3063cf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwaG90b2NvcGllcnxlbnwwfHx8fDE3NjE3MjIyNjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "photocopier"
     },
     {
-      "id": "product-8",
-      "description": "A leather-bound journal.",
-      "imageUrl": "https://images.unsplash.com/photo-1612907238575-6bd0fa8e1a43?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxsZWF0aGVyJTIwam91cm5hbHxlbnwwfHx8fDE3NjE2NDc3MjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "leather journal"
+      "id": "category-4",
+      "description": "An electronics kit.",
+      "imageUrl": "https://images.unsplash.com/photo-1689509973848-b258e42f394d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxlbGVjdHJvbmljcyUyMGtpdHxlbnwwfHx8fDE3NjE3MTE3Nzh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "electronics kit"
     }
   ]
 }

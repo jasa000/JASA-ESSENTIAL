@@ -5,14 +5,12 @@ import type { Product } from '@/lib/types';
 import {
   Card,
   CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Star } from 'lucide-react';
+import Link from 'next/link';
 
 type ProductCardProps = {
   product: Product;
@@ -30,33 +28,46 @@ export default function ProductCard({ product }: ProductCardProps) {
     });
   };
 
+  const rating = product.rating || 5;
+
   return (
-    <Card className="flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg">
-      <CardHeader className="p-0">
-        <div className="relative aspect-[4/3] w-full">
+    <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <div className="relative aspect-square w-full overflow-hidden">
+        <Link href="#">
           <Image
             src={product.image.src}
             alt={product.image.alt}
-            width={product.image.width}
-            height={product.image.height}
-            className="object-cover"
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             data-ai-hint={product.image.hint}
           />
-        </div>
-      </CardHeader>
-      <CardContent className="flex-grow p-4">
-        <CardTitle className="font-headline text-lg tracking-tight">{product.name}</CardTitle>
-        <p className="mt-2 text-sm text-muted-foreground">{product.description}</p>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between p-4 pt-0">
-        <p className="text-lg font-semibold text-foreground">
-          ${product.price.toFixed(2)}
-        </p>
-        <Button onClick={handleAddToCart} size="sm">
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          Add to Cart
+        </Link>
+        <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={handleAddToCart}>
+            <ShoppingCart className="h-4 w-4 text-primary" />
         </Button>
-      </CardFooter>
+      </div>
+      <CardContent className="flex flex-1 flex-col p-4">
+        <div className="flex-grow">
+          {product.brand && <p className="text-xs text-muted-foreground">{product.brand}</p>}
+          <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
+          <div className="mt-1 flex items-center gap-0.5">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-muted text-muted-foreground'}`}
+                />
+              ))}
+          </div>
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+            <p className="text-lg font-semibold text-foreground">
+                ₹{product.price.toFixed(2)}
+            </p>
+            <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
+                Shop Now
+            </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 }
