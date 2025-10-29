@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
 import type { UserProfile } from './types';
 
 const usersCollection = collection(db, 'users');
@@ -12,6 +12,17 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
   } catch (error) {
     console.error("Error getting users: ", error);
     throw new Error("Failed to fetch users.");
+  }
+};
+
+export const getSellers = async (): Promise<UserProfile[]> => {
+  try {
+    const q = query(usersCollection, where("role", "==", "seller"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ ...doc.data() } as UserProfile));
+  } catch (error) {
+    console.error("Error getting sellers: ", error);
+    throw new Error("Failed to fetch sellers.");
   }
 };
 

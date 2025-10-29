@@ -59,4 +59,12 @@ export type Post = {
   createdAt: number; // Using number for timestamp (milliseconds)
 };
 
+export type Shop = {
+  id: string;
+  name: string;
+  address: string;
+  ownerId: string;
+  ownerName?: string; // This will be populated after fetching
+  createdAt: any;
+};
     
