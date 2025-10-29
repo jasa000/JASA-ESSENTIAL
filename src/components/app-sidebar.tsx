@@ -57,7 +57,7 @@ export default function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          <SidebarMenuItem>
+           <SidebarMenuItem>
             <SidebarMenuButton href="/" tooltip="Home" asChild>
               <Link href="/">
                 <Home />
@@ -65,6 +65,8 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton href="#" tooltip="Products" asChild>
               <Link href="#">
