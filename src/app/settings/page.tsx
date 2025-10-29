@@ -32,20 +32,53 @@ import { useToast } from "@/hooks/use-toast";
 import { sendPasswordResetEmail, deleteUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
+const COOLDOWN_SECONDS = 1800; // 30 minutes
+
 export default function SettingsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [deleteInput, setDeleteInput] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const [isSendingLink, setIsSendingLink] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
+  
+  useEffect(() => {
+    const lastResetTime = localStorage.getItem("passwordResetTimestamp");
+    if (lastResetTime) {
+      const timePassed = (Date.now() - parseInt(lastResetTime, 10)) / 1000;
+      if (timePassed < COOLDOWN_SECONDS) {
+        setResetCooldown(Math.ceil(COOLDOWN_SECONDS - timePassed));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (resetCooldown > 0) {
+      const timer = setInterval(() => {
+        setResetCooldown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resetCooldown]);
+
 
   const handleChangePassword = async () => {
+    if (resetCooldown > 0) {
+      toast({
+        variant: "destructive",
+        title: "Please wait",
+        description: `You can request another password reset link in ${Math.ceil(resetCooldown / 60)} minutes.`,
+      });
+      return;
+    }
+
     if (!user?.email) {
       toast({
         variant: "destructive",
@@ -54,8 +87,13 @@ export default function SettingsPage() {
       });
       return;
     }
+
+    setIsSendingLink(true);
     try {
       await sendPasswordResetEmail(auth, user.email);
+      const now = Date.now();
+      localStorage.setItem("passwordResetTimestamp", now.toString());
+      setResetCooldown(COOLDOWN_SECONDS);
       toast({
         title: "Password Reset Email Sent",
         description:
@@ -67,6 +105,8 @@ export default function SettingsPage() {
         title: "Password Reset Failed",
         description: error.message,
       });
+    } finally {
+        setIsSendingLink(false);
     }
   };
   
@@ -130,6 +170,13 @@ export default function SettingsPage() {
     );
   }
 
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
@@ -176,8 +223,16 @@ export default function SettingsPage() {
                   your email.
                 </p>
               </div>
-              <Button variant="outline" onClick={handleChangePassword}>
-                Send Link
+               <Button
+                variant="outline"
+                onClick={handleChangePassword}
+                disabled={resetCooldown > 0 || isSendingLink}
+              >
+                {isSendingLink
+                  ? "Sending..."
+                  : resetCooldown > 0
+                  ? `Wait ${formatTime(resetCooldown)}`
+                  : "Send Link"}
               </Button>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
