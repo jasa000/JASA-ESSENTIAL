@@ -5,6 +5,8 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
 import { CartProvider } from "@/context/cart-provider";
+import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
+import AppSidebar from "@/components/app-sidebar";
 
 export const metadata: Metadata = {
   title: "Jasa Essentials",
@@ -35,12 +37,19 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${poppins.variable} ${ptSans.variable}`}>
       <body className="font-body antialiased">
         <CartProvider>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-grow">{children}</main>
-            <Footer />
-          </div>
-          <Toaster />
+          <SidebarProvider>
+            <Sidebar>
+              <AppSidebar />
+            </Sidebar>
+            <SidebarInset>
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-grow">{children}</main>
+                <Footer />
+              </div>
+              <Toaster />
+            </SidebarInset>
+          </SidebarProvider>
         </CartProvider>
       </body>
     </html>

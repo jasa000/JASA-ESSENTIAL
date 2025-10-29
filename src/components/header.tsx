@@ -4,8 +4,8 @@ import { LogIn, Search, ShoppingCart, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { PenSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function Header() {
   // Mock user login state. In a real app, this would come from an auth provider.
@@ -15,11 +15,8 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        <div className="flex w-1/3 items-center">
-           <Link href="/" className="flex items-center gap-2">
-            <PenSquare className="h-8 w-8" style={{color: '#7EC8E3'}} />
-            <span className="font-headline text-lg font-bold hidden sm:inline-block">Jasa Essentials</span>
-          </Link>
+        <div className="flex items-center">
+           <SidebarTrigger />
         </div>
         <div className="flex flex-1 justify-center px-4">
           <div className="relative w-full max-w-md">
@@ -33,7 +30,7 @@ export default function Header() {
             </span>
           </div>
         </div>
-        <div className="flex w-1/3 items-center justify-end space-x-2">
+        <div className="flex items-center justify-end space-x-2">
             <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
                 <Link href="/cart">
                     <ShoppingCart className={isMobile ? "h-5 w-5" : "h-4 w-4"}/>
