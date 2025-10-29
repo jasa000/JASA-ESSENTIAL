@@ -31,7 +31,7 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
   return (
     <Link href={category.href} className="group block w-full">
       <Card className={cn(
-        "relative w-full overflow-hidden rounded-lg border-2 p-2 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 md:p-4",
+        "relative flex w-full h-full overflow-hidden rounded-lg border-2 p-2 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 md:p-4",
         "bg-gray-900 text-gray-100 border-transparent hover:border-primary",
         "dark:bg-gray-100 dark:text-gray-900 dark:hover:border-primary"
       )}>
@@ -39,7 +39,7 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
            className="shining-card-animation"
            style={{ animationDelay: `${index * 0.2}s` }}
         />
-        <div className="flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center w-full">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-black md:h-16 md-w-16">
               <Icon 
                 name={category.icon} 
@@ -49,7 +49,7 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
                 )}
               />
             </div>
-            <h3 className="mt-2 font-headline text-xs font-semibold md:text-base">{category.name}</h3>
+            <h3 className="mt-2 flex-grow flex items-center font-headline text-xs font-semibold md:text-base">{category.name}</h3>
         </div>
       </Card>
     </Link>
