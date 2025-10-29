@@ -14,9 +14,10 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, LayoutGrid, ShoppingCart, User, Moon } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, LayoutGrid, ShoppingCart, User, Moon, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
+import { Skeleton } from "./ui/skeleton"
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
@@ -46,49 +47,65 @@ export default function AppSidebar() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
+  const renderUserActions = () => {
+    if (loading) {
+      return (
+        <div className="flex w-full justify-around">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      )
+    }
+
+    return (
+        <SidebarMenu className="flex flex-row justify-around">
+            <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Theme" size="icon" onClick={toggleTheme} className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    {theme === 'dark' ? <Sun /> : <Moon />}
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+             {user ? (
+                <>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip="Settings" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                            <Link href="/profile">
+                                <Settings />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip="Logout" onClick={handleSignOut} size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                            <LogOut />
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </>
+             ) : (
+                <>
+                    <SidebarMenuItem>
+                         <SidebarMenuButton tooltip="Sign Up" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                            <Link href="/signup">
+                                <UserPlus />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                       <SidebarMenuButton tooltip="Login" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                            <Link href="/login">
+                                <LogIn />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </>
+             )}
+        </SidebarMenu>
+    )
+  }
+
   return (
     <SidebarContent className="p-2">
         <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
-            <SidebarMenu className="flex flex-row justify-around">
-                <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Theme" size="icon" onClick={toggleTheme} className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                        {theme === 'dark' ? <Sun /> : <Moon />}
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                 {user ? (
-                    <>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton tooltip="Settings" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                                <Link href="/profile">
-                                    <Settings />
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton tooltip="Logout" onClick={handleSignOut} size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                                <LogOut />
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </>
-                 ) : (
-                    <>
-                        <SidebarMenuItem>
-                             <SidebarMenuButton tooltip="Sign Up" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                                <Link href="/signup">
-                                    <UserPlus />
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        <SidebarMenuItem>
-                           <SidebarMenuButton tooltip="Login" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                                <Link href="/login">
-                                    <LogIn />
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </>
-                 )}
-            </SidebarMenu>
+            {renderUserActions()}
         </SidebarGroup>
          <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
             <SidebarMenu>
@@ -131,6 +148,22 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
+        
+        {user?.role === 'admin' && (
+          <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
+              <SidebarGroupLabel className="text-white/90">ADMIN ACCESS</SidebarGroupLabel>
+              <SidebarMenu>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                          <Link href="#">
+                              <ShieldCheck />
+                              <span>Manage Users</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+              </SidebarMenu>
+          </SidebarGroup>
+        )}
     </SidebarContent>
   )
 }

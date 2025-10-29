@@ -36,7 +36,7 @@ export type UserProfile = {
   uid: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  role?: 'user' | 'admin';
   mobile?: string;
   altMobiles?: string[];
   altEmails?: string[];
