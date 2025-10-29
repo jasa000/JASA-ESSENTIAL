@@ -84,10 +84,10 @@ export default function AppSidebar() {
                  )}
             </SidebarMenu>
         </SidebarGroup>
-         <SidebarGroup className="rounded-lg p-2">
+         <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
                         <Link href="/">
                             <Home />
                             <span>Back to Home</span>
