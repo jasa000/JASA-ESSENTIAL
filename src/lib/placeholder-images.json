@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "product-1",
+      "description": "A classic Moleskine notebook.",
+      "imageUrl": "https://images.unsplash.com/photo-1700864781908-5e7fe069ae1e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxub3RlYm9vayUyMHBlbnxlbnwwfHx8fDE3NjE3MTI2MjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "notebook pen"
+    },
+    {
+      "id": "product-2",
+      "description": "A set of high-quality fountain pens.",
+      "imageUrl": "https://images.unsplash.com/photo-1471107340929-a87cd0f5b5f3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmb3VudGFpbiUyMHBlbnxlbnwwfHx8fDE3NjE2NjgwNjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fountain pen"
+    },
+    {
+      "id": "product-3",
+      "description": "A minimalist desk organizer.",
+      "imageUrl": "https://images.unsplash.com/photo-1639916991657-e74ba7546b28?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxkZXNrJTIwb3JnYW5pemVyfGVufDB8fHx8MTc2MTcyMDk2MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "desk organizer"
+    },
+    {
+      "id": "product-4",
+      "description": "Premium watercolor paper pad.",
+      "imageUrl": "https://images.unsplash.com/photo-1616410731303-6affae095a0a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx3YXRlcmNvbG9yJTIwcGFwZXJ8ZW58MHx8fHwxNzYxNjg0NDI4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "watercolor paper"
+    },
+    {
+      "id": "product-5",
+      "description": "A set of colorful sticky notes.",
+      "imageUrl": "https://images.unsplash.com/photo-1580934174026-8142803ebb5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzdGlja3klMjBub3Rlc3xlbnwwfHx8fDE3NjE2NTk4MTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sticky notes"
+    },
+    {
+      "id": "product-6",
+      "description": "An elegant brass ruler.",
+      "imageUrl": "https://images.unsplash.com/photo-1642420719668-6ff753d2b467?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxicmFzcyUyMHJ1bGVyfGVufDB8fHx8MTc2MTcyMDk2MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "brass ruler"
+    },
+    {
+      "id": "product-7",
+      "description": "A vintage-style wax seal kit.",
+      "imageUrl": "https://images.unsplash.com/photo-1578531504112-0dcd95eda450?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx3YXglMjBzZWFsfGVufDB8fHx8MTc2MTY3OTg2NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "wax seal"
+    },
+    {
+      "id": "product-8",
+      "description": "A leather-bound journal.",
+      "imageUrl": "https://images.unsplash.com/photo-1612907238575-6bd0fa8e1a43?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxsZWF0aGVyJTIwam91cm5hbHxlbnwwfHx8fDE3NjE2NDc3MjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "leather journal"
+    }
+  ]
 }
