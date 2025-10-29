@@ -23,7 +23,7 @@ const emailSchema = z.object({
 });
 
 const phoneSchema = z.object({
-  phone: z.string().min(5, 'Please enter a valid phone number.'),
+  phone: z.string().min(10, 'Please enter a valid 10-digit phone number.').max(10),
   otp: z.string().length(6, 'OTP must be 6 digits.'),
 });
 
@@ -31,6 +31,7 @@ const phoneSchema = z.object({
 declare global {
     interface Window {
         recaptchaVerifier?: RecaptchaVerifier;
+        confirmationResult?: any;
     }
 }
 
@@ -107,7 +108,7 @@ export default function LoginPage() {
       });
     } catch (error: any) {
       console.error(error);
-      setupRecaptcha();
+      setupRecaptcha(); // Reset reCAPTCHA on error
       toast({
         variant: 'destructive',
         title: 'Failed to send OTP',
@@ -165,7 +166,7 @@ export default function LoginPage() {
 
   return (
     <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
-      <div id="recaptcha-container"></div>
+      <div id="recaptcha-container" className="my-4"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto flex w-fit items-center gap-2">
@@ -240,7 +241,7 @@ export default function LoginPage() {
                               disabled={loading}
                             />
                           </FormControl>
-                          <Button type="button" variant="outline" onClick={() => handleGetOtp(field.value)} disabled={loading}>Get OTP</Button>
+                          <Button id="get-otp-button" type="button" variant="outline" onClick={() => handleGetOtp(field.value)} disabled={loading}>Get OTP</Button>
                         </div>
                         <FormMessage />
                       </FormItem>
