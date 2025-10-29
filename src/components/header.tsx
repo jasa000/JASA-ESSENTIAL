@@ -1,17 +1,26 @@
 "use client";
 
-import { Search, User } from 'lucide-react';
+import { LogIn, Search, ShoppingCart, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
+import { PenSquare } from 'lucide-react';
 
 export default function Header() {
+  // Mock user login state. In a real app, this would come from an auth provider.
+  const isLoggedIn = false;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        <div className="w-1/3"></div>
-        <div className="w-1/3">
-          <div className="relative w-full">
+        <div className="flex w-1/3 items-center">
+           <Link href="/" className="flex items-center gap-2">
+            <PenSquare className="h-8 w-8" style={{color: '#7EC8E3'}} />
+            <span className="font-headline text-lg font-bold hidden sm:inline-block">Jasa Essentials</span>
+          </Link>
+        </div>
+        <div className="flex w-1/3 justify-center">
+          <div className="relative w-full max-w-md">
             <Input
               type="text"
               placeholder="Search your product"
@@ -22,13 +31,28 @@ export default function Header() {
             </span>
           </div>
         </div>
-        <div className="flex w-1/3 justify-end">
-           <Button asChild variant="ghost" size="icon">
-            <Link href="/login">
-              <User className="h-6 w-6 text-foreground" />
-              <span className="sr-only">Login</span>
-            </Link>
-          </Button>
+        <div className="flex w-1/3 items-center justify-end space-x-2">
+            <Button asChild variant="outline" className='rounded-full'>
+                <Link href="/cart">
+                    <ShoppingCart className='h-4 w-4 mr-2'/>
+                    Cart
+                </Link>
+            </Button>
+          {isLoggedIn ? (
+            <Button asChild variant="outline" className='rounded-full'>
+              <Link href="/profile">
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className='rounded-full'>
+              <Link href="/login">
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
