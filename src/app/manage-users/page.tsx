@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,7 +72,7 @@ export default function ManageUsersPage() {
         <TabsContent value="admin">
           <Card>
             <CardHeader>
-              <CardTitle>Administrators</CardTitle>
+              <CardTitle>Admin</CardTitle>
               <CardDescription>
                 Manage all administrators.
               </CardDescription>
