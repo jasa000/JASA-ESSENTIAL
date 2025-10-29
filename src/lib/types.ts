@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   name: string;
@@ -30,3 +31,23 @@ export type Category = {
         hint: string;
     }
 }
+
+export type UserProfile = {
+  uid: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
+  mobile?: string;
+  altMobiles?: string[];
+  altEmails?: string[];
+  address?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+  };
+  createdAt: Date;
+}
+
+    
