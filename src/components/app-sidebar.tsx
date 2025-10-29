@@ -4,6 +4,7 @@
 import {
   SidebarContent,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -13,7 +14,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, LayoutGrid, ShoppingCart, User } from "lucide-react"
 import Link from "next/link"
 
 export default function AppSidebar() {
@@ -91,6 +92,35 @@ export default function AppSidebar() {
                         <Link href="/">
                             <Home />
                             <span>Back to Home</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        </SidebarGroup>
+         <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
+            <SidebarGroupLabel className="text-white/90">USER ACCESS</SidebarGroupLabel>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <Link href="/">
+                            <LayoutGrid />
+                            <span>Products</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <Link href="/cart">
+                            <ShoppingCart />
+                            <span>Cart</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <Link href="/profile">
+                            <User />
+                            <span>Profile</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
