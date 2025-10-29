@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation"
 
 export default function AppSidebar() {
   const { state } = useSidebar()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const { toast } = useToast();
   const router = useRouter();
 
@@ -83,7 +83,7 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          {user && (
+          {!loading && user && (
             <SidebarMenuItem>
               <SidebarMenuButton href="/profile" tooltip="Profile" asChild>
                 <Link href="/profile">
@@ -106,18 +106,22 @@ export default function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            {user ? (
-               <SidebarMenuButton onClick={handleSignOut} tooltip="Logout">
-                  <LogOut />
-                  Logout
-              </SidebarMenuButton>
-            ) : (
-              <SidebarMenuButton href="/login" tooltip="Login" asChild>
-                <Link href="/login">
-                  <LogIn />
-                  Login
-                </Link>
-              </SidebarMenuButton>
+            {!loading && (
+              <>
+                {user ? (
+                  <SidebarMenuButton onClick={handleSignOut} tooltip="Logout">
+                      <LogOut />
+                      Logout
+                  </SidebarMenuButton>
+                ) : (
+                  <SidebarMenuButton href="/login" tooltip="Login" asChild>
+                    <Link href="/login">
+                      <LogIn />
+                      Login
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+              </>
             )}
           </SidebarMenuItem>
         </SidebarMenu>
