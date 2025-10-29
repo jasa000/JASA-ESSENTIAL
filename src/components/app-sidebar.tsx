@@ -6,11 +6,10 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  useSidebar,
   SidebarGroup,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar"
-import { Home, Notebook, ShoppingBag, User, Settings, LogIn, LogOut, Moon } from "lucide-react"
+import { Home, Notebook, ShoppingBag, User, Settings, LogIn, LogOut, Moon, UserPlus } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-provider"
 import { signOut } from "firebase/auth"
@@ -74,14 +73,24 @@ export default function AppSidebar() {
                   </SidebarMenuItem>
                   </>
                 ) : (
-                  <SidebarMenuItem>
-                  <SidebarMenuButton href="/login" tooltip="Login" asChild>
-                    <Link href="/login">
-                      <LogIn />
-                      Login
-                    </Link>
-                  </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton href="/signup" tooltip="Sign Up" asChild>
+                        <Link href="/signup">
+                          <UserPlus />
+                          Sign Up
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                    <SidebarMenuButton href="/login" tooltip="Login" asChild>
+                      <Link href="/login">
+                        <LogIn />
+                        Login
+                      </Link>
+                    </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
                 )}
               </>
             )}
