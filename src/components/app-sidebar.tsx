@@ -25,7 +25,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -209,6 +209,14 @@ export default function AppSidebar() {
                           <Link href="#">
                               <ShieldCheck />
                               <span>Manage Users</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                          <Link href="/post-update">
+                              <FilePenLine />
+                              <span>Post Update</span>
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
