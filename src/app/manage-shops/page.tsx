@@ -52,12 +52,14 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 
 const shopSchema = z.object({
   name: z.string().min(2, "Shop name must be at least 2 characters."),
   address: z.string().min(5, "Address is required."),
   ownerId: z.string().min(1, "Shop owner is required."),
+  notes: z.string().optional(),
 });
 
 export default function ManageShopsPage() {
@@ -76,6 +78,7 @@ export default function ManageShopsPage() {
       name: "",
       address: "",
       ownerId: "",
+      notes: "",
     },
   });
   
@@ -121,6 +124,7 @@ export default function ManageShopsPage() {
           name: editingShop.name,
           address: editingShop.address,
           ownerId: editingShop.ownerId,
+          notes: editingShop.notes || "",
       });
     }
   }, [editingShop, editForm]);
@@ -223,6 +227,19 @@ export default function ManageShopsPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Any additional notes about the shop..." {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -334,6 +351,19 @@ export default function ManageShopsPage() {
                                                 </FormItem>
                                                 )}
                                             />
+                                             <FormField
+                                                control={editForm.control}
+                                                name="notes"
+                                                render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Notes</FormLabel>
+                                                    <FormControl>
+                                                      <Textarea placeholder="Any additional notes..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                                )}
+                                            />
                                              <DialogFooter>
                                                 <DialogClose asChild>
                                                   <Button type="button" variant="secondary">Cancel</Button>
@@ -381,4 +411,3 @@ export default function ManageShopsPage() {
     </div>
   );
 }
-

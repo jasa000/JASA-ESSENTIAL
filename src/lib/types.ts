@@ -64,6 +64,7 @@ export type Shop = {
   name: string;
   address: string;
   ownerId: string;
+  notes?: string;
   ownerName?: string; // This will be populated after fetching
   createdAt: any;
 };
