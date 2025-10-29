@@ -17,7 +17,6 @@ const categories: { value: string, label: string }[] = [
     { value: 'all', label: 'All' },
     { value: 'stationary', label: 'Stationary' },
     { value: 'books', label: 'Books' },
-    { value: 'xerox', label: 'Xerox' },
     { value: 'electronics', label: 'Electronic Kit' },
 ]
 
@@ -54,11 +53,13 @@ export default function CartPage() {
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Your Cart</h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-            {categories.map((cat) => (
-                <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
-            ))}
-        </TabsList>
+        <div className="sticky top-20 z-40 bg-background py-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+              {categories.map((cat) => (
+                  <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
+              ))}
+          </TabsList>
+        </div>
 
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2">
