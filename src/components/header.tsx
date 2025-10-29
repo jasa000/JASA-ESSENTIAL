@@ -43,7 +43,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
            <SidebarTrigger />
            <Link href="/" className="flex items-center gap-2">
-            <span className="font-headline text-lg font-bold">
+            <span className="font-headline text-lg font-bold sr-only">
               Jasa Essentials
             </span>
           </Link>
@@ -68,18 +68,12 @@ export default function Header() {
                 </Link>
             </Button>
           {user ? (
-             <>
               <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
                 <Link href="/profile">
                   <User className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                   <span className="hidden md:inline">Profile</span>
                 </Link>
               </Button>
-               <Button onClick={handleSignOut} size={isMobile ? "icon" : "default"} className='rounded-full'>
-                  <LogOut className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
-                  <span className="hidden md:inline">Logout</span>
-              </Button>
-            </>
           ) : (
             <Button asChild size={isMobile ? "icon" : "default"} className='rounded-full'>
               <Link href="/login">
