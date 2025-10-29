@@ -9,13 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PenSquare, Mail, Phone } from 'lucide-react';
+import { PenSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, updateProfile, ConfirmationResult } from 'firebase/auth';
-import { useState, useEffect } from 'react';
+import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, updateProfile } from 'firebase/auth';
+import { useState } from 'react';
 import PasswordStrength from '@/components/password-strength';
 
 const emailSchema = z.object({
@@ -24,51 +23,16 @@ const emailSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters.'),
 });
 
-const phoneSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
-  phone: z.string().min(10, 'Please enter a valid 10-digit phone number.').max(10),
-  otp: z.string().length(6, 'OTP must be 6 digits.'),
-});
-
-// Augment the Window interface
-declare global {
-    interface Window {
-        recaptchaVerifier?: RecaptchaVerifier;
-    }
-}
-
 export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
-  const countryCode = "+91";
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
     defaultValues: { name: '', email: '', password: '' },
   });
-
-  const phoneForm = useForm<z.infer<typeof phoneSchema>>({
-    resolver: zodResolver(phoneSchema),
-    defaultValues: { name: '', phone: '', otp: '' },
-  });
-
-  const setupRecaptcha = () => {
-    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-            'callback': () => {
-              // reCAPTCHA solved, allow signInWithPhoneNumber.
-            }
-        });
-    }
-  }
-
-  useEffect(() => {
-    setupRecaptcha();
-  }, []);
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     setLoading(true);
@@ -90,69 +54,6 @@ export default function SignupPage() {
       });
     } finally {
       setLoading(false);
-    }
-  }
-  
-  async function handleGetOtp(phoneNumber: string) {
-    if (!phoneNumber) {
-      toast({ variant: 'destructive', title: "Phone number is required." });
-      return;
-    }
-    setLoading(true);
-    try {
-      if (!window.recaptchaVerifier) {
-          setupRecaptcha();
-      }
-      const appVerifier = window.recaptchaVerifier!;
-      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
-      setConfirmationResult(result);
-      toast({ 
-        title: "OTP Sent!", 
-        description: `An OTP has been sent to ${fullPhoneNumber}. Please enter it to complete registration.`
-      });
-    } catch (error: any) {
-      console.error("OTP Error:", error);
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.render().then((widgetId) => {
-          if (typeof window !== 'undefined' && (window as any).grecaptcha) {
-            (window as any).grecaptcha.reset(widgetId);
-          }
-        });
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Failed to send OTP',
-        description: "Could not send OTP. Please check the phone number and try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
-  
-  async function onPhoneSubmit(values: z.infer<typeof phoneSchema>) {
-    if (!confirmationResult) {
-        toast({ variant: 'destructive', title: "Please get an OTP first." });
-        return;
-    }
-    setLoading(true);
-    try {
-      const userCredential = await confirmationResult.confirm(values.otp);
-      await updateProfile(userCredential.user, { displayName: values.name });
-      toast({
-          title: "Account Created!",
-          description: "You have successfully signed up with your phone number.",
-      });
-      router.push('/login');
-    } catch (error: any) {
-        console.error(error);
-        toast({
-            variant: 'destructive',
-            title: 'Sign Up Failed',
-            description: 'The OTP might be incorrect. Please try again.',
-        });
-    } finally {
-        setLoading(false);
     }
   }
 
@@ -179,7 +80,6 @@ export default function SignupPage() {
 
   return (
     <>
-      <div id="recaptcha-container" className="my-4"></div>
       <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
@@ -190,130 +90,57 @@ export default function SignupPage() {
             <CardDescription>Join Jasa Essentials to start your creative journey.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="email">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="email"><Mail className="mr-2 h-4 w-4"/>Email</TabsTrigger>
-                <TabsTrigger value="phone"><Phone className="mr-2 h-4 w-4"/>Phone</TabsTrigger>
-              </TabsList>
-              <TabsContent value="email" className="mt-4">
-                <Form {...emailForm}>
-                  <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
-                    <FormField
-                      control={emailForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John Doe" {...field} disabled={loading}/>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={emailForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="m@example.com" {...field} disabled={loading}/>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={emailForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} onChange={(e) => {
-                              field.onChange(e);
-                              setPassword(e.target.value);
-                            }} disabled={loading}/>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <PasswordStrength password={password} />
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Creating Account...' : 'Create Account with Email'}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-              <TabsContent value="phone" className="mt-4">
-                 <Form {...phoneForm}>
-                  <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
-                    <FormField
-                      control={phoneForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Jane Doe" {...field} disabled={loading}/>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={phoneForm.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <div className="flex gap-2">
-                             <div className="flex h-10 items-center rounded-md border border-input bg-background px-3 text-sm">
-                              +91
-                             </div>
-                            <FormControl>
-                              <Input
-                                type="tel"
-                                placeholder="9876543210"
-                                {...field}
-                                 onChange={(e) => {
-                                  const value = e.target.value.replace(/\D/g, '');
-                                  field.onChange(value);
-                                }}
-                                disabled={loading}
-                              />
-                            </FormControl>
-                             <Button id="get-otp-button" type="button" variant="outline" onClick={() => handleGetOtp(field.value)} disabled={loading}>
-                              {loading ? 'Sending...' : 'Get OTP'}
-                             </Button>
-                          </div>
-                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={phoneForm.control}
-                      name="otp"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>OTP</FormLabel>
-                          <FormControl>
-                            <Input type="text" placeholder="123456" {...field} disabled={loading || !confirmationResult}/>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={loading || !confirmationResult}>
-                      {loading ? 'Creating Account...' : 'Create Account with Phone'}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-            </Tabs>
-
+            <Form {...emailForm}>
+              <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                <FormField
+                  control={emailForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} disabled={loading}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={emailForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="m@example.com" {...field} disabled={loading}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={emailForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} onChange={(e) => {
+                          field.onChange(e);
+                          setPassword(e.target.value);
+                        }} disabled={loading}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <PasswordStrength password={password} />
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Creating Account...' : 'Create Account with Email'}
+                </Button>
+              </form>
+            </Form>
+            
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
