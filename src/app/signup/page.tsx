@@ -267,13 +267,13 @@ export default function SignupPage() {
                         <FormLabel>Phone Number</FormLabel>
                         <div className="flex gap-2">
                            <Select onValueChange={setCountryCode} defaultValue={countryCode}>
-                            <SelectTrigger className="w-[80px]">
+                            <SelectTrigger className="w-[120px]">
                               <SelectValue placeholder="Code" />
                             </SelectTrigger>
                             <SelectContent>
                               {countries.map((country) => (
                                 <SelectItem key={`${country.code}-${country.dial_code}`} value={country.dial_code}>
-                                  {country.dial_code}
+                                  {country.code} {country.dial_code}
                                 </SelectItem>
                               ))}
                             </SelectContent>
