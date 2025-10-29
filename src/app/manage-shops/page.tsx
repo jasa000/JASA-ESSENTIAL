@@ -50,15 +50,18 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Pencil } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash2, Pencil, Check, ChevronsUpDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 const shopSchema = z.object({
   name: z.string().min(2, "Shop name must be at least 2 characters."),
   address: z.string().min(5, "Address is required."),
-  ownerId: z.string().min(1, "Shop owner is required."),
+  ownerIds: z.array(z.string()).min(1, "At least one shop owner is required."),
   notes: z.string().optional(),
 });
 
@@ -77,7 +80,7 @@ export default function ManageShopsPage() {
     defaultValues: {
       name: "",
       address: "",
-      ownerId: "",
+      ownerIds: [],
       notes: "",
     },
   });
@@ -100,8 +103,11 @@ export default function ManageShopsPage() {
     try {
       const [fetchedShops, fetchedSellers] = await Promise.all([getShops(), getSellers()]);
       const shopsWithOwnerNames = fetchedShops.map(shop => {
-        const owner = fetchedSellers.find(seller => seller.uid === shop.ownerId);
-        return { ...shop, ownerName: owner?.name || 'N/A' };
+        const ownerNames = shop.ownerIds.map(id => {
+          const owner = fetchedSellers.find(seller => seller.uid === id);
+          return owner?.name || 'N/A';
+        });
+        return { ...shop, ownerNames: ownerNames };
       });
       setShops(shopsWithOwnerNames);
       setSellers(fetchedSellers);
@@ -116,14 +122,14 @@ export default function ManageShopsPage() {
     if (user?.role === 'admin') {
       fetchShopsAndSellers();
     }
-  }, [user, toast]);
+  }, [user]);
 
   useEffect(() => {
     if (editingShop) {
       editForm.reset({
           name: editingShop.name,
           address: editingShop.address,
-          ownerId: editingShop.ownerId,
+          ownerIds: editingShop.ownerIds,
           notes: editingShop.notes || "",
       });
     }
@@ -163,6 +169,84 @@ export default function ManageShopsPage() {
       toast({ variant: "destructive", title: "Error", description: error.message });
     }
   };
+
+  const MultiSellerSelect = ({ form, fieldName }: { form: any, fieldName: "ownerIds" }) => {
+    return (
+        <FormField
+            control={form.control}
+            name={fieldName}
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Shop Owners</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn("w-full justify-between h-auto", !field.value?.length && "text-muted-foreground")}
+                                >
+                                    <div className="flex gap-1 flex-wrap">
+                                        {field.value?.length > 0 ? (
+                                            sellers
+                                                .filter(seller => field.value.includes(seller.uid))
+                                                .map(seller => (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        key={seller.uid}
+                                                        className="mr-1"
+                                                    >
+                                                        {seller.name}
+                                                    </Badge>
+                                                ))
+                                        ) : (
+                                            "Select sellers"
+                                        )}
+                                    </div>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search sellers..." />
+                                <CommandList>
+                                    <CommandEmpty>No sellers found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {sellers.map((seller) => (
+                                            <CommandItem
+                                                value={seller.name}
+                                                key={seller.uid}
+                                                onSelect={() => {
+                                                    const currentIds = field.value || [];
+                                                    const newIds = currentIds.includes(seller.uid)
+                                                        ? currentIds.filter((id: string) => id !== seller.uid)
+                                                        : [...currentIds, seller.uid];
+                                                    form.setValue(fieldName, newIds);
+                                                }}
+                                            >
+                                                <Check
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        (field.value || []).includes(seller.uid)
+                                                            ? "opacity-100"
+                                                            : "opacity-0"
+                                                    )}
+                                                />
+                                                {seller.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
+};
   
   if (loading || user?.role !== 'admin') {
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
@@ -209,28 +293,7 @@ export default function ManageShopsPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="ownerId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Shop Owner</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                <SelectValue placeholder="Select a seller" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {sellers.map(seller => (
-                                <SelectItem key={seller.uid} value={seller.uid}>{seller.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <MultiSellerSelect form={form} fieldName="ownerIds" />
                   <FormField
                     control={form.control}
                     name="notes"
@@ -264,7 +327,7 @@ export default function ManageShopsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Shop Name</TableHead>
-                      <TableHead>Owner</TableHead>
+                      <TableHead>Owners</TableHead>
                       <TableHead>Date Added</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -278,7 +341,7 @@ export default function ManageShopsPage() {
                       shops.map((shop) => (
                         <TableRow key={shop.id}>
                           <TableCell className="font-medium">{shop.name}</TableCell>
-                          <TableCell>{shop.ownerName}</TableCell>
+                          <TableCell>{shop.ownerNames?.join(', ')}</TableCell>
                           <TableCell>{new Date(shop.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -329,28 +392,7 @@ export default function ManageShopsPage() {
                                                     </FormItem>
                                                 )}
                                             />
-                                             <FormField
-                                                control={editForm.control}
-                                                name="ownerId"
-                                                render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Shop Owner</FormLabel>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl>
-                                                            <SelectTrigger>
-                                                            <SelectValue placeholder="Select a seller" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {sellers.map(seller => (
-                                                            <SelectItem key={seller.uid} value={seller.uid}>{seller.name}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                                )}
-                                            />
+                                            <MultiSellerSelect form={editForm} fieldName="ownerIds" />
                                              <FormField
                                                 control={editForm.control}
                                                 name="notes"

@@ -60,12 +60,12 @@ export type Post = {
 };
 
 export type Shop = {
-  id: string;
+  id:string;
   name: string;
   address: string;
-  ownerId: string;
+  ownerIds: string[];
+  ownerNames?: string[];
   notes?: string;
-  ownerName?: string; // This will be populated after fetching
   createdAt: any;
 };
     

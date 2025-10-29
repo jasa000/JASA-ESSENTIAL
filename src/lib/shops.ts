@@ -6,7 +6,7 @@ import type { Shop } from './types';
 const shopsCollection = collection(db, 'shops');
 
 // Add a new shop
-export const addShop = async (data: Omit<Shop, 'id' | 'createdAt' | 'ownerName'>): Promise<string> => {
+export const addShop = async (data: Omit<Shop, 'id' | 'createdAt' | 'ownerNames'>): Promise<string> => {
   try {
     const docRef = await addDoc(shopsCollection, {
       ...data,
@@ -32,7 +32,7 @@ export const getShops = async (): Promise<Shop[]> => {
 };
 
 // Update a shop
-export const updateShop = async (id: string, data: Partial<Omit<Shop, 'id' | 'createdAt' | 'ownerName'>>): Promise<void> => {
+export const updateShop = async (id: string, data: Partial<Omit<Shop, 'id' | 'createdAt' | 'ownerNames'>>): Promise<void> => {
   try {
     const shopDoc = doc(db, 'shops', id);
     await updateDoc(shopDoc, data);
