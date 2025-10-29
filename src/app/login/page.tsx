@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -27,6 +27,12 @@ const phoneSchema = z.object({
   otp: z.string().length(6, 'OTP must be 6 digits.'),
 });
 
+// Augment the Window interface
+declare global {
+    interface Window {
+        recaptchaVerifier: RecaptchaVerifier;
+    }
+}
 
 export default function LoginPage() {
   const { toast } = useToast();
@@ -46,7 +52,7 @@ export default function LoginPage() {
   
   // Add a div for reCAPTCHA
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
