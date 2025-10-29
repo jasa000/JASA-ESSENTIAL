@@ -36,7 +36,7 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-black md:h-16 md-w-16">
               <Icon 
                 name={category.icon} 
-                className="h-6 w-6 text-primary md:h-8 md:w-8 animate-float"
+                className="h-6 w-6 text-black dark:text-white md:h-8 md:w-8 animate-float"
                 style={{ animationDelay: `${index * 0.3}s` }}
               />
             </div>
