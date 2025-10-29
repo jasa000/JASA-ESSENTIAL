@@ -1,3 +1,4 @@
+
 import type { Product, Category } from './types';
 import imageData from './placeholder-images.json';
 
@@ -26,21 +27,29 @@ export const categories: Category[] = [
     {
         id: 'cat-1',
         name: 'Stationary',
+        href: '/stationary',
+        icon: 'Notebook',
         image: getProductImage('category-1', 96, 96),
     },
     {
         id: 'cat-2',
         name: 'Books',
+        href: '/books',
+        icon: 'Book',
         image: getProductImage('category-2', 96, 96),
     },
     {
         id: 'cat-3',
         name: 'Xerox',
+        href: '/xerox',
+        icon: 'Printer',
         image: getProductImage('category-3', 96, 96),
     },
     {
         id: 'cat-4',
         name: 'Electronic Kit',
+        href: '/electronics',
+        icon: 'CircuitBoard',
         image: getProductImage('category-4', 96, 96),
     }
 ]

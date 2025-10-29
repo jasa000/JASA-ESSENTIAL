@@ -23,6 +23,8 @@ export type CartItem = {
 export type Category = {
     id: string;
     name: string;
+    href: string;
+    icon: string;
     image: {
         src: string;
         alt: string;

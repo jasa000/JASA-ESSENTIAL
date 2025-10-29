@@ -5,6 +5,8 @@ import * as React from "react";
 import Autoplay from "embla-carousel-autoplay";
 import BannerCard from '@/components/banner-card';
 import WelcomeCard from '@/components/welcome-card';
+import CategoryLinkCard from '@/components/category-link-card';
+import { categories } from '@/lib/data';
 import imageData from '@/lib/placeholder-images.json';
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import PostCarousel from "@/components/post-carousel";
@@ -25,7 +27,17 @@ export default function Home() {
   return (
     <div className="flex flex-col">
        <WelcomeCard />
+       
+       <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+            {categories.map((category, index) => (
+                <CategoryLinkCard key={category.id} category={category} index={index} />
+            ))}
+        </div>
+       </div>
+
        <PostCarousel />
+
        <div className="container mx-auto px-4 py-8">
          <Carousel
           plugins={[plugin.current]}

@@ -101,6 +101,11 @@ export default {
         'border-glow': {
           '0%, 100%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
+        },
+        'shine-indefinitely': {
+          '0%': { transform: 'translateX(-100%) skewX(-30deg)', opacity: '0'},
+          '30%': { transform: 'translateX(100%) skewX(-30deg)', opacity: '1'},
+          '100%': { transform: 'translateX(100%) skewX(-30deg)', opacity: '0'},
         }
       },
       animation: {
@@ -109,6 +114,7 @@ export default {
         'blink': 'blink 1s step-end infinite',
         'shining-fast': 'shining-fast 1s ease-in-out infinite',
         'border-glow': 'border-glow 4s ease-in-out infinite',
+        'shine-indefinitely': 'shine-indefinitely 3s infinite',
       },
     },
   },
