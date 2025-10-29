@@ -44,7 +44,7 @@ export default function AppSidebar() {
   return (
     <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
+          <SidebarMenu className="flex-row justify-center">
              {!loading && (
               <>
                 {user ? (
@@ -53,7 +53,6 @@ export default function AppSidebar() {
                     <SidebarMenuButton href="#" tooltip="Theme" asChild>
                       <Link href="#">
                         <Moon />
-                        Theme
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -61,14 +60,12 @@ export default function AppSidebar() {
                     <SidebarMenuButton href="#" tooltip="Settings" asChild>
                       <Link href="#">
                         <Settings />
-                        Settings
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                    <SidebarMenuItem>
                     <SidebarMenuButton onClick={handleSignOut} tooltip="Logout">
                         <LogOut />
-                        Logout
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   </>
@@ -78,7 +75,6 @@ export default function AppSidebar() {
                       <SidebarMenuButton href="/signup" tooltip="Sign Up" asChild>
                         <Link href="/signup">
                           <UserPlus />
-                          Sign Up
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -86,7 +82,6 @@ export default function AppSidebar() {
                     <SidebarMenuButton href="/login" tooltip="Login" asChild>
                       <Link href="/login">
                         <LogIn />
-                        Login
                       </Link>
                     </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -100,11 +95,9 @@ export default function AppSidebar() {
         <SidebarGroup>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton href="/" tooltip="Home" asChild>
-                    <Link href="/">
-                        <Home />
-                        Back to Home
-                    </Link>
+                    <SidebarMenuButton href="/" tooltip="Home">
+                      <Home />
+                      Back to Home
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
@@ -114,28 +107,22 @@ export default function AppSidebar() {
             <SidebarGroupLabel>User Access</SidebarGroupLabel>
             <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" tooltip="Products" asChild>
-                <Link href="#">
+                <SidebarMenuButton href="#" tooltip="Products">
                     <Notebook />
                     Products
-                </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="/cart" tooltip="Cart" asChild>
-                <Link href="/cart">
+                <SidebarMenuButton href="/cart" tooltip="Cart">
                     <ShoppingBag />
                     Cart
-                </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             {!loading && user && (
                 <SidebarMenuItem>
-                <SidebarMenuButton href="/profile" tooltip="Profile" asChild>
-                    <Link href="/profile">
+                <SidebarMenuButton href="/profile" tooltip="Profile">
                     <User />
                     Profile
-                    </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
             )}
