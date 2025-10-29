@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import { PenSquare } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Header() {
   // Mock user login state. In a real app, this would come from an auth provider.
   const isLoggedIn = false;
+  const isMobile = useIsMobile();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -19,7 +21,7 @@ export default function Header() {
             <span className="font-headline text-lg font-bold hidden sm:inline-block">Jasa Essentials</span>
           </Link>
         </div>
-        <div className="flex w-1/3 justify-center">
+        <div className="flex flex-1 justify-center px-4">
           <div className="relative w-full max-w-md">
             <Input
               type="text"
@@ -32,24 +34,24 @@ export default function Header() {
           </div>
         </div>
         <div className="flex w-1/3 items-center justify-end space-x-2">
-            <Button asChild variant="outline" className='rounded-full'>
+            <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
                 <Link href="/cart">
-                    <ShoppingCart className='h-4 w-4 mr-2'/>
-                    Cart
+                    <ShoppingCart className={isMobile ? "h-5 w-5" : "h-4 w-4"}/>
+                    <span className="hidden md:inline">Cart</span>
                 </Link>
             </Button>
           {isLoggedIn ? (
-            <Button asChild variant="outline" className='rounded-full'>
+            <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
               <Link href="/profile">
-                <User className="h-4 w-4 mr-2" />
-                Profile
+                <User className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+                <span className="hidden md:inline">Profile</span>
               </Link>
             </Button>
           ) : (
-            <Button asChild className='rounded-full'>
+            <Button asChild size={isMobile ? "icon" : "default"} className='rounded-full'>
               <Link href="/login">
-                <LogIn className="h-4 w-4 mr-2" />
-                Login
+                <LogIn className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+                <span className="hidden md:inline">Login</span>
               </Link>
             </Button>
           )}
