@@ -13,7 +13,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home } from "lucide-react"
 import Link from "next/link"
 
 export default function AppSidebar() {
@@ -41,7 +41,7 @@ export default function AppSidebar() {
 
 
   return (
-    <SidebarContent>
+    <SidebarContent className="p-2">
         <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
             <SidebarMenu className="flex flex-row justify-around">
                 <SidebarMenuItem>
@@ -82,6 +82,18 @@ export default function AppSidebar() {
                         </SidebarMenuItem>
                     </>
                  )}
+            </SidebarMenu>
+        </SidebarGroup>
+         <SidebarGroup className="rounded-lg p-2">
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                        <Link href="/">
+                            <Home />
+                            <span>Back to Home</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
     </SidebarContent>
