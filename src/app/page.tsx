@@ -29,7 +29,7 @@ export default function Home() {
        <WelcomeCard />
        
        <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <div className="flex w-full gap-2 md:gap-4">
             {categories.map((category, index) => (
                 <CategoryLinkCard key={category.id} category={category} index={index} />
             ))}
