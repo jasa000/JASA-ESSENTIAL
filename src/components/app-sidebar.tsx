@@ -206,7 +206,7 @@ export default function AppSidebar() {
               <SidebarMenu>
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                          <Link href="#">
+                          <Link href="/manage-users">
                               <ShieldCheck />
                               <span>Manage Users</span>
                           </Link>
