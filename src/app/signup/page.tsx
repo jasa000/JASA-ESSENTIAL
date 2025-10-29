@@ -17,6 +17,8 @@ import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 import PasswordStrength from '@/components/password-strength';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { countries } from "@/lib/countries";
 
 const emailSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -26,7 +28,7 @@ const emailSchema = z.object({
 
 const phoneSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
-  phone: z.string().min(10, 'Please enter a valid phone number including country code.'),
+  phone: z.string().min(5, 'Please enter a valid phone number.'),
   otp: z.string().length(6, 'OTP must be 6 digits.'),
 });
 
@@ -43,6 +45,7 @@ export default function SignupPage() {
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
+  const [countryCode, setCountryCode] = useState("+91");
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -104,15 +107,15 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const appVerifier = window.recaptchaVerifier!;
-      const result = await signInWithPhoneNumber(auth, `+${phoneNumber}`, appVerifier);
+      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
       setConfirmationResult(result);
       toast({ 
         title: "OTP Sent!", 
-        description: "An OTP has been sent to your phone. Please enter it to complete registration." 
+        description: `An OTP has been sent to ${fullPhoneNumber}. Please enter it to complete registration.`
       });
     } catch (error: any) {
       console.error(error);
-      // Reset reCAPTCHA so user can try again
       setupRecaptcha();
       toast({
         variant: 'destructive',
@@ -263,8 +266,29 @@ export default function SignupPage() {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <div className="flex gap-2">
+                           <Select onValueChange={setCountryCode} defaultValue={countryCode}>
+                            <SelectTrigger className="w-[80px]">
+                              <SelectValue placeholder="Code" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {countries.map((country) => (
+                                <SelectItem key={country.code} value={country.dial_code}>
+                                  {country.dial_code}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormControl>
-                            <Input type="tel" placeholder="919876543210" {...field} disabled={loading}/>
+                            <Input
+                              type="tel"
+                              placeholder="9876543210"
+                              {...field}
+                               onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, '');
+                                field.onChange(value);
+                              }}
+                              disabled={loading}
+                            />
                           </FormControl>
                            <Button type="button" variant="outline" onClick={() => handleGetOtp(field.value)} disabled={loading}>Get OTP</Button>
                         </div>

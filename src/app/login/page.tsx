@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { countries } from "@/lib/countries";
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -23,7 +25,7 @@ const emailSchema = z.object({
 });
 
 const phoneSchema = z.object({
-  phone: z.string().min(10, 'Please enter a valid phone number.'),
+  phone: z.string().min(5, 'Please enter a valid phone number.'),
   otp: z.string().length(6, 'OTP must be 6 digits.'),
 });
 
@@ -39,6 +41,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState("+91");
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -97,15 +100,15 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const appVerifier = window.recaptchaVerifier!;
-      const result = await signInWithPhoneNumber(auth, `+${phoneNumber}`, appVerifier);
+      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
       setConfirmationResult(result);
       toast({ 
         title: "OTP Sent!", 
-        description: "An OTP has been sent to your phone. Please check your messages and enter it to continue." 
+        description: `An OTP has been sent to ${fullPhoneNumber}. Please check your messages.` 
       });
     } catch (error: any) {
       console.error(error);
-       // Reset reCAPTCHA so user can try again
       setupRecaptcha();
       toast({
         variant: 'destructive',
@@ -224,8 +227,29 @@ export default function LoginPage() {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <div className="flex gap-2">
+                          <Select onValueChange={setCountryCode} defaultValue={countryCode}>
+                            <SelectTrigger className="w-[80px]">
+                              <SelectValue placeholder="Code" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {countries.map((country) => (
+                                <SelectItem key={country.code} value={country.dial_code}>
+                                  {country.dial_code}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormControl>
-                            <Input type="tel" placeholder="919876543210" {...field} disabled={loading} />
+                            <Input
+                              type="tel"
+                              placeholder="9876543210"
+                              {...field}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, '');
+                                field.onChange(value);
+                              }}
+                              disabled={loading}
+                            />
                           </FormControl>
                           <Button type="button" variant="outline" onClick={() => handleGetOtp(field.value)} disabled={loading}>Get OTP</Button>
                         </div>
