@@ -8,6 +8,7 @@ import { CartProvider } from "@/context/cart-provider";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/app-sidebar";
 import { AuthProvider } from "@/context/auth-provider";
+import { ThemeProvider } from "@/context/theme-provider";
 
 export const metadata: Metadata = {
   title: "Jasa Essentials",
@@ -37,22 +38,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${poppins.variable} ${ptSans.variable}`}>
       <body className="font-body antialiased">
-        <AuthProvider>
-          <CartProvider>
-            <SidebarProvider>
-              <Sidebar>
-                <AppSidebar />
-              </Sidebar>
-              <SidebarInset>
-                <div className="flex min-h-screen flex-col">
-                  <Header />
-                  <main className="flex-grow">{children}</main>
-                </div>
-                <Toaster />
-              </SidebarInset>
-            </SidebarProvider>
-          </CartProvider>
-        </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
+            <CartProvider>
+              <SidebarProvider>
+                <Sidebar>
+                  <AppSidebar />
+                </Sidebar>
+                <SidebarInset>
+                  <div className="flex min-h-screen flex-col">
+                    <Header />
+                    <main className="flex-grow">{children}</main>
+                  </div>
+                  <Toaster />
+                </SidebarInset>
+              </SidebarProvider>
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

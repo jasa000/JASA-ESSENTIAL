@@ -14,13 +14,15 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, LayoutGrid, ShoppingCart, User } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, LayoutGrid, ShoppingCart, User, Moon } from "lucide-react"
 import Link from "next/link"
+import { useTheme } from "@/context/theme-provider"
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
   const { toast } = useToast();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     try {
@@ -40,14 +42,17 @@ export default function AppSidebar() {
     }
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
   return (
     <SidebarContent className="p-2">
         <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
             <SidebarMenu className="flex flex-row justify-around">
                 <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Theme" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                        <Sun />
+                    <SidebarMenuButton tooltip="Theme" size="icon" onClick={toggleTheme} className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        {theme === 'dark' ? <Sun /> : <Moon />}
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                  {user ? (
