@@ -37,11 +37,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const postSchema = z.object({
@@ -54,12 +64,18 @@ export default function PostUpdatePage() {
   const { toast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
     defaultValues: {
       content: "",
     },
+  });
+
+  const editForm = useForm<z.infer<typeof postSchema>>({
+    resolver: zodResolver(postSchema),
   });
 
   useEffect(() => {
@@ -77,6 +93,12 @@ export default function PostUpdatePage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (editingPost) {
+      editForm.reset({ content: editingPost.content });
+    }
+  }, [editingPost, editForm]);
+
   const fetchPosts = async () => {
     setIsLoadingPosts(true);
     const fetchedPosts = await getPosts();
@@ -93,6 +115,19 @@ export default function PostUpdatePage() {
       fetchPosts();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }
+  
+  async function onEditSubmit(values: z.infer<typeof postSchema>) {
+    if (!editingPost) return;
+    try {
+      await updatePost(editingPost.id, { content: values.content });
+      toast({ title: "Post Updated", description: "The post content has been saved." });
+      fetchPosts();
+      setIsEditDialogOpen(false);
+      setEditingPost(null);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error Updating Post", description: error.message });
     }
   }
 
@@ -213,6 +248,54 @@ export default function PostUpdatePage() {
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                                </AlertDialog>
+                               
+                               <Dialog open={isEditDialogOpen && editingPost?.id === post.id} onOpenChange={(open) => {
+                                  if (!open) {
+                                    setEditingPost(null);
+                                    editForm.reset();
+                                  }
+                                  setIsEditDialogOpen(open);
+                                }}>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" onClick={() => setEditingPost(post)}>
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Edit Post</DialogTitle>
+                                        <DialogDescription>
+                                            Make changes to your post here. Click save when you're done.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <Form {...editForm}>
+                                        <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                                            <FormField
+                                                control={editForm.control}
+                                                name="content"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Content</FormLabel>
+                                                        <FormControl>
+                                                            <Textarea {...field} rows={5} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                             <DialogFooter>
+                                                <DialogClose asChild>
+                                                  <Button type="button" variant="secondary">Cancel</Button>
+                                                </DialogClose>
+                                                <Button type="submit" disabled={editForm.formState.isSubmitting}>
+                                                  {editForm.formState.isSubmitting ? "Saving..." : "Save Changes"}
+                                                </Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                               </Dialog>
+
 
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -248,3 +331,5 @@ export default function PostUpdatePage() {
     </div>
   );
 }
+
+    
