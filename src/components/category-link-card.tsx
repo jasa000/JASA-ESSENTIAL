@@ -12,6 +12,13 @@ type CategoryLinkCardProps = {
   index: number;
 };
 
+const animationClasses = [
+  'animate-float-1',
+  'animate-float-2',
+  'animate-float-3',
+  'animate-float-4',
+];
+
 const Icon = ({ name, ...props }: { name: string; [key: string]: any }) => {
   const LucideIcon = (LucideIcons as any)[name];
   if (!LucideIcon) {
@@ -36,8 +43,10 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-black md:h-16 md-w-16">
               <Icon 
                 name={category.icon} 
-                className="h-6 w-6 text-black dark:text-white md:h-8 md:w-8 animate-float"
-                style={{ animationDelay: `${index * 0.3}s` }}
+                className={cn(
+                  "h-6 w-6 text-black dark:text-white md:h-8 md:w-8",
+                   animationClasses[index % animationClasses.length]
+                )}
               />
             </div>
             <h3 className="mt-2 font-headline text-xs font-semibold md:text-base">{category.name}</h3>
