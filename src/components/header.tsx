@@ -1,7 +1,7 @@
 
 "use client";
 
-import { LogIn, LogOut, Search, ShoppingCart, User } from 'lucide-react';
+import { LogIn, LogOut, Search, ShoppingCart, User, PenSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
@@ -40,8 +40,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
            <SidebarTrigger />
+           <Link href="/" className="flex items-center gap-2">
+            <PenSquare className="h-8 w-8 text-sky-blue" />
+            <span className="hidden font-headline text-lg font-bold sm:inline-block">
+              Jasa Essentials
+            </span>
+          </Link>
         </div>
         <div className="flex flex-1 justify-center px-4">
           <div className="relative w-full max-w-md">

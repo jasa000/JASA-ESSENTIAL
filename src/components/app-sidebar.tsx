@@ -3,14 +3,14 @@
 
 import {
   SidebarContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
   useSidebar,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar"
-import { Home, Notebook, ShoppingBag, User, Settings, PenSquare, LogIn, LogOut } from "lucide-react"
+import { Home, Notebook, ShoppingBag, User, Settings, LogIn, LogOut, Moon } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-provider"
 import { signOut } from "firebase/auth"
@@ -19,7 +19,6 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
 export default function AppSidebar() {
-  const { state } = useSidebar()
   const { user, loading } = useAuth()
   const { toast } = useToast();
   const router = useRouter();
@@ -44,88 +43,96 @@ export default function AppSidebar() {
 
 
   return (
-    <>
-      <SidebarHeader>
-        <div className="flex items-center gap-2">
-           <PenSquare className="h-8 w-8 text-sky-blue" />
-          {state === "expanded" && (
-            <span className="font-headline text-lg font-bold">
-              Jasa Essentials
-            </span>
-          )}
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-           <SidebarMenuItem>
-            <SidebarMenuButton href="/" tooltip="Home" asChild>
-              <Link href="/">
-                <Home />
-                Home
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton href="#" tooltip="Products" asChild>
-              <Link href="#">
-                <Notebook />
-                Products
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton href="/cart" tooltip="Cart" asChild>
-              <Link href="/cart">
-                <ShoppingBag />
-                Cart
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          {!loading && user && (
-            <SidebarMenuItem>
-              <SidebarMenuButton href="/profile" tooltip="Profile" asChild>
-                <Link href="/profile">
-                  <User />
-                  Profile
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-        </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton href="#" tooltip="Settings" asChild>
-              <Link href="#">
-                <Settings />
-                Settings
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            {!loading && (
+    <SidebarContent>
+        <SidebarGroup>
+          <SidebarMenu>
+             {!loading && (
               <>
                 {user ? (
-                  <SidebarMenuButton onClick={handleSignOut} tooltip="Logout">
-                      <LogOut />
-                      Logout
-                  </SidebarMenuButton>
+                  <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton href="#" tooltip="Theme" asChild>
+                      <Link href="#">
+                        <Moon />
+                        Theme
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton href="#" tooltip="Settings" asChild>
+                      <Link href="#">
+                        <Settings />
+                        Settings
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                   <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleSignOut} tooltip="Logout">
+                        <LogOut />
+                        Logout
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  </>
                 ) : (
+                  <SidebarMenuItem>
                   <SidebarMenuButton href="/login" tooltip="Login" asChild>
                     <Link href="/login">
                       <LogIn />
                       Login
                     </Link>
                   </SidebarMenuButton>
+                  </SidebarMenuItem>
                 )}
               </>
             )}
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton href="/" tooltip="Home" asChild>
+                    <Link href="/">
+                        <Home />
+                        Back to Home
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+            <SidebarGroupLabel>User Access</SidebarGroupLabel>
+            <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton href="#" tooltip="Products" asChild>
+                <Link href="#">
+                    <Notebook />
+                    Products
+                </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton href="/cart" tooltip="Cart" asChild>
+                <Link href="/cart">
+                    <ShoppingBag />
+                    Cart
+                </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            {!loading && user && (
+                <SidebarMenuItem>
+                <SidebarMenuButton href="/profile" tooltip="Profile" asChild>
+                    <Link href="/profile">
+                    <User />
+                    Profile
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+            )}
+            </SidebarMenu>
+        </SidebarGroup>
+
+    </SidebarContent>
   )
 }
