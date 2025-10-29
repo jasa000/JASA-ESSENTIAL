@@ -16,8 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useState, useEffect } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { countries } from "@/lib/countries";
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -41,7 +39,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [countryCode, setCountryCode] = useState("+91");
+  const countryCode = "+91";
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -227,18 +225,9 @@ export default function LoginPage() {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <div className="flex gap-2">
-                          <Select onValueChange={setCountryCode} defaultValue={countryCode}>
-                            <SelectTrigger className="w-[120px]">
-                              <SelectValue placeholder="Code" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {countries.map((country) => (
-                                <SelectItem key={`${country.code}-${country.dial_code}`} value={country.dial_code}>
-                                  {country.code} {country.dial_code}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                           <div className="flex h-10 items-center rounded-md border border-input bg-background px-3 text-sm">
+                            +91
+                           </div>
                           <FormControl>
                             <Input
                               type="tel"
