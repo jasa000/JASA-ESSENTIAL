@@ -106,6 +106,10 @@ export default {
           '0%': { transform: 'translateX(-100%) skewX(-30deg)', opacity: '0'},
           '30%': { transform: 'translateX(100%) skewX(-30deg)', opacity: '1'},
           '100%': { transform: 'translateX(100%) skewX(-30deg)', opacity: '0'},
+        },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
         }
       },
       animation: {
@@ -115,6 +119,7 @@ export default {
         'shining-fast': 'shining-fast 1s ease-in-out infinite',
         'border-glow': 'border-glow 4s ease-in-out infinite',
         'shine-indefinitely': 'shine-indefinitely 3s infinite',
+        'float': 'float 3s ease-in-out infinite',
       },
     },
   },
