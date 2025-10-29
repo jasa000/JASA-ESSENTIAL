@@ -30,7 +30,7 @@ const phoneSchema = z.object({
 // Augment the Window interface
 declare global {
     interface Window {
-        recaptchaVerifier: RecaptchaVerifier;
+        recaptchaVerifier?: RecaptchaVerifier;
     }
 }
 
@@ -50,16 +50,23 @@ export default function LoginPage() {
     defaultValues: { phone: '', otp: '' },
   });
   
+  const setupRecaptcha = () => {
+    if (typeof window !== 'undefined') {
+        if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+        }
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response: any) => {
+              // reCAPTCHA solved, allow signInWithPhoneNumber.
+            }
+        });
+    }
+  }
+
   // Add a div for reCAPTCHA
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-        }
-      });
-    }
+    setupRecaptcha();
   }, []);
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
@@ -89,7 +96,7 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      const appVerifier = window.recaptchaVerifier;
+      const appVerifier = window.recaptchaVerifier!;
       const result = await signInWithPhoneNumber(auth, `+${phoneNumber}`, appVerifier);
       setConfirmationResult(result);
       toast({ 
@@ -98,6 +105,8 @@ export default function LoginPage() {
       });
     } catch (error: any) {
       console.error(error);
+       // Reset reCAPTCHA so user can try again
+      setupRecaptcha();
       toast({
         variant: 'destructive',
         title: 'Failed to send OTP',
