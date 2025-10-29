@@ -9,6 +9,17 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { useAuth } from "@/context/auth-provider"
 import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
@@ -75,9 +86,25 @@ export default function AppSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                        <SidebarMenuButton tooltip="Logout" onClick={handleSignOut} size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
-                            <LogOut />
-                        </SidebarMenuButton>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <SidebarMenuButton tooltip="Logout" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                                <LogOut />
+                            </SidebarMenuButton>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action will sign you out of your account.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleSignOut}>Confirm</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </SidebarMenuItem>
                 </>
              ) : (
