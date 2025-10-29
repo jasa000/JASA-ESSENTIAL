@@ -50,3 +50,13 @@ export type UserProfile = {
   }[];
   createdAt: Date;
 }
+
+export type Post = {
+  id: string;
+  content: string;
+  authorId: string;
+  isActive: boolean;
+  createdAt: number; // Using number for timestamp (milliseconds)
+};
+
+    
