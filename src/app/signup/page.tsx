@@ -12,8 +12,9 @@ import { Input } from '@/components/ui/input';
 import { PenSquare, Home, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import PasswordStrength from '@/components/password-strength';
 
@@ -40,6 +41,16 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.name });
+
+      // Store user data in Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        uid: userCredential.user.uid,
+        name: values.name,
+        email: values.email,
+        role: 'user',
+        createdAt: new Date(),
+      });
+
       await sendEmailVerification(userCredential.user);
       toast({
         title: "Account Created! Please Verify Your Email.",
@@ -62,7 +73,18 @@ export default function SignupPage() {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Store user data in Firestore for Google sign-in
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name: user.displayName,
+        email: user.email,
+        role: 'user',
+        createdAt: new Date(),
+      }, { merge: true }); // Use merge to avoid overwriting existing data if user signed up with email first
+
       toast({
         title: "Sign Up Successful",
         description: "Welcome! You have successfully signed up with Google.",
