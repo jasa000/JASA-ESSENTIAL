@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -9,12 +10,38 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Home, Notebook, ShoppingBag, User, Settings, PenSquare } from "lucide-react"
+import { Home, Notebook, ShoppingBag, User, Settings, PenSquare, LogIn, LogOut } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/context/auth-provider"
+import { signOut } from "firebase/auth"
+import { auth } from "@/lib/firebase"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 export default function AppSidebar() {
   const { state } = useSidebar()
-  const isLoggedIn = false; // mock
+  const { user } = useAuth()
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      toast({
+        variant: "destructive",
+        title: "Sign Out Error",
+        description: "There was a problem signing you out.",
+      });
+    }
+  };
+
 
   return (
     <>
@@ -54,14 +81,16 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton href={isLoggedIn ? "/profile" : "/login"} tooltip={isLoggedIn ? "Profile" : "Login"} asChild>
-              <Link href={isLoggedIn ? "/profile" : "/login"}>
-                <User />
-                {isLoggedIn ? "Profile" : "Login"}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {user && (
+            <SidebarMenuItem>
+              <SidebarMenuButton href="/profile" tooltip="Profile" asChild>
+                <Link href="/profile">
+                  <User />
+                  Profile
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
@@ -73,6 +102,21 @@ export default function AppSidebar() {
                 Settings
               </Link>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            {user ? (
+               <SidebarMenuButton onClick={handleSignOut} tooltip="Logout">
+                  <LogOut />
+                  Logout
+              </SidebarMenuButton>
+            ) : (
+              <SidebarMenuButton href="/login" tooltip="Login" asChild>
+                <Link href="/login">
+                  <LogIn />
+                  Login
+                </Link>
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -1,16 +1,41 @@
+
 "use client";
 
-import { LogIn, Search, ShoppingCart, User } from 'lucide-react';
+import { LogIn, LogOut, Search, ShoppingCart, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useAuth } from '@/context/auth-provider';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
-  // Mock user login state. In a real app, this would come from an auth provider.
-  const isLoggedIn = false;
+  const { user } = useAuth();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      toast({
+        variant: "destructive",
+        title: "Sign Out Error",
+        description: "There was a problem signing you out.",
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -37,13 +62,19 @@ export default function Header() {
                     <span className="hidden md:inline">Cart</span>
                 </Link>
             </Button>
-          {isLoggedIn ? (
-            <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
-              <Link href="/profile">
-                <User className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
-                <span className="hidden md:inline">Profile</span>
-              </Link>
-            </Button>
+          {user ? (
+             <>
+              <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
+                <Link href="/profile">
+                  <User className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+                  <span className="hidden md:inline">Profile</span>
+                </Link>
+              </Button>
+               <Button onClick={handleSignOut} size={isMobile ? "icon" : "default"} className='rounded-full'>
+                  <LogOut className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+                  <span className="hidden md:inline">Logout</span>
+              </Button>
+            </>
           ) : (
             <Button asChild size={isMobile ? "icon" : "default"} className='rounded-full'>
               <Link href="/login">
