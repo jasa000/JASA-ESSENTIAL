@@ -38,6 +38,8 @@
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 200 82% 55%;
+
+    --shine-color: rgba(229, 231, 235, 0.3);
   }
   .dark {
     --background: 240 10% 3.9%;
@@ -73,6 +75,8 @@
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 200 82% 45%;
+
+    --shine-color: rgba(55, 65, 81, 0.3);
   }
 }
 
@@ -88,7 +92,7 @@
 @layer components {
   .shining-card-animation {
     @apply absolute left-0 top-0 h-full w-full opacity-0;
-    background: linear-gradient(110deg, transparent 20%, hsl(var(--primary)/0.3), transparent 80%);
+    background: linear-gradient(110deg, transparent 20%, var(--shine-color), transparent 80%);
     animation: shine-indefinitely 3s infinite;
   }
 }
