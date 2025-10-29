@@ -153,15 +153,15 @@ export default function LoginPage() {
   return (
     <>
       <div className="container relative flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
-        <div className="absolute right-4 top-4">
-            <Button asChild variant="ghost" size="icon">
-                <Link href="/">
-                    <Home className="h-6 w-6" />
-                    <span className="sr-only">Home</span>
-                </Link>
-            </Button>
-        </div>
-        <Card className="w-full max-w-sm">
+        <Card className="relative w-full max-w-sm">
+          <div className="absolute right-4 top-4">
+              <Button asChild variant="ghost" size="icon">
+                  <Link href="/">
+                      <Home className="h-6 w-6" />
+                      <span className="sr-only">Home</span>
+                  </Link>
+              </Button>
+          </div>
           <CardHeader className="text-center">
             <Link href="/" className="mx-auto flex w-fit items-center gap-2">
               <PenSquare className="h-8 w-8" style={{color: '#7EC8E3'}} />
