@@ -101,6 +101,8 @@ export default function CheckoutPage() {
         const category = item.product.category;
         if (category === 'stationary' || category === 'books' || category === 'electronics') {
             services.add(category);
+        } else if (category === 'xerox') { // Assuming 'xerox' is a potential category
+            services.add('xerox');
         }
     });
     return Array.from(services);
