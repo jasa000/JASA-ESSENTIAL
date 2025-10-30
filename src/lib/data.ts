@@ -2,7 +2,7 @@
 import type { Product, Category } from './types';
 import imageData from './placeholder-images.json';
 
-const getProductImage = (id: string, width = 400, height = 400) => {
+const getCategoryImage = (id: string, width = 400, height = 400) => {
   const image = imageData.placeholderImages.find(img => img.id === id);
   if (!image) {
     // Fallback image
@@ -23,38 +23,46 @@ const getProductImage = (id: string, width = 400, height = 400) => {
   };
 };
 
+const getProductImage = (category: Product['category'], imageName: string, alt: string) => {
+    return {
+        src: `/images/${category}/${imageName}`,
+        alt: alt,
+        hint: alt.toLowerCase().split(' ').slice(0, 2).join(' ')
+    }
+};
+
 export const categories: Category[] = [
     {
         id: 'cat-1',
         name: 'STATIONARY PRODUCTS',
         href: '/stationary',
         icon: 'Notebook',
-        image: getProductImage('category-1', 96, 96),
+        image: getCategoryImage('category-1', 96, 96),
     },
     {
         id: 'cat-2',
         name: 'BOOK',
         href: '/books',
         icon: 'Book',
-        image: getProductImage('category-2', 96, 96),
+        image: getCategoryImage('category-2', 96, 96),
     },
     {
         id: 'cat-3',
         name: 'XEROX',
         href: '/xerox',
         icon: 'Printer',
-        image: getProductImage('category-3', 96, 96),
+        image: getCategoryImage('category-3', 96, 96),
     },
     {
         id: 'cat-4',
         name: 'ELECTRONIC KIT',
         href: '/electronics',
         icon: 'CircuitBoard',
-        image: getProductImage('category-4', 96, 96),
+        image: getCategoryImage('category-4', 96, 96),
     }
 ]
 
-export const products: Product[] = [
+export let products: Product[] = [
   {
     id: 'prod_1',
     name: 'CX-Scientific calculator',
@@ -63,7 +71,7 @@ export const products: Product[] = [
     price: 600,
     category: 'electronics',
     rating: 5,
-    image: getProductImage('product-1'),
+    image: getProductImage('electronics', 'calculator.jpg', 'A scientific calculator.'),
   },
   {
     id: 'prod_2',
@@ -73,17 +81,17 @@ export const products: Product[] = [
     price: 25,
     category: 'stationary',
     rating: 4,
-    image: getProductImage('product-2'),
+    image: getProductImage('stationary', 'ink-bottle.jpg', 'A bottle of ink.'),
   },
   {
     id: 'prod_3',
-    name: 'CX-Scientific calculator',
+    name: 'Kangaroo Stapler',
     brand: 'KANGARO',
     description: 'Keep your workspace tidy with this elegant wooden organizer.',
     price: 60,
     category: 'stationary',
     rating: 5,
-    image: getProductImage('product-3'),
+    image: getProductImage('stationary', 'stapler.jpg', 'A stapler.'),
   },
   {
     id: 'prod_4',
@@ -93,6 +101,18 @@ export const products: Product[] = [
     price: 10,
     category: 'stationary',
     rating: 4,
-    image: getProductImage('product-4'),
+    image: getProductImage('stationary', 'ball-pen.jpg', 'A ball point pen.'),
   },
 ];
+
+
+export const addProduct = (product: Omit<Product, 'id' | 'rating' | 'image'> & { imageName: string }) => {
+  const newProduct: Product = {
+    ...product,
+    id: `prod_${Date.now()}`,
+    rating: 5, // Default rating
+    image: getProductImage(product.category, product.imageName, product.description),
+  };
+  products.unshift(newProduct); // Add to the beginning of the array
+  return newProduct;
+};

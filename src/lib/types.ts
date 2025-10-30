@@ -5,13 +5,11 @@ export type Product = {
   brand?: string;
   description: string;
   price: number;
-  category: 'stationary' | 'books' | 'xerox' | 'electronics';
+  category: 'stationary' | 'books' | 'electronics';
   rating?: number;
   image: {
     src: string;
     alt: string;
-    width: number;
-    height: number;
     hint: string;
   };
 };
