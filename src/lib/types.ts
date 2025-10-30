@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   name: string;
@@ -78,5 +79,28 @@ export type Brand = {
   id: string;
   name: string;
   category: 'stationary' | 'books' | 'electronics';
+};
+
+export type OrderStatus = "Processing" | "Shipped" | "Delivered" | "Cancelled";
+
+export type Order = {
+  id: string;
+  date: string;
+  status: OrderStatus;
+  category: "stationary" | "books" | "electronics" | "xerox";
+  items: {
+    name: string;
+    quantity: number;
+    price: number;
+  }[];
+  total: number;
+  seller: string;
+  tracking: {
+    ordered: string;
+    confirmed?: string;
+    shipped?: string;
+    delivered?: string;
+    expectedDelivery?: string;
+  };
 };
     

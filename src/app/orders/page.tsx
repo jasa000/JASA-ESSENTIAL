@@ -8,23 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Package, Truck, CheckCircle, PackageOpen } from "lucide-react";
-import type { Product } from "@/lib/types";
-
-type OrderStatus = "Processing" | "Shipped" | "Delivered" | "Cancelled";
-
-type Order = {
-  id: string;
-  date: string;
-  status: OrderStatus;
-  category: "stationary" | "books" | "electronics" | "xerox";
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
-  total: number;
-  seller: string;
-};
+import type { Order, OrderStatus } from "@/lib/types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import OrderTracker from "@/components/order-tracker";
 
 const mockOrders: Order[] = [
   {
@@ -37,7 +23,14 @@ const mockOrders: Order[] = [
       { name: "Kangaroo Stapler", quantity: 1, price: 60 },
     ],
     total: 105.00, // including 5 shipping
-    seller: "Jasa Books & Stationary"
+    seller: "Jasa Books & Stationary",
+    tracking: {
+      ordered: "2023-10-26T10:00:00Z",
+      confirmed: "2023-10-26T11:30:00Z",
+      shipped: "2023-10-27T09:00:00Z",
+      delivered: "2023-10-28T14:00:00Z",
+      expectedDelivery: "2023-10-28"
+    }
   },
   {
     id: "ORD-BK-001",
@@ -46,7 +39,13 @@ const mockOrders: Order[] = [
     category: "books",
     items: [{ name: "The Alchemist", quantity: 1, price: 250 }],
     total: 255.00,
-    seller: "Readers Corner"
+    seller: "Readers Corner",
+     tracking: {
+      ordered: "2023-10-28T12:00:00Z",
+      confirmed: "2023-10-28T13:00:00Z",
+      shipped: "2023-10-29T18:00:00Z",
+      expectedDelivery: "2023-10-31"
+    }
   },
   {
     id: "ORD-ELEC-001",
@@ -55,7 +54,12 @@ const mockOrders: Order[] = [
     category: "electronics",
     items: [{ name: "CX-Scientific calculator", quantity: 1, price: 600 }],
     total: 605.00,
-    seller: "Gadget Galaxy"
+    seller: "Gadget Galaxy",
+    tracking: {
+      ordered: "2023-10-29T15:20:00Z",
+      confirmed: "2023-10-30T10:00:00Z",
+      expectedDelivery: "2023-11-04"
+    }
   },
    {
     id: "ORD-STN-002",
@@ -64,7 +68,11 @@ const mockOrders: Order[] = [
     category: "stationary",
     items: [{ name: "XO-BALL P", quantity: 10, price: 10 }],
     total: 105.00,
-    seller: "Jasa Books & Stationary"
+    seller: "Jasa Books & Stationary",
+    tracking: {
+      ordered: "2023-11-02T09:00:00Z",
+      expectedDelivery: "2023-11-07"
+    }
   },
 ];
 
@@ -77,7 +85,9 @@ const statusConfig = {
 
 const OrderCard = ({ order }: { order: Order }) => {
   const StatusIcon = statusConfig[order.status].icon;
-  const [day, month, year] = order.date.split('-').reverse();
+  
+  // Manual date formatting to avoid hydration errors
+  const [year, month, day] = order.date.split('-');
   const formattedDate = `${day}/${month}/${year}`;
 
   return (
@@ -109,7 +119,20 @@ const OrderCard = ({ order }: { order: Order }) => {
         </div>
       </CardContent>
       <CardFooter className="bg-muted/50 p-4">
-          <Button className="w-full" variant="outline">Track Order</Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="w-full" variant="outline">Track Order</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Track Order #{order.id}</DialogTitle>
+              <DialogDescription>
+                Current status of your shipment.
+              </DialogDescription>
+            </DialogHeader>
+            <OrderTracker trackingInfo={order.tracking} />
+          </DialogContent>
+        </Dialog>
       </CardFooter>
     </Card>
   )
