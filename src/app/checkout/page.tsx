@@ -8,11 +8,12 @@ import * as z from 'zod';
 import { useCart } from '@/hooks/use-cart';
 import { useAuth } from '@/context/auth-provider';
 import { updateUserProfile } from '@/lib/users';
-import { useState, useEffect } from 'react';
+import { getShops } from '@/lib/shops';
+import { useState, useEffect, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -20,8 +21,8 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle } from 'lucide-react';
-import type { UserProfile } from '@/lib/types';
+import { PlusCircle, Store } from 'lucide-react';
+import type { UserProfile, Shop, ShopService } from '@/lib/types';
 
 
 const addressSchema = z.object({
@@ -35,6 +36,7 @@ const addressSchema = z.object({
 
 const checkoutFormSchema = z.object({
   selectedAddress: z.string().min(1, "Please select a shipping address."),
+  selectedShop: z.string().min(1, "Please select a seller."),
 });
 
 export default function CheckoutPage() {
@@ -44,6 +46,8 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [allShops, setAllShops] = useState<Shop[]>([]);
+  const [loadingShops, setLoadingShops] = useState(true);
 
   const subtotal = items.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
   const shipping = items.length > 0 ? 5.00 : 0;
@@ -53,6 +57,7 @@ export default function CheckoutPage() {
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
       selectedAddress: "",
+      selectedShop: "",
     },
   });
 
@@ -67,7 +72,7 @@ export default function CheckoutPage() {
       postalCode: '',
     }
   });
-  
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -75,7 +80,38 @@ export default function CheckoutPage() {
     if (user?.addresses && user.addresses.length > 0 && !checkoutForm.getValues('selectedAddress')) {
         checkoutForm.setValue('selectedAddress', `address-0`);
     }
-  }, [user, authLoading, router, checkoutForm]);
+    
+    const fetchShops = async () => {
+        try {
+            setLoadingShops(true);
+            const shops = await getShops();
+            setAllShops(shops);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Could not fetch sellers." });
+        } finally {
+            setLoadingShops(false);
+        }
+    };
+    fetchShops();
+  }, [user, authLoading, router, checkoutForm, toast]);
+
+  const requiredServices = useMemo(() => {
+    const services = new Set<ShopService>();
+    items.forEach(item => {
+        // Assuming product.category directly maps to a ShopService
+        if (item.product.category === 'stationary' || item.product.category === 'books' || item.product.category === 'electronics') {
+            services.add(item.product.category);
+        }
+    });
+    return Array.from(services);
+  }, [items]);
+
+  const availableShops = useMemo(() => {
+    if (requiredServices.length === 0) return [];
+    return allShops.filter(shop => {
+        return requiredServices.every(service => shop.services.includes(service));
+    });
+  }, [allShops, requiredServices]);
 
   async function onAddressSubmit(values: z.infer<typeof addressSchema>) {
     if (!user) return;
@@ -98,15 +134,16 @@ export default function CheckoutPage() {
   }
 
   function onCheckoutSubmit(values: z.infer<typeof checkoutFormSchema>) {
-    console.log('Order placed with address:', values.selectedAddress);
+    const selectedShop = allShops.find(shop => shop.id === values.selectedShop);
+    console.log('Order placed with address:', values.selectedAddress, 'and seller:', selectedShop?.name);
     toast({
       title: 'Order Placed!',
-      description: 'Thank you for your purchase. Your order is being processed.',
+      description: `Thank you for your purchase. Your order has been sent to ${selectedShop?.name}.`,
     });
     router.push('/profile');
   }
 
-  if (authLoading) {
+  if (authLoading || loadingShops) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>
   }
 
@@ -121,6 +158,8 @@ export default function CheckoutPage() {
       </div>
     )
   }
+  
+  const selectedAddress = checkoutForm.watch('selectedAddress');
 
   const renderAddressSelection = () => {
     if (!user?.addresses || user.addresses.length === 0) {
@@ -152,31 +191,113 @@ export default function CheckoutPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Select Shipping Address</CardTitle>
+          <CardTitle className="font-headline">1. Select Shipping Address</CardTitle>
         </CardHeader>
         <CardContent>
-            <Form {...checkoutForm}>
-              <form onSubmit={checkoutForm.handleSubmit(onCheckoutSubmit)} className="space-y-6">
-                <FormField
+            <FormField
+              control={checkoutForm.control}
+              name="selectedAddress"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      {user.addresses.map((address, index) => (
+                        <FormItem key={index} className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                                <RadioGroupItem value={`address-${index}`} />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                                <p className="font-bold">{address.type} Address</p>
+                                <p>{address.line1}{address.line2 ? `, ${address.line2}` : ''}</p>
+                                <p>{address.city}, {address.state} {address.postalCode}</p>
+                            </FormLabel>
+                        </FormItem>
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="mt-4">
+                <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+                  <DialogTrigger asChild>
+                      <Button variant="outline">
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add Another Address
+                      </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                      <DialogHeader>
+                          <DialogTitle>Add a new address</DialogTitle>
+                      </DialogHeader>
+                      {renderAddressForm()}
+                  </DialogContent>
+                </Dialog>
+            </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const renderSellerSelection = () => {
+    if (!selectedAddress) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">2. Select a Seller</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">Please select a shipping address first.</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    if (availableShops.length === 0) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">2. Select a Seller</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">Sorry, no single seller provides all the services for the items in your cart. Please adjust your cart items.</p>
+                    <p className="text-sm text-muted-foreground mt-2">Required services: {requiredServices.join(', ')}</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">2. Select a Seller</CardTitle>
+                <CardDescription>Choose a shop to fulfill your order.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <FormField
                   control={checkoutForm.control}
-                  name="selectedAddress"
+                  name="selectedShop"
                   render={({ field }) => (
                     <FormItem className="space-y-3">
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          className="flex flex-col space-y-1"
+                          className="flex flex-col space-y-2"
                         >
-                          {user.addresses.map((address, index) => (
-                            <FormItem key={index} className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                          {availableShops.map((shop) => (
+                            <FormItem key={shop.id} className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
                                 <FormControl>
-                                    <RadioGroupItem value={`address-${index}`} />
+                                    <RadioGroupItem value={shop.id} className="mt-1" />
                                 </FormControl>
                                 <FormLabel className="font-normal">
-                                    <p className="font-bold">{address.type} Address</p>
-                                    <p>{address.line1}{address.line2 ? `, ${address.line2}` : ''}</p>
-                                    <p>{address.city}, {address.state} {address.postalCode}</p>
+                                    <p className="font-bold flex items-center gap-2"><Store className="h-4 w-4" /> {shop.name}</p>
+                                    <p className="text-sm text-muted-foreground">{shop.address}</p>
+                                    {shop.notes && <p className="text-sm mt-2 pt-2 border-t">{shop.notes}</p>}
                                 </FormLabel>
                             </FormItem>
                           ))}
@@ -186,28 +307,11 @@ export default function CheckoutPage() {
                     </FormItem>
                   )}
                 />
-                 <div className="flex items-center gap-4">
-                    <Button type="submit" className="w-full">Place Order</Button>
-                    <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
-                      <DialogTrigger asChild>
-                          <Button variant="outline">
-                              <PlusCircle className="mr-2 h-4 w-4" /> Add New
-                          </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                          <DialogHeader>
-                              <DialogTitle>Add a new address</DialogTitle>
-                          </DialogHeader>
-                          {renderAddressForm()}
-                      </DialogContent>
-                    </Dialog>
-                </div>
-              </form>
-            </Form>
-        </CardContent>
-      </Card>
+            </CardContent>
+        </Card>
     );
   }
+
 
   const renderAddressForm = () => (
     <Form {...addressForm}>
@@ -269,9 +373,11 @@ export default function CheckoutPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Checkout</h1>
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <Form {...checkoutForm}>
+      <form onSubmit={checkoutForm.handleSubmit(onCheckoutSubmit)} className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-8">
           {renderAddressSelection()}
+          {renderSellerSelection()}
         </div>
 
         <div className="lg:col-span-1">
@@ -306,9 +412,15 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </CardContent>
+            <CardFooter>
+                <Button type="submit" className="w-full" disabled={!checkoutForm.formState.isValid}>
+                    Place Order
+                </Button>
+            </CardFooter>
           </Card>
         </div>
-      </div>
+      </form>
+      </Form>
     </div>
   );
 }
