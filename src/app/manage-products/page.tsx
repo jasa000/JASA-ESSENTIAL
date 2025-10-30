@@ -7,18 +7,17 @@ import ProductCard from "@/components/product-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Product } from "@/lib/types";
 
-const categories: { value: Product['category'] | 'all', label: string }[] = [
-    { value: 'all', label: 'All' },
+const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
     { value: 'books', label: 'Books' },
     { value: 'electronics', label: 'Electronic Kit' },
 ];
 
 export default function ManageProductsPage() {
-  const [activeTab, setActiveTab] = useState<Product['category'] | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
 
   const filteredProducts = products.filter(product => 
-    activeTab === 'all' || product.category === activeTab
+    product.category === activeTab
   );
 
   return (
@@ -28,7 +27,7 @@ export default function ManageProductsPage() {
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="mt-8">
         <div className="sticky top-20 z-40 bg-background py-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
               {categories.map((cat) => (
                   <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
               ))}
