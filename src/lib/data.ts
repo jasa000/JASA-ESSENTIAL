@@ -11,7 +11,6 @@ const getCategoryImage = (id: string, width = 400, height = 400) => {
       alt: "Placeholder image", 
       width: width, 
       height: height,
-      hint: "stationery"
     };
   }
   return { 
@@ -19,26 +18,16 @@ const getCategoryImage = (id: string, width = 400, height = 400) => {
     alt: image.description,
     width: width,
     height: height,
-    hint: image.imageHint
   };
 };
 
-const getProductImage = (id: string, alt: string) => {
-  const image = imageData.placeholderImages.find(img => img.id === id);
-  if (!image) {
-    // Fallback image
-    return { 
-      src: `https://picsum.photos/seed/${id}/400/400`, 
-      alt: alt,
-      hint: "product"
+const getProductImage = (imageName: string, category: Product['category'], alt: string) => {
+    return {
+        src: `/images/${category}/${imageName}`,
+        alt: alt,
     };
-  }
-  return { 
-    src: image.imageUrl, 
-    alt: image.description,
-    hint: image.imageHint
-  };
 };
+
 
 export const categories: Category[] = [
     {
@@ -76,41 +65,41 @@ export let products: Product[] = [
     id: 'prod_1',
     name: 'CX-Scientific calculator',
     brand: 'CALTRIX',
-    description: 'A5 size, 240 lined pages. Perfect for notes and journaling.',
+    description: 'A scientific calculator.',
     price: 600,
     category: 'electronics',
     rating: 5,
-    image: getProductImage('product-1', 'A scientific calculator.'),
+    image: { src: '/images/electronics/calculator.jpg', alt: 'A scientific calculator.' },
   },
   {
     id: 'prod_2',
     name: 'Bril ink Bottle',
     brand: 'BRIL',
-    description: 'Smooth-writing medium nib with a classic black and gold finish.',
+    description: 'A bottle of ink.',
     price: 25,
     category: 'stationary',
     rating: 4,
-    image: getProductImage('product-2', 'A bottle of ink.'),
+    image: { src: '/images/stationary/ink-bottle.jpg', alt: 'A bottle of ink.' },
   },
   {
     id: 'prod_3',
     name: 'Kangaroo Stapler',
     brand: 'KANGARO',
-    description: 'Keep your workspace tidy with this elegant wooden organizer.',
+    description: 'A stapler.',
     price: 60,
     category: 'stationary',
     rating: 5,
-    image: getProductImage('product-3', 'A stapler.'),
+    image: { src: '/images/stationary/stapler.jpg', alt: 'A stapler.'},
   },
   {
     id: 'prod_4',
     name: 'XO-BALL P',
     brand: 'HAUSHER',
-    description: 'A4 cold-press paper, 30 sheets. Ideal for all water-based media.',
+    description: 'A ball point pen.',
     price: 10,
     category: 'stationary',
     rating: 4,
-    image: getProductImage('product-4', 'A ball point pen.'),
+    image: { src: '/images/stationary/ball-pen.jpg', alt: 'A ball point pen.'},
   },
 ];
 
@@ -121,9 +110,8 @@ export const addProduct = (product: Omit<Product, 'id' | 'rating' | 'image'> & {
     ...product,
     id: newId,
     rating: 5, // Default rating
-    image: getProductImage(product.imageName, product.description),
+    image: getProductImage(product.imageName, product.category, product.description),
   };
   products.unshift(newProduct); // Add to the beginning of the array
   return newProduct;
 };
-
