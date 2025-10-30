@@ -98,9 +98,9 @@ export default function CheckoutPage() {
   const requiredServices = useMemo(() => {
     const services = new Set<ShopService>();
     items.forEach(item => {
-        // Assuming product.category directly maps to a ShopService
-        if (item.product.category === 'stationary' || item.product.category === 'books' || item.product.category === 'electronics') {
-            services.add(item.product.category);
+        const category = item.product.category;
+        if (category === 'stationary' || category === 'books' || category === 'electronics') {
+            services.add(category);
         }
     });
     return Array.from(services);
