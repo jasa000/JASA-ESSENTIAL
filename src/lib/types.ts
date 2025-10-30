@@ -102,5 +102,6 @@ export type Order = {
     delivered?: string;
     expectedDelivery?: string;
   };
+  cancellationReason?: string;
 };
     

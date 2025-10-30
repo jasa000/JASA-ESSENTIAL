@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, PackageOpen } from "lucide-react";
+import { Package, Truck, CheckCircle, PackageOpen, Info } from "lucide-react";
 import type { Order, OrderStatus } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import OrderTracker from "@/components/order-tracker";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const mockOrders: Order[] = [
   {
@@ -74,6 +75,19 @@ const mockOrders: Order[] = [
       expectedDelivery: "2023-11-07"
     }
   },
+  {
+    id: "ORD-BK-002",
+    date: "2023-11-03",
+    status: "Cancelled",
+    category: "books",
+    items: [{ name: "The Great Gatsby", quantity: 1, price: 180 }],
+    total: 185.00,
+    seller: "Readers Corner",
+    cancellationReason: "Out of stock.",
+    tracking: {
+      ordered: "2023-11-03T11:00:00Z",
+    }
+  },
 ];
 
 const statusConfig = {
@@ -103,6 +117,15 @@ const OrderCard = ({ order }: { order: Order }) => {
         </Badge>
       </CardHeader>
       <CardContent className="p-4">
+        {order.cancellationReason && (
+            <Alert variant="destructive" className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Cancellation Reason</AlertTitle>
+                <AlertDescription>
+                    {order.cancellationReason}
+                </AlertDescription>
+            </Alert>
+        )}
         <div className="space-y-2">
             <p className="text-sm font-medium">Sold by: <span className="font-normal text-muted-foreground">{order.seller}</span></p>
             {order.items.map((item) => (
@@ -121,7 +144,7 @@ const OrderCard = ({ order }: { order: Order }) => {
       <CardFooter className="bg-muted/50 p-4">
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="w-full" variant="outline">Track Order</Button>
+            <Button className="w-full" variant="outline" disabled={order.status === 'Cancelled'}>Track Order</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
