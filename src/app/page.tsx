@@ -53,8 +53,6 @@ export default function Home() {
         </div>
        </div>
 
-       <PostCarousel />
-
        {Object.entries(productsByCategory).map(([category, productList]) => {
           const catInfo = categoryDisplayInfo[category as keyof typeof categoryDisplayInfo];
           if (!productList.length || !catInfo) return null;
@@ -106,6 +104,8 @@ export default function Home() {
           </CarouselContent>
         </Carousel>
       </div>
+
+      <PostCarousel />
     </div>
   );
 }
