@@ -89,7 +89,10 @@ export default function CartPage() {
                                         type="number"
                                         min="1"
                                         value={quantity}
-                                        onChange={(e) => updateQuantity(product.id, parseInt(e.target.value, 10))}
+                                        onChange={(e) => {
+                                            const newQuantity = parseInt(e.target.value, 10);
+                                            updateQuantity(product.id, isNaN(newQuantity) ? 0 : newQuantity);
+                                        }}
                                         className="h-10 w-20 text-center"
                                         aria-label={`Quantity for ${product.name}`}
                                         />
