@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from "react";
@@ -34,6 +33,8 @@ const productSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   imageNames: z.array(z.object({ value: z.string().min(1, "Image filename is required.") })).min(1, "At least one image is required."),
   category: z.enum(['stationary', 'books', 'electronics']),
+  price: z.coerce.number().positive("Price must be a positive number."),
+  discountPrice: z.coerce.number().optional(),
 });
 
 const brandSchema = z.object({
@@ -42,7 +43,7 @@ const brandSchema = z.object({
 
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
-  const [productList, setProductList] = useState<(Product & { price: number, rating: number })[]>(products);
+  const [productList, setProductList] = useState<Product[]>(products);
   const [brandList, setBrandList] = useState<Brand[]>(brands);
   const { toast } = useToast();
 
@@ -54,6 +55,8 @@ export default function ManageProductsPage() {
       description: "",
       imageNames: [{ value: "" }],
       category: activeTab,
+      price: 0,
+      discountPrice: undefined,
     },
   });
 
@@ -236,6 +239,16 @@ export default function ManageProductsPage() {
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
+                    
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormField control={form.control} name="price" render={({ field }) => (
+                          <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="discountPrice" render={({ field }) => (
+                          <FormItem><FormLabel>Discount Price (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+
                     <div>
                         <FormLabel>Image Filenames</FormLabel>
                         {fields.map((field, index) => (
@@ -251,6 +264,7 @@ export default function ManageProductsPage() {
                                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
+                                    <FormMessage />
                                 </FormItem>
                                 )}
                             />

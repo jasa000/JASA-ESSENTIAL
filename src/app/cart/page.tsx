@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from "react";
@@ -26,7 +25,7 @@ export default function CartPage() {
   const [activeTab, setActiveTab] = useState('all');
 
   const subtotal = items.reduce(
-    (acc, item) => acc + item.product.price * item.quantity,
+    (acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity,
     0
   );
   const shipping = items.length > 0 ? 5.00 : 0;
@@ -79,7 +78,7 @@ export default function CartPage() {
                             <div className="flex flex-grow flex-col p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex-grow">
                                 <h2 className="font-headline text-lg font-semibold">{product.name}</h2>
-                                <p className="text-sm text-muted-foreground">${product.price.toFixed(2)}</p>
+                                <p className="text-sm text-muted-foreground">₹{(product.discountPrice || product.price).toFixed(2)}</p>
                             </div>
                             <div className="mt-4 flex items-center gap-4 sm:mt-0">
                                 <Input
@@ -118,16 +117,16 @@ export default function CartPage() {
                 <CardContent className="space-y-4">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
+                    <span>₹{shipping.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                 </div>
                 </CardContent>
                 <CardFooter>

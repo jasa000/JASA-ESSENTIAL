@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -29,7 +30,7 @@ export default function CheckoutPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const subtotal = items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const subtotal = items.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
   const shipping = items.length > 0 ? 5.00 : 0;
   const total = subtotal + shipping;
 
@@ -180,22 +181,22 @@ export default function CheckoutPage() {
                       <p className="font-medium">{product.name}</p>
                       <p className="text-sm text-muted-foreground">Quantity: {quantity}</p>
                     </div>
-                    <p>${(product.price * quantity).toFixed(2)}</p>
+                    <p>₹{((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
                   </div>
                 ))}
                 <Separator />
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>${shipping.toFixed(2)}</span>
+                  <span>₹{shipping.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>₹{total.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>

@@ -1,5 +1,4 @@
 
-
 import type { Product, Category, Brand } from './types';
 import imageData from './placeholder-images.json';
 
@@ -62,7 +61,7 @@ export const categories: Category[] = [
     }
 ]
 
-export let products: (Product & { price: number, rating: number })[] = [
+export let products: Product[] = [
   {
     id: 'prod_1',
     name: 'CX-Scientific calculator',
@@ -79,6 +78,7 @@ export let products: (Product & { price: number, rating: number })[] = [
     brandIds: ['brand_bril'],
     description: 'A bottle of ink.',
     price: 25,
+    discountPrice: 20,
     category: 'stationary',
     rating: 4,
     images: [{ src: '/images/stationary/ink-bottle.jpg', alt: 'A bottle of ink.' }],
@@ -112,15 +112,15 @@ export let brands: Brand[] = [
     { id: 'brand_caltrix', name: 'CALTRIX', category: 'electronics' },
 ];
 
-export const addProduct = (product: Omit<Product, 'id' | 'images'> & { imageNames: string[] }) => {
+export const addProduct = (product: Omit<Product, 'id' | 'images' | 'rating'> & { imageNames: string[] }) => {
   const newId = `prod_${Date.now()}`;
   const newProduct: Product = {
     ...product,
     id: newId,
     images: getProductImages(product.imageNames, product.category, product.description),
+    rating: Math.floor(Math.random() * 3) + 3, // 3 to 5 stars
   };
-  const productForDisplay: any = { ...newProduct, price: 0, rating: 0, brand: product.brandIds && product.brandIds.length > 0 ? brands.find(b => b.id === product.brandIds![0])?.name : '' };
-  products.unshift(productForDisplay); 
+  products.unshift(newProduct); 
   return newProduct;
 };
 

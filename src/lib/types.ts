@@ -1,5 +1,4 @@
 
-
 export type Product = {
   id: string;
   name: string;
@@ -10,10 +9,13 @@ export type Product = {
     src: string;
     alt: string;
   }[];
+  price: number;
+  discountPrice?: number;
+  rating?: number;
 };
 
 export type CartItem = {
-  product: Product & { price: number }; // Price is now part of the item in cart, not the base product
+  product: Product;
   quantity: number;
 };
 

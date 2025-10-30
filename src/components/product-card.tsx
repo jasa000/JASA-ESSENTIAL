@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from 'next/image';
@@ -16,7 +15,7 @@ import Link from 'next/link';
 import { brands } from '@/lib/data';
 
 type ProductCardProps = {
-  product: Product & { price: number; rating?: number };
+  product: Product;
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
@@ -34,7 +33,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const rating = product.rating || 5;
   const primaryImage = product.images[0];
   const productBrands = product.brandIds?.map(id => brands.find(b => b.id === id)?.name).filter(Boolean).join(', ');
-
+  
+  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg">
@@ -66,10 +66,17 @@ export default function ProductCard({ product }: ProductCardProps) {
               ))}
           </div>
         </div>
-        <div className="mt-4 flex items-center justify-between">
-            <p className="text-lg font-semibold text-foreground">
-                ₹{product.price.toFixed(2)}
-            </p>
+        <div className="mt-4 flex items-baseline justify-between">
+            <div className='flex flex-col'>
+               {hasDiscount && (
+                 <p className="text-sm text-muted-foreground line-through">
+                    ₹{product.price.toFixed(2)}
+                 </p>
+               )}
+               <p className="text-lg font-semibold text-foreground">
+                  ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+               </p>
+            </div>
             <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
                 Shop Now
             </Button>
