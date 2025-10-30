@@ -98,12 +98,7 @@ export default function CheckoutPage() {
   const requiredServices = useMemo(() => {
     const services = new Set<ShopService>();
     items.forEach(item => {
-        const category = item.product.category;
-        if (category === 'stationary' || category === 'books' || category === 'electronics') {
-            services.add(category);
-        } else if (category === 'xerox') { // Assuming 'xerox' is a potential category
-            services.add('xerox');
-        }
+        services.add(item.product.category);
     });
     return Array.from(services);
   }, [items]);
