@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -10,11 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { PlusCircle, Trash2 } from "lucide-react";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -26,15 +28,14 @@ const productSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
   brand: z.string().optional(),
   description: z.string().min(10, "Description must be at least 10 characters."),
-  price: z.coerce.number().min(0, "Price must be a positive number."),
-  imageName: z.string().min(1, "Image filename is required."),
+  imageNames: z.array(z.object({ value: z.string().min(1, "Image filename is required.") })).min(1, "At least one image is required."),
   category: z.enum(['stationary', 'books', 'electronics']),
 });
 
 
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
-  const [productList, setProductList] = useState<Product[]>(products);
+  const [productList, setProductList] = useState<(Product & { price: number, rating: number })[]>(products);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof productSchema>>({
@@ -43,12 +44,16 @@ export default function ManageProductsPage() {
       name: "",
       brand: "",
       description: "",
-      price: 0,
-      imageName: "",
+      imageNames: [{ value: "" }],
       category: activeTab,
     },
   });
   
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "imageNames",
+  });
+
   useState(() => {
     form.setValue('category', activeTab);
   });
@@ -56,14 +61,17 @@ export default function ManageProductsPage() {
 
   const onSubmit = (values: z.infer<typeof productSchema>) => {
     try {
-      const newProduct = addProduct(values);
-      setProductList([newProduct, ...productList]);
+      const imageNames = values.imageNames.map(img => img.value);
+      addProduct({ ...values, imageNames });
+      // This is a bit of a hack to update the state. In a real app, you'd refetch.
+      setProductList([...products]);
       toast({
         title: "Product Created",
         description: `${values.name} has been added successfully.`,
       });
       form.reset();
       form.setValue('category', activeTab);
+      form.setValue('imageNames', [{ value: '' }]);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -91,12 +99,30 @@ export default function ManageProductsPage() {
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="price" render={({ field }) => (
-                        <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="imageName" render={({ field }) => (
-                        <FormItem><FormLabel>Image Filename</FormLabel><FormControl><Input placeholder="e.g., product.jpg" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
+                    <div>
+                        <FormLabel>Image Filenames</FormLabel>
+                        {fields.map((field, index) => (
+                            <FormField
+                                key={field.id}
+                                control={form.control}
+                                name={`imageNames.${index}.value`}
+                                render={({ field }) => (
+                                <FormItem className="mt-2 flex items-center gap-2">
+                                    <FormControl>
+                                    <Input {...field} placeholder={`Image ${index + 1} filename (e.g., image.jpg)`} />
+                                    </FormControl>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </FormItem>
+                                )}
+                            />
+                        ))}
+                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+                        </Button>
+                        <FormMessage>{(form.formState.errors.imageNames as any)?.message}</FormMessage>
+                    </div>
                     <Button type="submit" className="w-full">Add Product</Button>
                 </form>
             </Form>

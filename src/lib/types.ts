@@ -1,21 +1,19 @@
 
+
 export type Product = {
   id: string;
   name: string;
   brand?: string;
   description: string;
-  price: number;
   category: 'stationary' | 'books' | 'electronics';
-  rating?: number;
-  image: {
+  images: {
     src: string;
     alt: string;
-    hint: string;
-  };
+  }[];
 };
 
 export type CartItem = {
-  product: Product;
+  product: Product & { price: number }; // Price is now part of the item in cart, not the base product
   quantity: number;
 };
 
@@ -29,7 +27,7 @@ export type Category = {
         alt: string;
         width: number;
         height: number;
-        hint: string;
+        hint?: string;
     }
 }
 

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from 'next/image';
@@ -14,7 +15,7 @@ import { ShoppingCart, Star } from 'lucide-react';
 import Link from 'next/link';
 
 type ProductCardProps = {
-  product: Product;
+  product: Product & { price: number; rating?: number };
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
@@ -30,17 +31,20 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const rating = product.rating || 5;
+  const primaryImage = product.images[0];
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg">
       <div className="relative aspect-square w-full overflow-hidden">
         <Link href="#">
-          <Image
-            src={product.image.src}
-            alt={product.image.alt}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+          {primaryImage && (
+            <Image
+              src={primaryImage.src}
+              alt={primaryImage.alt}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          )}
         </Link>
         <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={handleAddToCart}>
             <ShoppingCart className="h-4 w-4 text-primary" />
@@ -71,4 +75,3 @@ export default function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
-

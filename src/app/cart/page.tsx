@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -69,8 +70,8 @@ export default function CartPage() {
                         <Card key={product.id} className="flex items-center overflow-hidden">
                             <div className="relative h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32">
                             <Image
-                                src={product.image.src}
-                                alt={product.image.alt}
+                                src={product.images[0].src}
+                                alt={product.images[0].alt}
                                 fill
                                 className="object-cover"
                                 />

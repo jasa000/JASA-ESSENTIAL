@@ -1,4 +1,5 @@
 
+
 import type { Product, Category } from './types';
 import imageData from './placeholder-images.json';
 
@@ -18,14 +19,15 @@ const getCategoryImage = (id: string, width = 400, height = 400) => {
     alt: image.description,
     width: width,
     height: height,
+    hint: image.imageHint,
   };
 };
 
-const getProductImage = (imageName: string, category: Product['category'], alt: string) => {
-    return {
-        src: `/images/${category}/${imageName}`,
+const getProductImages = (imageNames: string[], category: Product['category'], alt: string) => {
+    return imageNames.map(name => ({
+        src: `/images/${category}/${name}`,
         alt: alt,
-    };
+    }));
 };
 
 
@@ -60,7 +62,7 @@ export const categories: Category[] = [
     }
 ]
 
-export let products: Product[] = [
+export let products: (Product & { price: number, rating: number })[] = [
   {
     id: 'prod_1',
     name: 'CX-Scientific calculator',
@@ -69,7 +71,7 @@ export let products: Product[] = [
     price: 600,
     category: 'electronics',
     rating: 5,
-    image: { src: '/images/electronics/calculator.jpg', alt: 'A scientific calculator.' },
+    images: [{ src: '/images/electronics/calculator.jpg', alt: 'A scientific calculator.' }],
   },
   {
     id: 'prod_2',
@@ -79,7 +81,7 @@ export let products: Product[] = [
     price: 25,
     category: 'stationary',
     rating: 4,
-    image: { src: '/images/stationary/ink-bottle.jpg', alt: 'A bottle of ink.' },
+    images: [{ src: '/images/stationary/ink-bottle.jpg', alt: 'A bottle of ink.' }],
   },
   {
     id: 'prod_3',
@@ -89,7 +91,7 @@ export let products: Product[] = [
     price: 60,
     category: 'stationary',
     rating: 5,
-    image: { src: '/images/stationary/stapler.jpg', alt: 'A stapler.'},
+    images: [{ src: '/images/stationary/stapler.jpg', alt: 'A stapler.'}],
   },
   {
     id: 'prod_4',
@@ -99,19 +101,21 @@ export let products: Product[] = [
     price: 10,
     category: 'stationary',
     rating: 4,
-    image: { src: '/images/stationary/ball-pen.jpg', alt: 'A ball point pen.'},
+    images: [{ src: '/images/stationary/ball-pen.jpg', alt: 'A ball point pen.'}],
   },
 ];
 
 
-export const addProduct = (product: Omit<Product, 'id' | 'rating' | 'image'> & { imageName: string }) => {
+export const addProduct = (product: Omit<Product, 'id' | 'images'> & { imageNames: string[] }) => {
   const newId = `prod_${Date.now()}`;
   const newProduct: Product = {
     ...product,
     id: newId,
-    rating: 5, // Default rating
-    image: getProductImage(product.imageName, product.category, product.description),
+    images: getProductImages(product.imageNames, product.category, product.description),
   };
-  products.unshift(newProduct); // Add to the beginning of the array
+  // This is a temporary solution to keep the app working with the old data structure.
+  // In a real app, products and their prices would be managed separately.
+  const productForDisplay: any = { ...newProduct, price: 0, rating: 0 };
+  products.unshift(productForDisplay); 
   return newProduct;
 };
