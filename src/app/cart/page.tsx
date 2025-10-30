@@ -73,7 +73,6 @@ export default function CartPage() {
                                 alt={product.image.alt}
                                 fill
                                 className="object-cover"
-                                data-ai-hint={product.image.hint}
                                 />
                             </div>
                             <div className="flex flex-grow flex-col p-4 sm:flex-row sm:items-center sm:justify-between">

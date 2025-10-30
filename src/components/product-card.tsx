@@ -40,7 +40,6 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.image.alt}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint={product.image.hint}
           />
         </Link>
         <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={handleAddToCart}>
