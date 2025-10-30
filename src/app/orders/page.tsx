@@ -132,7 +132,7 @@ export default function OrdersPage() {
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Order['category'])} className="mt-8">
         <div className="sticky top-20 z-10 bg-background py-4">
-            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
+            <TabsList className="grid h-auto w-full grid-cols-4">
                  {categories.map((cat) => (
                     <TabsTrigger 
                         key={cat.value} 
