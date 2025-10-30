@@ -113,8 +113,7 @@ const OrderCard = ({ order }: { order: Order }) => {
   )
 };
 
-const categories: { value: Order['category'] | 'all', label: string }[] = [
-    { value: 'all', label: 'All Orders' },
+const categories: { value: Order['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
     { value: 'books', label: 'Books' },
     { value: 'electronics', label: 'Electronic Kit' },
@@ -122,39 +121,54 @@ const categories: { value: Order['category'] | 'all', label: string }[] = [
 ]
 
 export default function OrdersPage() {
-    const [activeTab, setActiveTab] = useState<Order['category'] | 'all'>('all');
+    const [activeTab, setActiveTab] = useState<Order['category']>('stationary');
 
-    const filteredOrders = mockOrders.filter(order => activeTab === 'all' || order.category === activeTab);
+    const filteredOrders = mockOrders.filter(order => order.category === activeTab);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Order Status & History</h1>
       <p className="mt-2 text-muted-foreground">View the status of your current orders and your order history.</p>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Order['category'] | 'all')} className="mt-8">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Order['category'])} className="mt-8">
         <div className="sticky top-20 z-10 bg-background py-4">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
+            <TabsList className="w-full justify-start overflow-x-auto">
                  {categories.map((cat) => (
-                    <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
+                    <TabsTrigger 
+                        key={cat.value} 
+                        value={cat.value}
+                        className="flex-shrink-0 px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm"
+                    >
+                        {cat.label}
+                    </TabsTrigger>
                 ))}
             </TabsList>
         </div>
         
-        <div className="mt-8">
-            {filteredOrders.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredOrders.map(order => (
-                        <OrderCard key={order.id} order={order} />
-                    ))}
-                </div>
-            ) : (
-                <div className="py-16 text-center">
-                    <PackageOpen className="mx-auto h-24 w-24 text-muted-foreground" />
-                    <h2 className="mt-4 text-xl font-semibold">No Orders Found</h2>
-                    <p className="text-muted-foreground">You have no orders in this category yet.</p>
-                </div>
-            )}
-        </div>
+        {categories.map((cat) => (
+            <TabsContent key={cat.value} value={cat.value} className="mt-8">
+                {(() => {
+                    const filteredOrders = mockOrders.filter(order => order.category === cat.value);
+                    if (filteredOrders.length > 0) {
+                        return (
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                {filteredOrders.map(order => (
+                                    <OrderCard key={order.id} order={order} />
+                                ))}
+                            </div>
+                        );
+                    } else {
+                        return (
+                            <div className="py-16 text-center">
+                                <PackageOpen className="mx-auto h-24 w-24 text-muted-foreground" />
+                                <h2 className="mt-4 text-xl font-semibold">No Orders Found</h2>
+                                <p className="text-muted-foreground">You have no orders in this category yet.</p>
+                            </div>
+                        );
+                    }
+                })()}
+            </TabsContent>
+        ))}
       </Tabs>
     </div>
   );
