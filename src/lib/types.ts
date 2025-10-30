@@ -60,12 +60,16 @@ export type Post = {
   createdAt: number; // Using number for timestamp (milliseconds)
 };
 
+export const SHOP_SERVICES = ['stationary', 'books', 'electronics', 'xerox'] as const;
+export type ShopService = typeof SHOP_SERVICES[number];
+
 export type Shop = {
   id:string;
   name: string;
   address: string;
   ownerIds: string[];
   ownerNames?: string[];
+  services: ShopService[];
   notes?: string;
   createdAt: any;
 };

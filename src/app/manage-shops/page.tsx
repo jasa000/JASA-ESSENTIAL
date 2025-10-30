@@ -9,7 +9,7 @@ import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
 import { addShop, getShops, updateShop, deleteShop } from "@/lib/shops";
 import { getSellers } from "@/lib/users";
-import type { Shop, UserProfile } from "@/lib/types";
+import { SHOP_SERVICES, type Shop, type UserProfile, type ShopService } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,12 +57,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 const shopSchema = z.object({
   name: z.string().min(2, "Shop name must be at least 2 characters."),
   address: z.string().min(5, "Address is required."),
   ownerIds: z.array(z.string()).min(1, "At least one shop owner is required."),
+  services: z.array(z.string()).min(1, "At least one service must be selected."),
   notes: z.string().optional(),
 });
 
@@ -82,6 +84,7 @@ export default function ManageShopsPage() {
       name: "",
       address: "",
       ownerIds: [],
+      services: [],
       notes: "",
     },
   });
@@ -131,6 +134,7 @@ export default function ManageShopsPage() {
           name: editingShop.name,
           address: editingShop.address,
           ownerIds: editingShop.ownerIds,
+          services: editingShop.services,
           notes: editingShop.notes || "",
       });
     }
@@ -139,7 +143,7 @@ export default function ManageShopsPage() {
 
   async function onSubmit(values: z.infer<typeof shopSchema>) {
     try {
-      await addShop(values);
+      await addShop(values as Omit<Shop, 'id' | 'createdAt' | 'ownerNames'>);
       toast({ title: "Shop Created", description: "The new shop has been added." });
       form.reset();
       fetchShopsAndSellers();
@@ -247,7 +251,57 @@ export default function ManageShopsPage() {
             )}
         />
     );
-};
+  };
+  
+  const ServicesCheckboxes = ({ form, fieldName }: { form: any, fieldName: "services" }) => (
+    <FormField
+      control={form.control}
+      name={fieldName}
+      render={() => (
+        <FormItem>
+          <div className="mb-4">
+            <FormLabel className="text-base">Shop Services</FormLabel>
+            <FormMessage />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {SHOP_SERVICES.map((item) => (
+              <FormField
+                key={item}
+                control={form.control}
+                name={fieldName}
+                render={({ field }) => {
+                  return (
+                    <FormItem
+                      key={item}
+                      className="flex flex-row items-start space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value?.includes(item)}
+                          onCheckedChange={(checked) => {
+                            return checked
+                              ? field.onChange([...(field.value || []), item])
+                              : field.onChange(
+                                  (field.value || []).filter(
+                                    (value: string) => value !== item
+                                  )
+                                );
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal capitalize">
+                        {item}
+                      </FormLabel>
+                    </FormItem>
+                  );
+                }}
+              />
+            ))}
+          </div>
+        </FormItem>
+      )}
+    />
+  );
   
   if (loading || user?.role !== 'admin') {
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
@@ -295,6 +349,7 @@ export default function ManageShopsPage() {
                     )}
                   />
                   <MultiSellerSelect form={form} fieldName="ownerIds" />
+                  <ServicesCheckboxes form={form} fieldName="services" />
                   <FormField
                     control={form.control}
                     name="notes"
@@ -329,20 +384,22 @@ export default function ManageShopsPage() {
                     <TableRow>
                       <TableHead>Shop Name</TableHead>
                       <TableHead>Owners</TableHead>
+                      <TableHead>Services</TableHead>
                       <TableHead>Date Added</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
-                      <TableRow><TableCell colSpan={4} className="text-center">Loading shops...</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center">Loading shops...</TableCell></TableRow>
                     ) : shops.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center">No shops found.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center">No shops found.</TableCell></TableRow>
                     ) : (
                       shops.map((shop) => (
                         <TableRow key={shop.id}>
                           <TableCell className="font-medium">{shop.name}</TableCell>
                           <TableCell>{shop.ownerNames?.join(', ')}</TableCell>
+                          <TableCell className="capitalize">{shop.services?.join(', ')}</TableCell>
                           <TableCell>{new Date(shop.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -394,6 +451,7 @@ export default function ManageShopsPage() {
                                                 )}
                                             />
                                             <MultiSellerSelect form={editForm} fieldName="ownerIds" />
+                                            <ServicesCheckboxes form={editForm} fieldName="services" />
                                              <FormField
                                                 control={editForm.control}
                                                 name="notes"
@@ -454,5 +512,3 @@ export default function ManageShopsPage() {
     </div>
   );
 }
-
-    
