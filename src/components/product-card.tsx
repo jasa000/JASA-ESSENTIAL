@@ -13,6 +13,7 @@ import { useCart } from '@/hooks/use-cart';
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Star } from 'lucide-react';
 import Link from 'next/link';
+import { brands } from '@/lib/data';
 
 type ProductCardProps = {
   product: Product & { price: number; rating?: number };
@@ -32,6 +33,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const rating = product.rating || 5;
   const primaryImage = product.images[0];
+  const productBrands = product.brandIds?.map(id => brands.find(b => b.id === id)?.name).filter(Boolean).join(', ');
+
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg">
@@ -52,7 +55,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
       <CardContent className="flex flex-1 flex-col p-4">
         <div className="flex-grow">
-          {product.brand && <p className="text-xs text-muted-foreground">{product.brand}</p>}
+          {productBrands && <p className="text-xs text-muted-foreground">{productBrands}</p>}
           <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
           <div className="mt-1 flex items-center gap-0.5">
               {Array.from({ length: 5 }, (_, i) => (

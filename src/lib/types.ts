@@ -3,7 +3,7 @@
 export type Product = {
   id: string;
   name: string;
-  brand?: string;
+  brandIds?: string[];
   description: string;
   category: 'stationary' | 'books' | 'electronics';
   images: {
@@ -66,5 +66,11 @@ export type Shop = {
   ownerNames?: string[];
   notes?: string;
   createdAt: any;
+};
+    
+export type Brand = {
+  id: string;
+  name: string;
+  category: 'stationary' | 'books' | 'electronics';
 };
     

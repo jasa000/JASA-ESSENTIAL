@@ -3,10 +3,10 @@
 "use client";
 
 import { useState } from "react";
-import { products, addProduct } from "@/lib/data";
+import { products, addProduct, brands, addBrand } from "@/lib/data";
 import ProductCard from "@/components/product-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Product } from "@/lib/types";
+import type { Product, Brand } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -26,26 +30,37 @@ const categories: { value: Product['category'], label: string }[] = [
 
 const productSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
-  brand: z.string().optional(),
+  brandIds: z.array(z.string()).optional(),
   description: z.string().min(10, "Description must be at least 10 characters."),
   imageNames: z.array(z.object({ value: z.string().min(1, "Image filename is required.") })).min(1, "At least one image is required."),
   category: z.enum(['stationary', 'books', 'electronics']),
 });
 
+const brandSchema = z.object({
+  name: z.string().min(2, "Brand name must be at least 2 characters."),
+});
 
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
   const [productList, setProductList] = useState<(Product & { price: number, rating: number })[]>(products);
+  const [brandList, setBrandList] = useState<Brand[]>(brands);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: "",
-      brand: "",
+      brandIds: [],
       description: "",
       imageNames: [{ value: "" }],
       category: activeTab,
+    },
+  });
+
+  const brandForm = useForm<z.infer<typeof brandSchema>>({
+    resolver: zodResolver(brandSchema),
+    defaultValues: {
+      name: "",
     },
   });
   
@@ -58,12 +73,10 @@ export default function ManageProductsPage() {
     form.setValue('category', activeTab);
   });
 
-
-  const onSubmit = (values: z.infer<typeof productSchema>) => {
+  const onProductSubmit = (values: z.infer<typeof productSchema>) => {
     try {
       const imageNames = values.imageNames.map(img => img.value);
       addProduct({ ...values, imageNames });
-      // This is a bit of a hack to update the state. In a real app, you'd refetch.
       setProductList([...products]);
       toast({
         title: "Product Created",
@@ -80,22 +93,146 @@ export default function ManageProductsPage() {
       });
     }
   };
+
+  const onBrandSubmit = (values: z.infer<typeof brandSchema>) => {
+    try {
+        addBrand({ ...values, category: activeTab });
+        setBrandList([...brands]);
+        toast({
+            title: "Brand Created",
+            description: `${values.name} has been added successfully.`,
+        });
+        brandForm.reset();
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to create the brand.",
+        });
+    }
+  };
   
-  const renderCreateForm = () => (
+  const MultiBrandSelect = ({ form, fieldName, category }: { form: any, fieldName: "brandIds", category: Brand['category'] }) => {
+    const categoryBrands = brandList.filter(b => b.category === category);
+    return (
+        <FormField
+            control={form.control}
+            name={fieldName}
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Brands</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn("w-full justify-between h-auto", !field.value?.length && "text-muted-foreground")}
+                                >
+                                    <div className="flex gap-1 flex-wrap">
+                                        {field.value?.length > 0 ? (
+                                            brandList
+                                                .filter(brand => field.value.includes(brand.id))
+                                                .map(brand => (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        key={brand.id}
+                                                        className="mr-1"
+                                                    >
+                                                        {brand.name}
+                                                    </Badge>
+                                                ))
+                                        ) : (
+                                            "Select brands"
+                                        )}
+                                    </div>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search brands..." />
+                                <CommandList>
+                                    <CommandEmpty>No brands found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {categoryBrands.map((brand) => (
+                                            <CommandItem
+                                                value={brand.name}
+                                                key={brand.id}
+                                                onSelect={() => {
+                                                    const currentIds = field.value || [];
+                                                    const newIds = currentIds.includes(brand.id)
+                                                        ? currentIds.filter((id: string) => id !== brand.id)
+                                                        : [...currentIds, brand.id];
+                                                    form.setValue(fieldName, newIds);
+                                                }}
+                                            >
+                                                <Check
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        (field.value || []).includes(brand.id)
+                                                            ? "opacity-100"
+                                                            : "opacity-0"
+                                                    )}
+                                                />
+                                                {brand.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
+  };
+  
+  const renderCreateBrandForm = (category: Product['category']) => {
+    if (category !== 'stationary') return null;
+
+    return (
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Create Stationary Brand</CardTitle>
+          <CardDescription>Add a new brand to your inventory for this category.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...brandForm}>
+            <form onSubmit={brandForm.handleSubmit(onBrandSubmit)} className="space-y-4">
+              <FormField control={brandForm.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Brand Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <Button type="submit" className="w-full">Add Brand</Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
+  const renderCreateForm = (category: Product['category']) => (
      <Card className="mb-8">
         <CardHeader>
-            <CardTitle>Create {categories.find(c => c.value === activeTab)?.label} Product</CardTitle>
+            <CardTitle>Create {categories.find(c => c.value === category)?.label} Product</CardTitle>
             <CardDescription>Add a new item to your inventory for this category.</CardDescription>
         </CardHeader>
         <CardContent>
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onProductSubmit)} className="space-y-4">
                     <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="brand" render={({ field }) => (
-                        <FormItem><FormLabel>Brand</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
+                    {category === 'stationary' && <MultiBrandSelect form={form} fieldName="brandIds" category="stationary" />}
+                    
+                    {category !== 'stationary' && <FormField control={form.control} name="brandIds" render={({ field }) => (
+                        <FormItem><FormLabel>Brand</FormLabel><FormControl><Input onChange={(e) => field.onChange(e.target.value ? [e.target.value] : [])} placeholder="Enter brand name" /></FormControl><FormMessage /></FormItem>
+                    )} />}
+
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
@@ -166,17 +303,18 @@ export default function ManageProductsPage() {
           </div>
           
           <TabsContent value="stationary" className="mt-8">
-              {renderCreateForm()}
+              {renderCreateBrandForm('stationary')}
+              {renderCreateForm('stationary')}
               {renderProductGrid('stationary')}
           </TabsContent>
 
           <TabsContent value="books" className="mt-8">
-              {renderCreateForm()}
+              {renderCreateForm('books')}
               {renderProductGrid('books')}
           </TabsContent>
 
           <TabsContent value="electronics" className="mt-8">
-              {renderCreateForm()}
+              {renderCreateForm('electronics')}
               {renderProductGrid('electronics')}
           </TabsContent>
       </Tabs>

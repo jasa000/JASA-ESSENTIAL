@@ -1,6 +1,6 @@
 
 
-import type { Product, Category } from './types';
+import type { Product, Category, Brand } from './types';
 import imageData from './placeholder-images.json';
 
 const getCategoryImage = (id: string, width = 400, height = 400) => {
@@ -66,7 +66,7 @@ export let products: (Product & { price: number, rating: number })[] = [
   {
     id: 'prod_1',
     name: 'CX-Scientific calculator',
-    brand: 'CALTRIX',
+    brandIds: ['brand_caltrix'],
     description: 'A scientific calculator.',
     price: 600,
     category: 'electronics',
@@ -76,7 +76,7 @@ export let products: (Product & { price: number, rating: number })[] = [
   {
     id: 'prod_2',
     name: 'Bril ink Bottle',
-    brand: 'BRIL',
+    brandIds: ['brand_bril'],
     description: 'A bottle of ink.',
     price: 25,
     category: 'stationary',
@@ -86,7 +86,7 @@ export let products: (Product & { price: number, rating: number })[] = [
   {
     id: 'prod_3',
     name: 'Kangaroo Stapler',
-    brand: 'KANGARO',
+    brandIds: ['brand_kangaro'],
     description: 'A stapler.',
     price: 60,
     category: 'stationary',
@@ -96,7 +96,7 @@ export let products: (Product & { price: number, rating: number })[] = [
   {
     id: 'prod_4',
     name: 'XO-BALL P',
-    brand: 'HAUSHER',
+    brandIds: ['brand_hausher'],
     description: 'A ball point pen.',
     price: 10,
     category: 'stationary',
@@ -105,6 +105,12 @@ export let products: (Product & { price: number, rating: number })[] = [
   },
 ];
 
+export let brands: Brand[] = [
+    { id: 'brand_bril', name: 'BRIL', category: 'stationary' },
+    { id: 'brand_kangaro', name: 'KANGARO', category: 'stationary' },
+    { id: 'brand_hausher', name: 'HAUSHER', category: 'stationary' },
+    { id: 'brand_caltrix', name: 'CALTRIX', category: 'electronics' },
+];
 
 export const addProduct = (product: Omit<Product, 'id' | 'images'> & { imageNames: string[] }) => {
   const newId = `prod_${Date.now()}`;
@@ -113,9 +119,17 @@ export const addProduct = (product: Omit<Product, 'id' | 'images'> & { imageName
     id: newId,
     images: getProductImages(product.imageNames, product.category, product.description),
   };
-  // This is a temporary solution to keep the app working with the old data structure.
-  // In a real app, products and their prices would be managed separately.
-  const productForDisplay: any = { ...newProduct, price: 0, rating: 0 };
+  const productForDisplay: any = { ...newProduct, price: 0, rating: 0, brand: product.brandIds && product.brandIds.length > 0 ? brands.find(b => b.id === product.brandIds![0])?.name : '' };
   products.unshift(productForDisplay); 
   return newProduct;
 };
+
+export const addBrand = (brand: Omit<Brand, 'id'>) => {
+    const newId = `brand_${brand.name.toLowerCase().replace(/\s/g, '_')}_${Date.now()}`;
+    const newBrand: Brand = {
+        ...brand,
+        id: newId,
+    };
+    brands.unshift(newBrand);
+    return newBrand;
+}
