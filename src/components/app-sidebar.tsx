@@ -25,7 +25,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -225,6 +225,14 @@ export default function AppSidebar() {
                           <Link href="/manage-shops">
                               <Store />
                               <span>Manage Shops</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                          <Link href="/manage-products">
+                              <Package />
+                              <span>Manage Products</span>
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
