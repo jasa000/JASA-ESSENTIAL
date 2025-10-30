@@ -6,54 +6,108 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCart } from '@/hooks/use-cart';
+import { useAuth } from '@/context/auth-provider';
+import { updateUserProfile } from '@/lib/users';
+import { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlusCircle } from 'lucide-react';
+import type { UserProfile } from '@/lib/types';
 
-const formSchema = z.object({
-  email: z.string().email(),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  address: z.string().min(1, 'Address is required'),
-  city: z.string().min(1, 'City is required'),
-  country: z.string().min(1, 'Country is required'),
-  postalCode: z.string().min(1, 'Postal code is required'),
+
+const addressSchema = z.object({
+  type: z.enum(['Home', 'Work']),
+  line1: z.string().min(1, "Address Line 1 is required"),
+  line2: z.string().optional(),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  postalCode: z.string().min(1, "Postal Code is required"),
+});
+
+const checkoutFormSchema = z.object({
+  selectedAddress: z.string().min(1, "Please select a shipping address."),
 });
 
 export default function CheckoutPage() {
   const { items } = useCart();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
 
   const subtotal = items.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
   const shipping = items.length > 0 ? 5.00 : 0;
   const total = subtotal + shipping;
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const checkoutForm = useForm<z.infer<typeof checkoutFormSchema>>({
+    resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
-      email: '',
-      firstName: '',
-      lastName: '',
-      address: '',
-      city: '',
-      country: '',
-      postalCode: '',
+      selectedAddress: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log('Order placed:', values);
+  const addressForm = useForm<z.infer<typeof addressSchema>>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+      type: 'Home',
+      line1: '',
+      line2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+    }
+  });
+  
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+    if (user?.addresses && user.addresses.length > 0 && !checkoutForm.getValues('selectedAddress')) {
+        checkoutForm.setValue('selectedAddress', `address-0`);
+    }
+  }, [user, authLoading, router, checkoutForm]);
+
+  async function onAddressSubmit(values: z.infer<typeof addressSchema>) {
+    if (!user) return;
+    try {
+      const newAddresses = [...(user.addresses || []), values];
+      await updateUserProfile(user.uid, { addresses: newAddresses });
+      toast({
+        title: "Address Saved",
+        description: "Your new address has been added to your profile.",
+      });
+      addressForm.reset();
+      setIsAddressDialogOpen(false);
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save address. " + error.message,
+      });
+    }
+  }
+
+  function onCheckoutSubmit(values: z.infer<typeof checkoutFormSchema>) {
+    console.log('Order placed with address:', values.selectedAddress);
     toast({
       title: 'Order Placed!',
       description: 'Thank you for your purchase. Your order is being processed.',
     });
     router.push('/profile');
+  }
+
+  if (authLoading) {
+    return <div className="container mx-auto px-4 py-8">Loading...</div>
   }
 
   if (items.length === 0) {
@@ -68,104 +122,156 @@ export default function CheckoutPage() {
     )
   }
 
+  const renderAddressSelection = () => {
+    if (!user?.addresses || user.addresses.length === 0) {
+      return (
+        <Card className="text-center">
+            <CardHeader>
+                <CardTitle className="font-headline">Add Shipping Address</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground mb-4">You have no saved addresses. Please add one to continue.</p>
+                <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Address
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add a new address</DialogTitle>
+                        </DialogHeader>
+                        {renderAddressForm()}
+                    </DialogContent>
+                </Dialog>
+            </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">Select Shipping Address</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <Form {...checkoutForm}>
+              <form onSubmit={checkoutForm.handleSubmit(onCheckoutSubmit)} className="space-y-6">
+                <FormField
+                  control={checkoutForm.control}
+                  name="selectedAddress"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          {user.addresses.map((address, index) => (
+                            <FormItem key={index} className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                                <FormControl>
+                                    <RadioGroupItem value={`address-${index}`} />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                    <p className="font-bold">{address.type} Address</p>
+                                    <p>{address.line1}{address.line2 ? `, ${address.line2}` : ''}</p>
+                                    <p>{address.city}, {address.state} {address.postalCode}</p>
+                                </FormLabel>
+                            </FormItem>
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <div className="flex items-center gap-4">
+                    <Button type="submit" className="w-full">Place Order</Button>
+                    <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+                      <DialogTrigger asChild>
+                          <Button variant="outline">
+                              <PlusCircle className="mr-2 h-4 w-4" /> Add New
+                          </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                          <DialogHeader>
+                              <DialogTitle>Add a new address</DialogTitle>
+                          </DialogHeader>
+                          {renderAddressForm()}
+                      </DialogContent>
+                    </Dialog>
+                </div>
+              </form>
+            </Form>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const renderAddressForm = () => (
+    <Form {...addressForm}>
+        <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-4">
+            <FormField
+                control={addressForm.control}
+                name="type"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Address Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select address type" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="Home">Home</SelectItem>
+                        <SelectItem value="Work">Work</SelectItem>
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField control={addressForm.control} name="line1" render={({ field }) => (
+            <FormItem>
+                <FormLabel>Address Line 1</FormLabel>
+                <FormControl><Input {...field} placeholder="123 Main St" /></FormControl>
+                <FormMessage />
+            </FormItem>
+            )} />
+            <FormField control={addressForm.control} name="line2" render={({ field }) => (
+            <FormItem>
+                <FormLabel>Address Line 2 (Optional)</FormLabel>
+                <FormControl><Input {...field} placeholder="Apartment, suite, etc." /></FormControl>
+                <FormMessage />
+            </FormItem>
+            )} />
+             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <FormField control={addressForm.control} name="city" render={({ field }) => (
+                <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={addressForm.control} name="state" render={({ field }) => (
+                <FormItem><FormLabel>State / Province</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={addressForm.control} name="postalCode" render={({ field }) => (
+                <FormItem><FormLabel>Postal Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+            </div>
+            <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                <Button type="submit" disabled={addressForm.formState.isSubmitting}>
+                  {addressForm.formState.isSubmitting ? "Saving..." : "Save Address"}
+                </Button>
+            </DialogFooter>
+        </form>
+    </Form>
+  )
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Checkout</h1>
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline">Shipping Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl><Input placeholder="you@example.com" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl><Input placeholder="John" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl><Input placeholder="Doe" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl><Input placeholder="123 Main St" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                    <FormField
-                      control={form.control}
-                      name="city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="country"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Country</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="postalCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Postal Code</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full">Place Order</Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+          {renderAddressSelection()}
         </div>
 
         <div className="lg:col-span-1">
@@ -206,3 +312,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
