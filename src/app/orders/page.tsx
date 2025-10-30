@@ -77,13 +77,15 @@ const statusConfig = {
 
 const OrderCard = ({ order }: { order: Order }) => {
   const StatusIcon = statusConfig[order.status].icon;
+  const [day, month, year] = order.date.split('-').reverse();
+  const formattedDate = `${day}/${month}/${year}`;
 
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-start justify-between bg-muted/50 p-4">
         <div>
           <CardTitle className="font-headline text-lg">Order #{order.id}</CardTitle>
-          <CardDescription>Date: {new Date(order.date).toLocaleDateString()}</CardDescription>
+          <CardDescription>Date: {formattedDate}</CardDescription>
         </div>
         <Badge variant={order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2">
             <StatusIcon className="h-4 w-4" />
@@ -123,8 +125,6 @@ const categories: { value: Order['category'], label: string }[] = [
 export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState<Order['category']>('stationary');
 
-    const filteredOrders = mockOrders.filter(order => order.category === activeTab);
-
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Order Status & History</h1>
@@ -132,12 +132,11 @@ export default function OrdersPage() {
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Order['category'])} className="mt-8">
         <div className="sticky top-20 z-10 bg-background py-4">
-            <TabsList className="grid h-auto w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-4">
                  {categories.map((cat) => (
                     <TabsTrigger 
                         key={cat.value} 
                         value={cat.value}
-                        className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm"
                     >
                         {cat.label}
                     </TabsTrigger>
