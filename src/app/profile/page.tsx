@@ -22,14 +22,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { UserProfile } from "@/lib/types";
 
 const addressSchema = z.object({
   type: z.enum(['Home', 'Work']),
-  line1: z.string().optional(),
+  line1: z.string().min(1, "Address Line 1 is required"),
   line2: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postalCode: z.string().optional(),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  postalCode: z.string().min(1, "Postal Code is required"),
 });
 
 const profileSchema = z.object({
@@ -80,10 +81,12 @@ export default function ProfilePage() {
     }
     if (user) {
       form.reset({
-        name: user.displayName || "",
+        name: user.displayName || user.name || "",
         email: user.email || "",
-        // Pre-fill other fields from your DB here if available
-        addresses: [{ type: 'Home', line1: '', city: '', state: '', postalCode: '' }] // Default with one address
+        mobile: user.mobile || "",
+        altMobiles: user.altMobiles || [],
+        altEmails: user.altEmails || [],
+        addresses: user.addresses && user.addresses.length > 0 ? user.addresses : [],
       });
     }
   }, [user, loading, router, form]);
@@ -133,6 +136,8 @@ export default function ProfilePage() {
 
   function onSubmit(values: z.infer<typeof profileSchema>) {
     console.log("Updating profile:", values);
+    // Here you would typically call a function to update the user data in Firestore
+    // e.g. updateUserProfile(user.uid, values);
     toast({
       title: "Profile Updated",
       description: "Your profile information has been saved.",
@@ -148,9 +153,9 @@ export default function ProfilePage() {
             <CardHeader className="items-center text-center">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
-                <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                <AvatarFallback>{getInitials(user.displayName || user.name)}</AvatarFallback>
               </Avatar>
-              <CardTitle className="font-headline pt-4">{user.displayName || "User"}</CardTitle>
+              <CardTitle className="font-headline pt-4">{user.displayName || user.name}</CardTitle>
               <CardDescription>{user.email}</CardDescription>
             </CardHeader>
           </Card>
@@ -289,7 +294,7 @@ export default function ProfilePage() {
                               render={({ field }) => (
                               <FormItem>
                                   <FormLabel>Address Line 1</FormLabel>
-                                  <FormControl><Input {...field} /></FormControl>
+                                  <FormControl><Input {...field} placeholder="123 Main St" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                               )}
@@ -299,8 +304,8 @@ export default function ProfilePage() {
                               name={`addresses.${index}.line2`}
                               render={({ field }) => (
                               <FormItem>
-                                  <FormLabel>Address Line 2</FormLabel>
-                                  <FormControl><Input {...field} /></FormControl>
+                                  <FormLabel>Address Line 2 (Optional)</FormLabel>
+                                  <FormControl><Input {...field} placeholder="Apartment, suite, etc." /></FormControl>
                                   <FormMessage />
                               </FormItem>
                               )}
@@ -344,12 +349,11 @@ export default function ProfilePage() {
                         </Card>
                       ))}
                       {addresses.length < 2 && (
-                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendAddress({ type: addresses.length === 0 ? 'Home' : 'Work' })}>
+                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendAddress({ type: addresses.length === 0 ? 'Home' : 'Work', line1: '', city: '', state: '', postalCode: '' })}>
                           <PlusCircle className="mr-2 h-4 w-4" /> Add Address
                         </Button>
                       )}
                     </div>
-
 
                     <Button type="submit" className="w-full">Save Changes</Button>
                   </CardContent>

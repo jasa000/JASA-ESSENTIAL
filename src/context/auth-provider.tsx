@@ -4,7 +4,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 
 type AuthContextType = {
@@ -19,24 +19,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          const userProfile = userDocSnap.data() as UserProfile;
-          setUser({ ...firebaseUser, ...userProfile });
-        } else {
-          // Handle case where user exists in Auth but not in Firestore
-          setUser(firebaseUser as (User & UserProfile));
-        }
+        const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            const userProfile = doc.data() as UserProfile;
+            setUser({ ...firebaseUser, ...userProfile });
+          } else {
+            // This might happen if the user is in Auth but the Firestore doc hasn't been created yet
+            setUser(firebaseUser as (User & UserProfile));
+          }
+          setLoading(false);
+        });
+
+        // Return a cleanup function for the snapshot listener
+        return () => unsubscribeSnapshot();
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Return a cleanup function for the auth state listener
+    return () => unsubscribeAuth();
   }, []);
 
   return (

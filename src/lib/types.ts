@@ -39,15 +39,15 @@ export type UserProfile = {
   email: string;
   role?: 'user' | 'admin' | 'seller' | 'delivery';
   mobile?: string;
-  altMobiles?: string[];
-  altEmails?: string[];
+  altMobiles?: { value: string }[];
+  altEmails?: { value: string }[];
   addresses?: {
     type: 'Home' | 'Work';
-    line1?: string;
+    line1: string;
     line2?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
+    city: string;
+    state: string;
+    postalCode: string;
   }[];
   createdAt: any; // Firestore timestamp can be complex, using 'any' for simplicity
 }
