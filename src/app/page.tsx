@@ -46,6 +46,7 @@ export default function Home() {
        <WelcomeCard />
        
        <div className="container mx-auto px-4 py-8">
+        <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
         <div className="flex w-full gap-2 md:gap-4">
             {categories.map((category, index) => (
                 <CategoryLinkCard key={category.id} category={category} index={index} />
