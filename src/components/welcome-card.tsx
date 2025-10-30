@@ -3,12 +3,9 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function WelcomeCard() {
-  const services = ["Xerox", "Books", "Electronic Kit", "Stationary Products"];
   const [typedText, setTypedText] = useState("");
   const fullText = "Welcome to Jasa Essentials";
 
@@ -53,25 +50,6 @@ export default function WelcomeCard() {
           <CardDescription className="text-base">Your one-stop destination for all creative and academic needs.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {services.map((service, index) => (
-              <Badge 
-                key={service} 
-                variant="secondary" 
-                className={cn(
-                  "group relative flex items-center justify-center gap-2 overflow-hidden rounded-full py-2 text-sm sm:text-base",
-                  "bg-slate-100 dark:bg-slate-800"
-                )}
-              >
-                <span 
-                  className="absolute inset-0 -translate-x-full animate-shining-fast bg-gradient-to-r from-transparent via-white/50 to-transparent"
-                  style={{ animationDelay: `${index * 0.5}s` }}
-                ></span>
-                <CheckCircle className="h-4 w-4 text-teal-500" />
-                <span>{service}</span>
-              </Badge>
-            ))}
-          </div>
         </CardContent>
       </Card>
     </div>
