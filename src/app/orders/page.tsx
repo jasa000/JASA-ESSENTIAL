@@ -132,12 +132,12 @@ export default function OrdersPage() {
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Order['category'])} className="mt-8">
         <div className="sticky top-20 z-10 bg-background py-4">
-            <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
                  {categories.map((cat) => (
                     <TabsTrigger 
                         key={cat.value} 
                         value={cat.value}
-                        className="flex-shrink-0 px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm"
+                        className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm"
                     >
                         {cat.label}
                     </TabsTrigger>
