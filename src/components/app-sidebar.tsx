@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   SidebarContent,
   SidebarGroup,
@@ -25,16 +26,38 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
+import { getShops } from "@/lib/shops"
+import type { Shop } from "@/lib/types"
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
   const { toast } = useToast();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const [sellerShops, setSellerShops] = useState<Shop[]>([]);
+  const [isLoadingShops, setIsLoadingShops] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'seller') {
+      const fetchSellerShops = async () => {
+        setIsLoadingShops(true);
+        try {
+          const allShops = await getShops();
+          const ownedShops = allShops.filter(shop => shop.ownerIds.includes(user.uid));
+          setSellerShops(ownedShops);
+        } catch (error) {
+          toast({ variant: "destructive", title: "Error", description: "Could not load your shops." });
+        } finally {
+          setIsLoadingShops(false);
+        }
+      };
+      fetchSellerShops();
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -128,6 +151,42 @@ export default function AppSidebar() {
         </SidebarMenu>
     )
   }
+  
+  const renderSellerAccess = () => {
+    if (loading || isLoadingShops) {
+      return (
+        <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
+          <SidebarGroupLabel className="text-white/90">SELLER ACCESS</SidebarGroupLabel>
+          <Skeleton className="h-10 w-full" />
+        </SidebarGroup>
+      )
+    }
+
+    if (user?.role === 'seller' && sellerShops.length > 0) {
+      return (
+        <>
+          {sellerShops.map(shop => (
+            <SidebarGroup key={shop.id} className="bg-sidebar-accent rounded-lg p-2">
+                <SidebarGroupLabel className="text-white/90">{shop.name}</SidebarGroupLabel>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                            <Link href={`/seller/orders/${shop.id}`}>
+                                <FolderKanban />
+                                <span>Manage Orders</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+          ))}
+        </>
+      );
+    }
+
+    return null;
+  };
+
 
   return (
     <SidebarContent className="p-2">
@@ -208,6 +267,8 @@ export default function AppSidebar() {
             </SidebarMenu>
         </SidebarGroup>
         
+        {renderSellerAccess()}
+
         {user?.role === 'admin' && (
           <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
               <SidebarGroupLabel className="text-white/90">ADMIN ACCESS</SidebarGroupLabel>
