@@ -12,7 +12,7 @@ import { getShops } from '@/lib/shops';
 import { useState, useEffect, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -424,5 +424,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
