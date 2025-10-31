@@ -7,7 +7,6 @@ import BannerCard from '@/components/banner-card';
 import WelcomeCard from '@/components/welcome-card';
 import CategoryLinkCard from '@/components/category-link-card';
 import { categories, products } from '@/lib/data';
-import imageData from '@/lib/placeholder-images.json';
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import PostCarousel from "@/components/post-carousel";
 import type { Product } from "@/lib/types";
@@ -23,10 +22,10 @@ export default function Home() {
   );
 
   const banners = [
-    { id: 'banner-stationary', href: '/stationary', title: 'Level Up Your Workspace', cta: 'Shop Stationary' },
-    { id: 'banner-books', href: '/books', title: 'Explore New Worlds', cta: 'Browse Books' },
-    { id: 'banner-xerox', href: '/xerox', title: 'High-Quality Printing', cta: 'Print Now' },
-    { id: 'banner-electronics', href: '/electronics', title: 'Build Your Next Project', cta: 'Explore Kits' }
+    { id: 'banner-stationary', href: '/stationary', title: 'Level Up Your Workspace', cta: 'Shop Stationary', imageName: 'stationary.png', alt: 'A modern, well-organized desk with stationary supplies.' },
+    { id: 'banner-books', href: '/books', title: 'Explore New Worlds', cta: 'Browse Books', imageName: 'books.png', alt: 'A cozy library aisle with shelves full of books.' },
+    { id: 'banner-xerox', href: '/xerox', title: 'High-Quality Printing', cta: 'Print Now', imageName: 'xerox.png', alt: 'Close-up of a modern printer in a bright office.' },
+    { id: 'banner-electronics', href: '/electronics', title: 'Build Your Next Project', cta: 'Explore Kits', imageName: 'electronics.png', alt: 'A person soldering an electronics circuit board.' }
   ];
 
   const productsByCategory = {
@@ -55,16 +54,14 @@ export default function Home() {
                 <WelcomeCard />
             </CarouselItem>
             {banners.map((banner) => {
-               const image = imageData.placeholderImages.find(img => img.id === banner.id);
-               if (!image) return null;
               return (
                 <CarouselItem key={banner.id}>
                   <BannerCard
                     href={banner.href}
                     title={banner.title}
                     cta={banner.cta}
-                    imageSrc={image.imageUrl}
-                    imageAlt={image.description}
+                    imageSrc={`/images/banner/${banner.imageName}`}
+                    imageAlt={banner.alt}
                   />
                 </CarouselItem>
               );
