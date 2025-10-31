@@ -41,15 +41,21 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-           <SidebarTrigger />
-           <Link href="/" className="flex items-center gap-2">
-            <Image src="/favicon.ico" alt="Jasa Essentials" width={32} height={32} className="rounded-full" />
-            <span className="font-headline text-lg font-bold sr-only">
-              Jasa Essentials
-            </span>
-          </Link>
+        <div className="flex items-center gap-4">
+            <div className="relative flex h-9 w-9 items-center justify-center">
+              <Link href="/" className="absolute inset-0">
+                <Image src="/favicon.ico" alt="Jasa Essentials" width={36} height={36} className="rounded-full" />
+                <span className="sr-only">Jasa Essentials Home</span>
+              </Link>
+              <SidebarTrigger className="relative h-7 w-7 bg-transparent text-white hover:bg-transparent/20" />
+            </div>
+            <Link href="/" className="hidden items-center gap-2 sm:flex">
+                <span className="font-headline text-lg font-bold">
+                Jasa Essentials
+                </span>
+            </Link>
         </div>
+
         <div className="flex flex-1 justify-center px-4">
           <div className="relative w-full max-w-md">
             <Input
