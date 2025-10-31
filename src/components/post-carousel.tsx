@@ -33,7 +33,7 @@ export default function PostCarousel() {
   return (
     <div className="w-full">
       <Card className="w-full">
-        <CardContent className="p-6">
+        <CardContent>
           <Carousel
             plugins={[plugin.current]}
             className="w-full"

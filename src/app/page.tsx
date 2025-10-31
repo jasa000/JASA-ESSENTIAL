@@ -41,7 +41,7 @@ export default function Home() {
   }
 
   return (
-    <div className="w-full overflow-x-hidden">
+    <div className="w-screen overflow-x-hidden">
        <div className="w-full py-8">
          <Carousel
           plugins={[plugin.current]}
@@ -51,6 +51,7 @@ export default function Home() {
           opts={{
             stopOnInteraction: false,
             stopOnMouseEnter: true,
+            loop: true,
           }}
         >
           <CarouselContent>
