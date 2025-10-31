@@ -48,6 +48,10 @@ export default function Home() {
           className="w-full"
           onMouseEnter={plugin.current.stop}
           onMouseLeave={plugin.current.reset}
+          opts={{
+            stopOnInteraction: false,
+            stopOnMouseEnter: true,
+          }}
         >
           <CarouselContent>
             <CarouselItem>
@@ -97,12 +101,10 @@ export default function Home() {
                     </Link>
                   </Button>
                 </div>
-                <div className="-mx-4 px-4">
-                  <div className="flex gap-4 overflow-x-auto pb-4">
-                    {productList.map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
+                <div className="flex gap-4 overflow-x-auto pb-4">
+                  {productList.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
                 </div>
               </div>
             );
