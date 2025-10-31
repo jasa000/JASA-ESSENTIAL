@@ -61,56 +61,9 @@ export const categories: Category[] = [
     }
 ]
 
-export let products: Product[] = [
-  {
-    id: 'prod_1',
-    name: 'CX-Scientific calculator',
-    brandIds: ['brand_caltrix'],
-    description: 'A scientific calculator.',
-    price: 600,
-    category: 'electronics',
-    rating: 5,
-    images: [{ src: '/images/electronics/calculator.jpg', alt: 'A scientific calculator.' }],
-  },
-  {
-    id: 'prod_2',
-    name: 'Bril ink Bottle',
-    brandIds: ['brand_bril'],
-    description: 'A bottle of ink.',
-    price: 25,
-    discountPrice: 20,
-    category: 'stationary',
-    rating: 4,
-    images: [{ src: '/images/stationary/ink-bottle.jpg', alt: 'A bottle of ink.' }],
-  },
-  {
-    id: 'prod_3',
-    name: 'Kangaroo Stapler',
-    brandIds: ['brand_kangaro'],
-    description: 'A stapler.',
-    price: 60,
-    category: 'stationary',
-    rating: 5,
-    images: [{ src: '/images/stationary/stapler.jpg', alt: 'A stapler.'}],
-  },
-  {
-    id: 'prod_4',
-    name: 'XO-BALL P',
-    brandIds: ['brand_hausher'],
-    description: 'A ball point pen.',
-    price: 10,
-    category: 'stationary',
-    rating: 4,
-    images: [{ src: '/images/stationary/ball-pen.jpg', alt: 'A ball point pen.'}],
-  },
-];
+export let products: Product[] = [];
 
-export let brands: Brand[] = [
-    { id: 'brand_bril', name: 'BRIL', category: 'stationary' },
-    { id: 'brand_kangaro', name: 'KANGARO', category: 'stationary' },
-    { id: 'brand_hausher', name: 'HAUSHER', category: 'stationary' },
-    { id: 'brand_caltrix', name: 'CALTRIX', category: 'electronics' },
-];
+export let brands: Brand[] = [];
 
 export const addProduct = (product: Omit<Product, 'id' | 'images' | 'rating'> & { imageNames: string[] }) => {
   const newId = `prod_${Date.now()}`;
