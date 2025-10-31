@@ -15,26 +15,28 @@ type BannerCardProps = {
 
 export default function BannerCard({ href, title, cta, imageSrc, imageAlt }: BannerCardProps) {
   return (
-    <Card className="relative h-64 w-full overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl md:h-80 lg:h-96">
-      <Link href={href} className="absolute inset-0 z-10">
-        <span className="sr-only">{title}</span>
-      </Link>
-      <Image
-        src={imageSrc}
-        alt={imageAlt}
-        fill
-        className="object-cover transition-transform duration-300 group-hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-      <div className="absolute bottom-0 left-0 z-20 p-6">
-        <h2 className="font-headline text-2xl font-bold text-white sm:text-3xl md:text-4xl">{title}</h2>
-        <Button asChild variant="secondary" className="mt-4 rounded-full">
-          <Link href={href}>
-            {cta}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
-    </Card>
+    <div className="relative w-full overflow-hidden p-4 sm:p-6 lg:p-8">
+        <Card className="relative h-64 w-full overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl md:h-80 lg:h-[23rem]">
+        <Link href={href} className="absolute inset-0 z-10">
+            <span className="sr-only">{title}</span>
+        </Link>
+        <Image
+            src={imageSrc}
+            alt={imageAlt}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 z-20 p-6">
+            <h2 className="font-headline text-2xl font-bold text-white sm:text-3xl md:text-4xl">{title}</h2>
+            <Button asChild variant="secondary" className="mt-4 rounded-full">
+            <Link href={href}>
+                {cta}
+                <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+            </Button>
+        </div>
+        </Card>
+    </div>
   );
 }

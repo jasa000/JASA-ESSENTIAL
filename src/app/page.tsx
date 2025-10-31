@@ -43,7 +43,35 @@ export default function Home() {
 
   return (
     <div className="flex flex-col">
-       <WelcomeCard />
+       <div className="w-full">
+         <Carousel
+          plugins={[plugin.current]}
+          className="w-full"
+          onMouseEnter={plugin.current.stop}
+          onMouseLeave={plugin.current.reset}
+        >
+          <CarouselContent>
+            <CarouselItem>
+                <WelcomeCard />
+            </CarouselItem>
+            {banners.map((banner) => {
+               const image = imageData.placeholderImages.find(img => img.id === banner.id);
+               if (!image) return null;
+              return (
+                <CarouselItem key={banner.id}>
+                  <BannerCard
+                    href={banner.href}
+                    title={banner.title}
+                    cta={banner.cta}
+                    imageSrc={image.imageUrl}
+                    imageAlt={image.description}
+                  />
+                </CarouselItem>
+              );
+            })}
+          </CarouselContent>
+        </Carousel>
+      </div>
        
        <div className="container mx-auto px-4 py-8">
         <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
@@ -77,34 +105,6 @@ export default function Home() {
             </div>
           );
        })}
-
-
-       <div className="container mx-auto px-4 py-8">
-         <Carousel
-          plugins={[plugin.current]}
-          className="w-full"
-          onMouseEnter={plugin.current.stop}
-          onMouseLeave={plugin.current.reset}
-        >
-          <CarouselContent>
-            {banners.map((banner) => {
-               const image = imageData.placeholderImages.find(img => img.id === banner.id);
-               if (!image) return null;
-              return (
-                <CarouselItem key={banner.id}>
-                  <BannerCard
-                    href={banner.href}
-                    title={banner.title}
-                    cta={banner.cta}
-                    imageSrc={image.imageUrl}
-                    imageAlt={image.description}
-                  />
-                </CarouselItem>
-              );
-            })}
-          </CarouselContent>
-        </Carousel>
-      </div>
 
       <PostCarousel />
     </div>
