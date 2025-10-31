@@ -41,8 +41,8 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col">
-       <div className="w-full">
+    <div className="container mx-auto flex flex-col px-4">
+       <div className="w-full py-8">
          <Carousel
           plugins={[plugin.current]}
           className="w-full"
@@ -70,7 +70,7 @@ export default function Home() {
         </Carousel>
       </div>
        
-       <div className="container mx-auto px-4 py-8">
+       <div className="py-8">
         <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
         <div className="flex w-full gap-2 md:gap-4">
             {categories.map((category, index) => (
@@ -84,7 +84,7 @@ export default function Home() {
           if (!productList.length || !catInfo) return null;
 
           return (
-            <div key={category} className="container mx-auto px-4 py-8">
+            <div key={category} className="py-8">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</h2>
                 <Button asChild variant="outline">
@@ -103,7 +103,9 @@ export default function Home() {
           );
        })}
 
-      <PostCarousel />
+      <div className="py-8">
+        <PostCarousel />
+      </div>
     </div>
   );
 }
