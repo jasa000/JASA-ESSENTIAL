@@ -33,6 +33,7 @@ import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
 import { getShops } from "@/lib/shops"
 import type { Shop } from "@/lib/types"
+import Image from "next/image";
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
@@ -197,7 +198,10 @@ export default function AppSidebar() {
 
   return (
     <SidebarContent className="p-2">
-        <div className="text-center p-4">
+        <div className="flex items-center justify-center p-4 gap-2">
+            <div className="relative h-10 w-10 rounded-full border-2 border-black dark:border-white flex items-center justify-center">
+              <Image src="/favicon.ico" alt="Jasa Essentials Logo" width={32} height={32} />
+            </div>
             <h2 className="font-headline text-xl font-bold text-sidebar-foreground">JASA ESSENTIAL</h2>
         </div>
         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
