@@ -42,13 +42,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
         <div className="flex items-center gap-4">
-            <div className="relative flex h-9 w-9 items-center justify-center">
-              <Link href="/" className="absolute inset-0">
-                <Image src="/favicon.ico" alt="Jasa Essentials" width={36} height={36} className="rounded-full border-2 border-primary" />
-                <span className="sr-only">Jasa Essentials Home</span>
-              </Link>
-              <SidebarTrigger className="relative h-7 w-7 bg-transparent text-white hover:bg-transparent/20" />
-            </div>
+            <SidebarTrigger className="relative h-7 w-7 bg-transparent text-foreground hover:bg-transparent/20" />
             <Link href="/" className="hidden items-center gap-2 sm:flex">
                 <span className="font-headline text-lg font-bold">
                 Jasa Essentials
@@ -61,9 +55,12 @@ export default function Header() {
             <Input
               type="text"
               placeholder="Search your product"
-              className="rounded-full border-primary pl-10"
+              className="rounded-full border-primary pl-12 pr-10"
             />
-            <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+               <Image src="/favicon.ico" alt="Jasa Essentials" width={32} height={32} className="rounded-full border-2 border-primary" />
+            </span>
+             <span className="absolute inset-y-0 right-0 flex items-center pr-4">
               <Search className="h-5 w-5 text-muted-foreground" />
             </span>
           </div>
