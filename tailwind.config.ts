@@ -123,6 +123,10 @@ export default {
           '0%, 75%, 100%': { transform: 'translateY(0)' },
           '87.5%': { transform: 'translateY(-10px)' },
         },
+        'border-pulse': {
+          '0%, 100%': { 'border-color': 'hsl(var(--primary) / 0.5)' },
+          '50%': { 'border-color': 'hsl(var(--primary))' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -135,6 +139,7 @@ export default {
         'float-2': 'float-2 6s ease-in-out infinite',
         'float-3': 'float-3 6s ease-in-out infinite',
         'float-4': 'float-4 6s ease-in-out infinite',
+        'border-pulse': 'border-pulse 2s infinite',
       },
     },
   },

@@ -1,49 +1,32 @@
 
 "use client";
 
-import { Bell, LogIn, LogOut, Search, ShoppingCart, User, Home } from 'lucide-react';
+import { Bell, LogIn, Search, ShoppingCart, User, Home } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/context/auth-provider';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 export default function Header() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const { toast } = useToast();
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      });
-      router.push('/');
-    } catch (error) {
-      console.error("Error signing out: ", error);
-      toast({
-        variant: "destructive",
-        title: "Sign Out Error",
-        description: "There was a problem signing you out.",
-      });
-    }
-  };
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
         <div className="flex items-center gap-4">
             <SidebarTrigger className="relative h-7 w-7 bg-transparent text-foreground hover:bg-transparent/20" />
-            <Button asChild variant="ghost" size="icon" className='h-7 w-7'>
+            <Button asChild variant="ghost" size="icon" className={cn(
+              'h-7 w-7 rounded-full', 
+              !isHomePage && 'border-2 border-transparent animate-border-pulse'
+            )}>
               <Link href="/">
                   <Home className="h-5 w-5" />
                   <span className="sr-only">Home</span>

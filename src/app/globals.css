@@ -95,11 +95,19 @@
     background: linear-gradient(110deg, transparent 20%, var(--shine-color), transparent 80%);
     animation: shine-indefinitely 3s infinite;
   }
+  .animate-border-pulse {
+    animation: border-pulse 2s infinite;
+  }
 }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+@keyframes border-pulse {
+  0%, 100% { border-color: hsl(var(--primary) / 0.5); }
+  50% { border-color: hsl(var(--primary)); }
 }
 
 
