@@ -1,7 +1,7 @@
 
 "use client";
 
-import { LogIn, LogOut, Search, ShoppingCart, User } from 'lucide-react';
+import { Bell, LogIn, LogOut, Search, ShoppingCart, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
@@ -12,6 +12,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function Header() {
   const { user } = useAuth();
@@ -43,6 +44,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
            <SidebarTrigger />
            <Link href="/" className="flex items-center gap-2">
+            <Image src="/favicon.ico" alt="Jasa Essentials" width={32} height={32} className="rounded-full" />
             <span className="font-headline text-lg font-bold sr-only">
               Jasa Essentials
             </span>
@@ -61,6 +63,14 @@ export default function Header() {
           </div>
         </div>
         <div className="flex items-center justify-end space-x-2">
+            {user && (
+              <Button asChild variant="ghost" size="icon" className='rounded-full'>
+                  <Link href="#">
+                      <Bell className="h-5 w-5" />
+                      <span className="sr-only">Notifications</span>
+                  </Link>
+              </Button>
+            )}
             <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
                 <Link href="/cart">
                     <ShoppingCart className={isMobile ? "h-5 w-5" : "h-4 w-4"}/>
