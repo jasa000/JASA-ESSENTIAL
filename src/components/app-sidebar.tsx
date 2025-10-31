@@ -190,7 +190,7 @@ export default function AppSidebar() {
 
   return (
     <SidebarContent className="p-2">
-        <SidebarGroup className="bg-gray-200 dark:bg-gray-800 rounded-lg p-2">
+        <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
             {renderUserActions()}
         </SidebarGroup>
          <SidebarGroup>
