@@ -7,7 +7,7 @@ import BannerCard from '@/components/banner-card';
 import WelcomeCard from '@/components/welcome-card';
 import CategoryLinkCard from '@/components/category-link-card';
 import { categories, products } from '@/lib/data';
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import PostCarousel from "@/components/post-carousel";
 import type { Product } from "@/lib/types";
 import ProductCard from "@/components/product-card";
@@ -18,7 +18,7 @@ import { ArrowRight } from "lucide-react";
 
 export default function Home() {
   const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true })
+    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })
   );
 
   const banners = [
@@ -41,7 +41,7 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto flex flex-col px-4">
+    <div className="flex flex-col">
        <div className="w-full py-8">
          <Carousel
           plugins={[plugin.current]}
@@ -67,45 +67,49 @@ export default function Home() {
               );
             })}
           </CarouselContent>
+          <CarouselPrevious className="absolute left-4" />
+          <CarouselNext className="absolute right-4" />
         </Carousel>
       </div>
        
-       <div className="py-8">
-        <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
-        <div className="flex w-full gap-2 md:gap-4">
-            {categories.map((category, index) => (
-                <CategoryLinkCard key={category.id} category={category} index={index} />
-            ))}
+       <div className="container mx-auto px-4">
+         <div className="py-8">
+          <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
+          <div className="flex w-full gap-2 md:gap-4">
+              {categories.map((category, index) => (
+                  <CategoryLinkCard key={category.id} category={category} index={index} />
+              ))}
+          </div>
+         </div>
+
+         {Object.entries(productsByCategory).map(([category, productList]) => {
+            const catInfo = categoryDisplayInfo[category as keyof typeof categoryDisplayInfo];
+            if (!productList.length || !catInfo) return null;
+
+            return (
+              <div key={category} className="py-8">
+                <div className="mb-6 flex items-center justify-between">
+                  <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</h2>
+                  <Button asChild variant="outline">
+                    <Link href={catInfo.href}>
+                      <span>View All</span>
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-4">
+                  {productList.slice(0, 4).map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </div>
+            );
+         })}
+
+        <div className="py-8">
+          <PostCarousel />
         </div>
        </div>
-
-       {Object.entries(productsByCategory).map(([category, productList]) => {
-          const catInfo = categoryDisplayInfo[category as keyof typeof categoryDisplayInfo];
-          if (!productList.length || !catInfo) return null;
-
-          return (
-            <div key={category} className="py-8">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</h2>
-                <Button asChild variant="outline">
-                  <Link href={catInfo.href}>
-                    <span>View All</span>
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-4">
-                {productList.slice(0, 4).map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </div>
-          );
-       })}
-
-      <div className="py-8">
-        <PostCarousel />
-      </div>
     </div>
   );
 }
