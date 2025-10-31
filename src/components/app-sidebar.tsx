@@ -166,7 +166,7 @@ export default function AppSidebar() {
       return (
         <>
           {sellerShops.map(shop => (
-            <SidebarGroup key={shop.id}>
+            <SidebarGroup key={shop.id} className="bg-gray-100 dark:bg-gray-900 rounded-lg">
                 <SidebarGroupLabel>{shop.name}</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -193,7 +193,7 @@ export default function AppSidebar() {
         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
             {renderUserActions()}
         </SidebarGroup>
-         <SidebarGroup>
+         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild>
@@ -205,7 +205,7 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
-         <SidebarGroup>
+         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
             <SidebarGroupLabel>USER ACCESS</SidebarGroupLabel>
             <SidebarMenu>
                  <SidebarMenuItem>
@@ -270,7 +270,7 @@ export default function AppSidebar() {
         {renderSellerAccess()}
 
         {user?.role === 'admin' && (
-          <SidebarGroup>
+          <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>ADMIN ACCESS</SidebarGroupLabel>
               <SidebarMenu>
                   <SidebarMenuItem>
