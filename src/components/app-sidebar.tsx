@@ -95,14 +95,14 @@ export default function AppSidebar() {
     return (
         <SidebarMenu className="flex flex-row justify-around">
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Theme" size="icon" onClick={toggleTheme} className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                <SidebarMenuButton tooltip="Theme" size="icon" onClick={toggleTheme}>
                     {theme === 'dark' ? <Sun /> : <Moon />}
                 </SidebarMenuButton>
             </SidebarMenuItem>
              {user ? (
                 <>
                     <SidebarMenuItem>
-                        <SidebarMenuButton tooltip="Settings" size="icon" asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <SidebarMenuButton tooltip="Settings" size="icon" asChild>
                             <Link href="/settings">
                                 <Settings />
                             </Link>
@@ -111,7 +111,7 @@ export default function AppSidebar() {
                     <SidebarMenuItem>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                           <SidebarMenuButton tooltip="Logout" size="icon" className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                           <SidebarMenuButton tooltip="Logout" size="icon">
                                 <LogOut />
                             </SidebarMenuButton>
                         </AlertDialogTrigger>
@@ -133,14 +133,14 @@ export default function AppSidebar() {
              ) : (
                 <>
                     <SidebarMenuItem>
-                         <SidebarMenuButton tooltip="Sign Up" size="icon" asChild className="text-white hover:bg-sidebar-accent/80 hovertext-white">
+                         <SidebarMenuButton tooltip="Sign Up" size="icon" asChild>
                             <Link href="/signup">
                                 <UserPlus />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                       <SidebarMenuButton tooltip="Login" size="icon" asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                       <SidebarMenuButton tooltip="Login" size="icon" asChild>
                             <Link href="/login">
                                 <LogIn />
                             </Link>
@@ -155,8 +155,8 @@ export default function AppSidebar() {
   const renderSellerAccess = () => {
     if (loading || isLoadingShops) {
       return (
-        <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
-          <SidebarGroupLabel className="text-white/90">SELLER ACCESS</SidebarGroupLabel>
+        <SidebarGroup>
+          <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
           <Skeleton className="h-10 w-full" />
         </SidebarGroup>
       )
@@ -166,11 +166,11 @@ export default function AppSidebar() {
       return (
         <>
           {sellerShops.map(shop => (
-            <SidebarGroup key={shop.id} className="bg-sidebar-accent rounded-lg p-2">
-                <SidebarGroupLabel className="text-white/90">{shop.name}</SidebarGroupLabel>
+            <SidebarGroup key={shop.id}>
+                <SidebarGroupLabel>{shop.name}</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                        <SidebarMenuButton asChild>
                             <Link href={`/seller/orders/${shop.id}`}>
                                 <FolderKanban />
                                 <span>Manage Orders</span>
@@ -190,13 +190,13 @@ export default function AppSidebar() {
 
   return (
     <SidebarContent className="p-2">
-        <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
+        <SidebarGroup className="bg-gray-200 dark:bg-gray-800 rounded-lg p-2">
             {renderUserActions()}
         </SidebarGroup>
-         <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
+         <SidebarGroup>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/">
                             <Home />
                             <span>Back to Home</span>
@@ -205,11 +205,11 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
-         <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
-            <SidebarGroupLabel className="text-white/90">USER ACCESS</SidebarGroupLabel>
+         <SidebarGroup>
+            <SidebarGroupLabel>USER ACCESS</SidebarGroupLabel>
             <SidebarMenu>
                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/stationary">
                             <Notebook />
                             <span>Stationary</span>
@@ -217,7 +217,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/books">
                             <Book />
                             <span>Books</span>
@@ -225,7 +225,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/xerox">
                             <Printer />
                             <span>Xerox</span>
@@ -233,7 +233,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/electronics">
                             <CircuitBoard />
                             <span>Electronic Kit</span>
@@ -241,7 +241,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/cart">
                             <ShoppingCart />
                             <span>Cart</span>
@@ -249,7 +249,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/profile">
                             <User />
                             <span>Profile</span>
@@ -257,7 +257,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                    <SidebarMenuButton asChild>
                         <Link href="/orders">
                             <History />
                             <span>Order History</span>
@@ -270,11 +270,11 @@ export default function AppSidebar() {
         {renderSellerAccess()}
 
         {user?.role === 'admin' && (
-          <SidebarGroup className="bg-sidebar-accent rounded-lg p-2">
-              <SidebarGroupLabel className="text-white/90">ADMIN ACCESS</SidebarGroupLabel>
+          <SidebarGroup>
+              <SidebarGroupLabel>ADMIN ACCESS</SidebarGroupLabel>
               <SidebarMenu>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                      <SidebarMenuButton asChild>
                           <Link href="/manage-users">
                               <ShieldCheck />
                               <span>Manage Users</span>
@@ -282,7 +282,7 @@ export default function AppSidebar() {
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                      <SidebarMenuButton asChild>
                           <Link href="/post-update">
                               <FilePenLine />
                               <span>Post Update</span>
@@ -290,7 +290,7 @@ export default function AppSidebar() {
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                      <SidebarMenuButton asChild>
                           <Link href="/manage-shops">
                               <Store />
                               <span>Manage Shops</span>
@@ -298,7 +298,7 @@ export default function AppSidebar() {
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild className="text-white hover:bg-sidebar-accent/80 hover:text-white">
+                      <SidebarMenuButton asChild>
                           <Link href="/manage-products">
                               <Package />
                               <span>Manage Products</span>
