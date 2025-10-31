@@ -44,7 +44,7 @@ export default function Header() {
         <div className="flex items-center gap-4">
             <div className="relative flex h-9 w-9 items-center justify-center">
               <Link href="/" className="absolute inset-0">
-                <Image src="/favicon.ico" alt="Jasa Essentials" width={36} height={36} className="rounded-full" />
+                <Image src="/favicon.ico" alt="Jasa Essentials" width={36} height={36} className="rounded-full border-2 border-primary" />
                 <span className="sr-only">Jasa Essentials Home</span>
               </Link>
               <SidebarTrigger className="relative h-7 w-7 bg-transparent text-white hover:bg-transparent/20" />
