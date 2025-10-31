@@ -197,6 +197,9 @@ export default function AppSidebar() {
 
   return (
     <SidebarContent className="p-2">
+        <div className="text-center p-4">
+            <h2 className="font-headline text-xl font-bold text-sidebar-foreground">JASA ESSENTIAL</h2>
+        </div>
         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
             {renderUserActions()}
         </SidebarGroup>
