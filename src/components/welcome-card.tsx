@@ -37,7 +37,7 @@ export default function WelcomeCard() {
   }, []);
 
   return (
-    <div className="relative w-full overflow-hidden p-4 sm:p-6 lg:p-8">
+    <div className="relative w-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-sky-100 via-teal-100 to-sky-100 dark:from-sky-900/50 dark:via-teal-900/50 dark:to-sky-900/50"></div>
       <Card className="relative z-10 w-full bg-background/80 backdrop-blur-sm dark:bg-background/60 h-64 md:h-80 lg:h-[23rem] flex flex-col justify-center">
         <CardHeader className="text-center">

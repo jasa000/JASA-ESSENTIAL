@@ -15,7 +15,7 @@ type BannerCardProps = {
 
 export default function BannerCard({ href, title, cta, imageSrc, imageAlt }: BannerCardProps) {
   return (
-    <div className="relative w-full overflow-hidden p-4 sm:p-6 lg:p-8">
+    <div className="relative w-full overflow-hidden">
         <Card className="relative h-64 w-full overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl md:h-80 lg:h-[23rem]">
         <Link href={href} className="absolute inset-0 z-10">
             <span className="sr-only">{title}</span>
