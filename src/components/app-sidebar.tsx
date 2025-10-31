@@ -219,7 +219,7 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
-         <SidebarGroup className="bg-gray-100 dark:bg.gray-900 rounded-lg">
+         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
             <SidebarGroupLabel>USER ACCESS</SidebarGroupLabel>
             <SidebarMenu>
                  <SidebarMenuItem>
