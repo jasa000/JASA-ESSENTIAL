@@ -37,7 +37,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
   return (
-    <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg w-full">
       <div className="relative aspect-square w-full overflow-hidden">
         <Link href="#">
           {primaryImage && (

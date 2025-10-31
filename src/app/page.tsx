@@ -18,7 +18,7 @@ import { ArrowRight } from "lucide-react";
 
 export default function Home() {
   const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })
+    Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
   );
 
   const banners = [
@@ -41,7 +41,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="w-full overflow-x-hidden">
        <div className="w-full py-8">
          <Carousel
           plugins={[plugin.current]}
