@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   AlertDialog,
@@ -25,7 +26,7 @@ import { useAuth } from "@/context/auth-provider"
 import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
@@ -37,9 +38,15 @@ export default function AppSidebar() {
   const { user, loading } = useAuth()
   const { toast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [sellerShops, setSellerShops] = useState<Shop[]>([]);
   const [isLoadingShops, setIsLoadingShops] = useState(false);
+  const { setOpenMobile } = useSidebar();
+
+  const handleMenuItemClick = () => {
+    setOpenMobile(false);
+  };
 
   useEffect(() => {
     if (user?.role === 'seller') {
@@ -102,7 +109,7 @@ export default function AppSidebar() {
              {user ? (
                 <>
                     <SidebarMenuItem>
-                        <SidebarMenuButton tooltip="Settings" size="icon" asChild>
+                        <SidebarMenuButton tooltip="Settings" size="icon" asChild onClick={handleMenuItemClick}>
                             <Link href="/settings">
                                 <Settings />
                             </Link>
@@ -133,14 +140,14 @@ export default function AppSidebar() {
              ) : (
                 <>
                     <SidebarMenuItem>
-                         <SidebarMenuButton tooltip="Sign Up" size="icon" asChild>
+                         <SidebarMenuButton tooltip="Sign Up" size="icon" asChild onClick={handleMenuItemClick}>
                             <Link href="/signup">
                                 <UserPlus />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                       <SidebarMenuButton tooltip="Login" size="icon" asChild>
+                       <SidebarMenuButton tooltip="Login" size="icon" asChild onClick={handleMenuItemClick}>
                             <Link href="/login">
                                 <LogIn />
                             </Link>
@@ -155,7 +162,7 @@ export default function AppSidebar() {
   const renderSellerAccess = () => {
     if (loading || isLoadingShops) {
       return (
-        <SidebarGroup>
+        <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
           <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
           <Skeleton className="h-10 w-full" />
         </SidebarGroup>
@@ -170,7 +177,7 @@ export default function AppSidebar() {
                 <SidebarGroupLabel>{shop.name}</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
+                        <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith(`/seller/orders/${shop.id}`)}>
                             <Link href={`/seller/orders/${shop.id}`}>
                                 <FolderKanban />
                                 <span>Manage Orders</span>
@@ -196,7 +203,7 @@ export default function AppSidebar() {
          <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname === '/'}>
                         <Link href="/">
                             <Home />
                             <span>Back to Home</span>
@@ -209,7 +216,7 @@ export default function AppSidebar() {
             <SidebarGroupLabel>USER ACCESS</SidebarGroupLabel>
             <SidebarMenu>
                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/stationary')}>
                         <Link href="/stationary">
                             <Notebook />
                             <span>Stationary</span>
@@ -217,7 +224,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/books')}>
                         <Link href="/books">
                             <Book />
                             <span>Books</span>
@@ -225,7 +232,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/xerox')}>
                         <Link href="/xerox">
                             <Printer />
                             <span>Xerox</span>
@@ -233,7 +240,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/electronics')}>
                         <Link href="/electronics">
                             <CircuitBoard />
                             <span>Electronic Kit</span>
@@ -241,7 +248,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/cart')}>
                         <Link href="/cart">
                             <ShoppingCart />
                             <span>Cart</span>
@@ -249,7 +256,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/profile')}>
                         <Link href="/profile">
                             <User />
                             <span>Profile</span>
@@ -257,7 +264,7 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/orders')}>
                         <Link href="/orders">
                             <History />
                             <span>Order History</span>
@@ -274,7 +281,7 @@ export default function AppSidebar() {
               <SidebarGroupLabel>ADMIN ACCESS</SidebarGroupLabel>
               <SidebarMenu>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-users')}>
                           <Link href="/manage-users">
                               <ShieldCheck />
                               <span>Manage Users</span>
@@ -282,7 +289,7 @@ export default function AppSidebar() {
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/post-update')}>
                           <Link href="/post-update">
                               <FilePenLine />
                               <span>Post Update</span>
@@ -290,7 +297,7 @@ export default function AppSidebar() {
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-shops')}>
                           <Link href="/manage-shops">
                               <Store />
                               <span>Manage Shops</span>
@@ -298,7 +305,7 @@ export default function AppSidebar() {
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-products')}>
                           <Link href="/manage-products">
                               <Package />
                               <span>Manage Products</span>
