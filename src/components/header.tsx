@@ -74,7 +74,7 @@ export default function Header() {
         <div className="flex items-center justify-end space-x-2">
             {user && (
               <Button asChild variant="ghost" size="icon" className='rounded-full'>
-                  <Link href="#">
+                  <Link href="/notifications">
                       <Bell className="h-5 w-5" />
                       <span className="sr-only">Notifications</span>
                   </Link>
