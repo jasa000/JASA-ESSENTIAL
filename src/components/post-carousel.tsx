@@ -31,7 +31,7 @@ export default function PostCarousel() {
   }
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8">
+    <div className="w-full">
       <Card className="w-full">
         <CardContent className="p-6">
           <Carousel
