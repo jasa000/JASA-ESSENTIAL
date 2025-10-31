@@ -29,7 +29,7 @@ const Icon = ({ name, ...props }: { name: string; [key: string]: any }) => {
 
 export default function CategoryLinkCard({ category, index }: CategoryLinkCardProps) {
   return (
-    <Link href={category.href} className="group block">
+    <Link href={category.href} className="group block w-40 flex-shrink-0">
       <Card className={cn(
         "relative flex w-full h-full overflow-hidden rounded-lg border-2 p-2 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 md:p-4",
         "bg-gray-900 text-gray-100 border-transparent hover:border-primary",
