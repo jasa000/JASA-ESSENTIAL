@@ -57,7 +57,7 @@ export default function AppSidebar() {
       };
       fetchSellerShops();
     }
-  }, [user]);
+  }, [user, toast]);
 
   const handleSignOut = async () => {
     try {
