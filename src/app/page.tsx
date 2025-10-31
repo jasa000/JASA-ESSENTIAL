@@ -97,10 +97,12 @@ export default function Home() {
                     </Link>
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-4">
-                  {productList.slice(0, 4).map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
+                <div className="-mx-4 px-4">
+                  <div className="flex gap-4 overflow-x-auto pb-4">
+                    {productList.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
                 </div>
               </div>
             );

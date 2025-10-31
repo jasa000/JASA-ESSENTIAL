@@ -13,12 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Star } from 'lucide-react';
 import Link from 'next/link';
 import { brands } from '@/lib/data';
+import { cn } from '@/lib/utils';
 
 type ProductCardProps = {
   product: Product;
+  className?: string;
 };
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, className }: ProductCardProps) {
   const { addItem } = useCart();
   const { toast } = useToast();
 
@@ -37,7 +39,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
   return (
-    <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg w-full">
+    <Card className={cn("group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg w-64 flex-shrink-0", className)}>
       <div className="relative aspect-square w-full overflow-hidden">
         <Link href="#">
           {primaryImage && (
