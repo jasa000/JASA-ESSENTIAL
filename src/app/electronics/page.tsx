@@ -72,7 +72,7 @@ export default function ElectronicsPage() {
         tempProducts.sort((a, b) => {
             const priceA = a.discountPrice || a.price;
             const priceB = b.discountPrice || b.price;
-            return priceSort === 'asc' ? priceA - priceB : priceB - priceA;
+            return priceSort === 'asc' ? priceA - priceB : priceB - a.price;
         });
     }
 
@@ -177,21 +177,21 @@ export default function ElectronicsPage() {
                 <Button
                   variant={priceSort === 'all' ? 'default' : 'outline'}
                   onClick={() => setPriceSort('all')}
-                  className="rounded-full"
+                  className="rounded-full flex-shrink-0"
                 >
                   Default
                 </Button>
                 <Button
                   variant={priceSort === 'asc' ? 'default' : 'outline'}
                   onClick={() => setPriceSort('asc')}
-                  className="rounded-full"
+                  className="rounded-full flex-shrink-0"
                 >
                   Low to High
                 </Button>
                 <Button
                   variant={priceSort === 'desc' ? 'default' : 'outline'}
                   onClick={() => setPriceSort('desc')}
-                  className="rounded-full"
+                  className="rounded-full flex-shrink-0"
                 >
                   High to Low
                 </Button>
