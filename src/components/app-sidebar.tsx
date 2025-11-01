@@ -28,7 +28,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, Image as ImageIcon } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -354,6 +354,14 @@ export default function AppSidebar() {
                           <Link href="/manage-products">
                               <Package />
                               <span>Manage Products</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-cloudinary')}>
+                          <Link href="/manage-cloudinary">
+                              <ImageIcon />
+                              <span>Cloudinary</span>
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
