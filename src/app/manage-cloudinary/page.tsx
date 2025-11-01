@@ -53,8 +53,8 @@ type CloudinaryImage = {
 
 type CloudinaryUsage = {
   plan: string;
-  usage: {
-    credits: {
+  usage?: {
+    credits?: {
       usage: number;
       limit: number;
     };
@@ -67,6 +67,12 @@ type CloudinaryUsage = {
       limit: number;
     };
   };
+  credits?: { // For free plan structure
+    usage: number;
+    limit: number;
+  };
+  transformations?: any;
+  storage?: any;
 };
 
 export default function ManageCloudinaryPage() {
@@ -157,6 +163,12 @@ export default function ManageCloudinaryPage() {
           </CardContent>
         </Card>
       );
+      
+    // Handle different API response structures for free vs paid plans
+    const usageData = usage.usage || usage;
+    const creditsData = usageData.credits;
+    const transformationsData = usageData.transformations;
+    const storageData = usageData.storage;
 
     const formatBytes = (bytes: number) => {
       if (bytes === 0) return "0 Bytes";
@@ -171,19 +183,10 @@ export default function ManageCloudinaryPage() {
 
     const getPercentage = (used: number, limit: number) =>
       limit > 0 ? (used / limit) * 100 : 0;
-
-    const creditsPercent = getPercentage(
-      usage.usage.credits.usage,
-      usage.usage.credits.limit
-    );
-    const storagePercent = getPercentage(
-      usage.usage.storage.usage,
-      usage.usage.storage.limit
-    );
-    const transformationsPercent = getPercentage(
-      usage.usage.transformations.usage,
-      usage.usage.transformations.limit
-    );
+    
+    const creditsPercent = creditsData ? getPercentage(creditsData.usage, creditsData.limit) : 0;
+    const storagePercent = storageData ? getPercentage(storageData.usage, storageData.limit) : 0;
+    const transformationsPercent = transformationsData ? getPercentage(transformationsData.usage, transformationsData.limit) : 0;
 
     return (
       <Card>
@@ -195,35 +198,41 @@ export default function ManageCloudinaryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <div className="flex justify-between text-sm font-medium">
-              <span>Credits</span>
-              <span>
-                {usage.usage.credits.usage} / {usage.usage.credits.limit}
-              </span>
+          {creditsData && (
+            <div>
+              <div className="flex justify-between text-sm font-medium">
+                <span>Credits</span>
+                <span>
+                  {creditsData.usage} / {creditsData.limit}
+                </span>
+              </div>
+              <Progress value={creditsPercent} className="mt-1 h-2" />
             </div>
-            <Progress value={creditsPercent} className="mt-1 h-2" />
-          </div>
-          <div>
-            <div className="flex justify-between text-sm font-medium">
-              <span>Storage</span>
-              <span>
-                {formatBytes(usage.usage.storage.usage)} /{" "}
-                {formatBytes(usage.usage.storage.limit)}
-              </span>
+          )}
+          {storageData && (
+            <div>
+              <div className="flex justify-between text-sm font-medium">
+                <span>Storage</span>
+                <span>
+                  {formatBytes(storageData.usage)} /{" "}
+                  {formatBytes(storageData.limit)}
+                </span>
+              </div>
+              <Progress value={storagePercent} className="mt-1 h-2" />
             </div>
-            <Progress value={storagePercent} className="mt-1 h-2" />
-          </div>
-          <div>
-            <div className="flex justify-between text-sm font-medium">
-              <span>Transformations</span>
-              <span>
-                {usage.usage.transformations.usage} /{" "}
-                {usage.usage.transformations.limit}
-              </span>
+          )}
+          {transformationsData && (
+            <div>
+              <div className="flex justify-between text-sm font-medium">
+                <span>Transformations</span>
+                <span>
+                  {transformationsData.usage} /{" "}
+                  {transformationsData.limit}
+                </span>
+              </div>
+              <Progress value={transformationsPercent} className="mt-1 h-2" />
             </div>
-            <Progress value={transformationsPercent} className="mt-1 h-2" />
-          </div>
+          )}
         </CardContent>
       </Card>
     );
