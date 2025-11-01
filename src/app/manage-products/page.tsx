@@ -50,7 +50,8 @@ const authorSchema = z.object({
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
   const [productList, setProductList] = useState<Product[]>([]);
-  const [brandList, setBrandList] = useState<Brand[]>([]);
+  const [stationaryBrandList, setStationaryBrandList] = useState<Brand[]>([]);
+  const [electronicsBrandList, setElectronicsBrandList] = useState<Brand[]>([]);
   const [authorList, setAuthorList] = useState<Author[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -87,9 +88,15 @@ export default function ManageProductsPage() {
   const fetchAllData = async () => {
       setIsLoading(true);
       try {
-        const [products, brands, authors] = await Promise.all([getProducts(), getBrands(), getAuthors()]);
+        const [products, stationaryBrands, electronicsBrands, authors] = await Promise.all([
+            getProducts(), 
+            getBrands('stationary'),
+            getBrands('electronics'),
+            getAuthors()
+        ]);
         setProductList(products);
-        setBrandList(brands);
+        setStationaryBrandList(stationaryBrands);
+        setElectronicsBrandList(electronicsBrands);
         setAuthorList(authors);
       } catch (error) {
         toast({ variant: "destructive", title: "Error", description: "Failed to fetch data from the database." });
@@ -127,9 +134,9 @@ export default function ManageProductsPage() {
     }
   };
 
-  const onBrandSubmit = async (values: z.infer<typeof brandSchema>) => {
+  const onBrandSubmit = async (values: z.infer<typeof brandSchema>, category: Brand['category']) => {
     try {
-        await addBrand(values);
+        await addBrand(values, category);
         toast({
             title: "Brand Created",
             description: `${values.name} has been added successfully.`,
@@ -249,15 +256,15 @@ export default function ManageProductsPage() {
     );
   };
   
-  const renderCreateBrandForm = () => (
+  const renderCreateBrandForm = (category: Brand['category']) => (
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Create Stationary Brand</CardTitle>
-          <CardDescription>Add a new brand for stationary products.</CardDescription>
+          <CardTitle>Create {category === 'stationary' ? 'Stationary' : 'Electronics'} Brand</CardTitle>
+          <CardDescription>Add a new brand for {category} products.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...brandForm}>
-            <form onSubmit={brandForm.handleSubmit(onBrandSubmit)} className="space-y-4">
+            <form onSubmit={brandForm.handleSubmit((values) => onBrandSubmit(values, category))} className="space-y-4">
               <FormField control={brandForm.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>Brand Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -305,12 +312,9 @@ export default function ManageProductsPage() {
                         <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
-                    {category === 'stationary' && <MultiSelect form={form} fieldName="brandIds" items={brandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+                    {category === 'stationary' && <MultiSelect form={form} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
                     {category === 'books' && <MultiSelect form={form} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
-
-                    {category === 'electronics' && <FormField control={form.control} name="brandIds" render={({ field }) => (
-                        <FormItem><FormLabel>Brand</FormLabel><FormControl><Input onChange={(e) => field.onChange(e.target.value ? [e.target.value] : [])} placeholder="Enter brand name" /></FormControl><FormMessage /></FormItem>
-                    )} />}
+                    {category === 'electronics' && <MultiSelect form={form} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
 
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
@@ -412,7 +416,7 @@ export default function ManageProductsPage() {
           </div>
           
           <TabsContent value="stationary" className="mt-8">
-              {renderCreateBrandForm()}
+              {renderCreateBrandForm('stationary')}
               {renderCreateForm('stationary')}
               {renderProductGrid('stationary')}
           </TabsContent>
@@ -424,6 +428,7 @@ export default function ManageProductsPage() {
           </TabsContent>
 
           <TabsContent value="electronics" className="mt-8">
+              {renderCreateBrandForm('electronics')}
               {renderCreateForm('electronics')}
               {renderProductGrid('electronics')}
           </TabsContent>

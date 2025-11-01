@@ -95,9 +95,9 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
     }
 }
 
-export const getBrands = async (): Promise<Brand[]> => {
+export const getBrands = async (category: Brand['category']): Promise<Brand[]> => {
     try {
-        const q = query(brandsCollection, where('category', '==', 'stationary'), orderBy('name', 'asc'));
+        const q = query(brandsCollection, where('category', '==', category), orderBy('name', 'asc'));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Brand));
     } catch (error) {
@@ -136,10 +136,10 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'r
   }
 };
 
-export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>) => {
+export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt' | 'category'>, category: Brand['category']) => {
     const newBrand = {
         ...brandData,
-        category: 'stationary' as const,
+        category: category,
         createdAt: serverTimestamp(),
     }
     try {

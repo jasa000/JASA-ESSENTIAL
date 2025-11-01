@@ -80,7 +80,7 @@ export type Shop = {
 export type Brand = {
   id: string;
   name: string;
-  category: 'stationary';
+  category: 'stationary' | 'electronics';
   createdAt: any;
 };
 
