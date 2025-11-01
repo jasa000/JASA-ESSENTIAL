@@ -36,6 +36,9 @@ import { getShops } from "@/lib/shops"
 import type { Shop } from "@/lib/types"
 import Image from "next/image";
 import AuthForm from "./auth-form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
+import { Badge } from "./ui/badge"
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
@@ -92,6 +95,15 @@ export default function AppSidebar() {
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
+  
+  const getInitials = (name?: string | null) => {
+    if (!name) return "";
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
 
   const renderUserActions = () => {
     if (loading) {
@@ -216,6 +228,26 @@ export default function AppSidebar() {
             </div>
             <h2 className="font-headline text-xl font-bold text-sidebar-foreground">JASA ESSENTIAL</h2>
         </div>
+        
+        {user && (
+          <Card className="m-2 bg-background/50">
+            <CardHeader className="p-3">
+              <div className="flex items-center gap-3">
+                 <Avatar className="h-12 w-12">
+                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
+                  <AvatarFallback>{getInitials(user.displayName || user.name)}</AvatarFallback>
+                </Avatar>
+                <div className="overflow-hidden">
+                  <CardTitle className="text-base truncate">{user.displayName || user.name}</CardTitle>
+                  <CardDescription className="text-xs">
+                    UID: <Badge variant="secondary" className="px-1">{user.uid}</Badge>
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        )}
+
         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
             {renderUserActions()}
         </SidebarGroup>
