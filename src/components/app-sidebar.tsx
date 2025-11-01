@@ -230,22 +230,16 @@ export default function AppSidebar() {
         </div>
         
         {user && (
-          <Card className="m-2 bg-background/50">
-            <CardHeader className="p-3">
-              <div className="flex items-center gap-3">
-                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
-                  <AvatarFallback>{getInitials(user.displayName || user.name)}</AvatarFallback>
-                </Avatar>
-                <div className="overflow-hidden">
-                  <CardTitle className="text-base truncate">{user.displayName || user.name}</CardTitle>
-                  <CardDescription className="text-xs">
-                    ID: <Badge variant="secondary" className="px-1">{user.shortId}</Badge>
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
+           <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton variant="outline" size="lg" className="h-auto flex-col items-start p-2" disabled>
+                      <span className="font-semibold text-base truncate">{user.displayName || user.name}</span>
+                      <span className="text-xs text-muted-foreground">ID: <Badge variant="secondary" className="px-1">{user.shortId}</Badge></span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+          </SidebarGroup>
         )}
 
         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
