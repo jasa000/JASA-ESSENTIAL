@@ -100,7 +100,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   )
 
   const cardImage = (
-    <div className="relative aspect-square w-full overflow-hidden cursor-pointer">
+    <div className="relative aspect-square w-full overflow-hidden">
       {mainImage ? (
         <Image
           src={`/images/products/${mainImage}`}
@@ -117,7 +117,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   );
   
   const cardInfo = (
-     <div className="flex-grow cursor-pointer">
+     <div className="flex-grow">
       {names && <p className="text-xs text-muted-foreground">{names}</p>}
       <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
       <div className="mt-1 flex items-center gap-0.5">
@@ -130,38 +130,34 @@ export default function ProductCard({ product, className, showAdminControls = fa
       </div>
     </div>
   )
+  
+  const CardContentTrigger = showAdminControls ? 'div' : DialogTrigger;
+  const cardContentProps = showAdminControls ? {} : { asChild: true };
 
   return (
     <>
       <Dialog>
         <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg", className)}>
-          {showAdminControls ? (
-             cardImage
-          ) : (
-            <DialogTrigger asChild>
-              {cardImage}
-            </DialogTrigger>
-          )}
-          
-          {showAdminControls && (
-              <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                  <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
-                      <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
-                      <Trash2 className="h-4 w-4" />
-                  </Button>
-              </div>
-          )}
+            <div className='relative'>
+              <CardContentTrigger {...cardContentProps}>
+                 <div className='cursor-pointer'>{cardImage}</div>
+              </CardContentTrigger>
+              {showAdminControls && (
+                  <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                      <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
+                          <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
+                          <Trash2 className="h-4 w-4" />
+                      </Button>
+                  </div>
+              )}
+            </div>
           
           <CardContent className="flex flex-1 flex-col p-4">
-             {showAdminControls ? (
-                cardInfo
-             ) : (
-                <DialogTrigger asChild>
-                  {cardInfo}
-                </DialogTrigger>
-             )}
+              <CardContentTrigger {...cardContentProps}>
+                 <div className='cursor-pointer'>{cardInfo}</div>
+              </CardContentTrigger>
               <div className="mt-4 flex items-baseline justify-between">
                   <div className='flex flex-col'>
                   {hasDiscount && (
