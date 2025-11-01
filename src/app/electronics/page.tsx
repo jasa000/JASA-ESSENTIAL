@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLoading } from "@/hooks/use-loading";
 import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { SlidersHorizontal } from "lucide-react";
 
 export default function ElectronicsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,6 +26,7 @@ export default function ElectronicsPage() {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [priceSort, setPriceSort] = useState<"all" | "asc" | "desc">("all");
   const { isLoading, setIsLoading } = useLoading();
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,7 +72,7 @@ export default function ElectronicsPage() {
         tempProducts.sort((a, b) => {
             const priceA = a.discountPrice || a.price;
             const priceB = b.discountPrice || b.price;
-            return priceSort === 'asc' ? priceA - priceB : priceB - priceA;
+            return priceSort === 'asc' ? priceA - priceB : priceB - a;
         });
     }
 
@@ -150,36 +157,45 @@ export default function ElectronicsPage() {
         </p>
       </div>
 
-       <div className="sticky top-20 z-40 bg-background py-4 space-y-4">
-        <FilterButtons items={brands} selected={selectedBrand} onSelect={setSelectedBrand} title="Filter by Brand" />
-        <Separator />
-        <FilterButtons items={productTypes} selected={selectedType} onSelect={setSelectedType} title="Filter by Type" />
-        <Separator />
-        
-        <div>
-          <h3 className="text-sm font-semibold mb-2">Sort by Price</h3>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant={priceSort === 'all' ? 'default' : 'outline'}
-              onClick={() => setPriceSort('all')}
-            >
-              Default
+       <div className="sticky top-20 z-40 bg-background py-4">
+        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+          <CollapsibleTrigger asChild>
+             <Button variant="outline" className="w-full">
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Filters & Sorting
             </Button>
-            <Button
-              variant={priceSort === 'asc' ? 'default' : 'outline'}
-              onClick={() => setPriceSort('asc')}
-            >
-              Low to High
-            </Button>
-            <Button
-              variant={priceSort === 'desc' ? 'default' : 'outline'}
-              onClick={() => setPriceSort('desc')}
-            >
-              High to Low
-            </Button>
-          </div>
-        </div>
-
+          </CollapsibleTrigger>
+          <CollapsibleContent className="py-4 space-y-4">
+            <FilterButtons items={brands} selected={selectedBrand} onSelect={setSelectedBrand} title="Filter by Brand" />
+            <Separator />
+            <FilterButtons items={productTypes} selected={selectedType} onSelect={setSelectedType} title="Filter by Type" />
+            <Separator />
+            
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Sort by Price</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant={priceSort === 'all' ? 'default' : 'outline'}
+                  onClick={() => setPriceSort('all')}
+                >
+                  Default
+                </Button>
+                <Button
+                  variant={priceSort === 'asc' ? 'default' : 'outline'}
+                  onClick={() => setPriceSort('asc')}
+                >
+                  Low to High
+                </Button>
+                <Button
+                  variant={priceSort === 'desc' ? 'default' : 'outline'}
+                  onClick={() => setPriceSort('desc')}
+                >
+                  High to Low
+                </Button>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       <div className="mt-8">{renderProductGrid()}</div>

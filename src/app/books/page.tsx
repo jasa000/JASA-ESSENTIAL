@@ -9,7 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoading } from "@/hooks/use-loading";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { SlidersHorizontal } from "lucide-react";
 
 export default function BooksPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -17,6 +22,7 @@ export default function BooksPage() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedType, setSelectedType] = useState<string>("all");
   const { isLoading, setIsLoading } = useLoading();
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,8 +134,18 @@ export default function BooksPage() {
         </p>
       </div>
 
-       <div className="sticky top-20 z-40 bg-background py-4 space-y-4">
-        <FilterButtons items={productTypes} selected={selectedType} onSelect={setSelectedType} title="Filter by Type" />
+       <div className="sticky top-20 z-40 bg-background py-4">
+        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full">
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Filters & Sorting
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="py-4 space-y-4">
+            <FilterButtons items={productTypes} selected={selectedType} onSelect={setSelectedType} title="Filter by Type" />
+          </CollapsibleContent>
+        </Collapsible>
        </div>
 
       <div className="mt-8">{renderProductGrid()}</div>
