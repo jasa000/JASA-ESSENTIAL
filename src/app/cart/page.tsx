@@ -12,6 +12,9 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2, ShoppingBag } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Product } from "@/lib/types";
+import { useAuth } from "@/context/auth-provider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import AuthForm from "@/components/auth-form";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -20,8 +23,10 @@ const categories: { value: Product['category'], label: string }[] = [
 ]
 
 export default function CartPage() {
+  const { user } = useAuth();
   const { items, removeItem, updateQuantity } = useCart();
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   const getCategoryItems = (category: Product['category']) => items.filter(item => item.product.category === category);
 
@@ -67,14 +72,33 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground" />
-        <h1 className="mt-4 font-headline text-3xl font-bold">Your Cart is Empty</h1>
-        <p className="mt-2 text-muted-foreground">Looks like you haven't added anything to your cart yet.</p>
-        <Button asChild className="mt-6">
-          <Link href="/">Start Shopping</Link>
-        </Button>
-      </div>
+      <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+        <div className="container mx-auto px-4 py-8 text-center">
+          <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground" />
+          <h1 className="mt-4 font-headline text-3xl font-bold">Your Cart is Empty</h1>
+          {user ? (
+            <>
+              <p className="mt-2 text-muted-foreground">Looks like you haven't added anything to your cart yet.</p>
+              <Button asChild className="mt-6">
+                <Link href="/">Start Shopping</Link>
+              </Button>
+            </>
+          ) : (
+             <>
+              <p className="mt-2 text-muted-foreground">Please log in to add items to your cart.</p>
+                <DialogTrigger asChild>
+                  <Button className="mt-6">Login to Shop</Button>
+                </DialogTrigger>
+             </>
+          )}
+        </div>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Authentication</DialogTitle>
+          </DialogHeader>
+          <AuthForm onSuccess={() => setIsAuthDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
     );
   }
 
