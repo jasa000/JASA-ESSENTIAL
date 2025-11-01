@@ -133,8 +133,8 @@ export const getAuthors = async (): Promise<Author[]> => {
 export const getProductTypes = async (category?: ProductType['category']): Promise<ProductType[]> => {
     try {
         const q = category 
-            ? query(productTypesCollection, where('category', '==', category), orderBy('name', 'asc'))
-            : query(productTypesCollection, orderBy('name', 'asc'));
+            ? query(productTypesCollection, where('category', '==', category))
+            : query(productTypesCollection);
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductType));
     } catch (error) {
