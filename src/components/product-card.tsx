@@ -120,19 +120,15 @@ export default function ProductCard({ product, className, showAdminControls = fa
             </div>
         </DialogTrigger>
         
-        {showAdminControls ? (
+        {showAdminControls && (
             <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={onEdit}>
-                    <Pencil className="h-4 w-4 text-blue-500" />
+                <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
+                    <Pencil className="h-4 w-4" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={onDelete}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
+                    <Trash2 className="h-4 w-4" />
                 </Button>
             </div>
-        ) : (
-            <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
-                <ShoppingCart className="h-4 w-4 text-primary" />
-            </Button>
         )}
         
         <CardContent className="flex flex-1 flex-col p-4">
@@ -162,9 +158,14 @@ export default function ProductCard({ product, className, showAdminControls = fa
                 </p>
                 </div>
                 {!showAdminControls && (
-                    <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
-                        Shop Now
-                    </Button>
+                    <>
+                        <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
+                            Shop Now
+                        </Button>
+                        <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
+                            <ShoppingCart className="h-4 w-4 text-primary" />
+                        </Button>
+                    </>
                 )}
             </div>
         </CardContent>
@@ -178,3 +179,4 @@ export default function ProductCard({ product, className, showAdminControls = fa
     </>
   );
 }
+
