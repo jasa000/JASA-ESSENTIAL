@@ -11,7 +11,7 @@ import { useAuth } from '@/context/auth-provider';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AuthForm from './auth-form';
 import { useState } from 'react';
 
@@ -109,6 +109,11 @@ export default function Header() {
             )}
           </div>
           <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="sr-only">
+                {authDialogDefaultTab === 'login' ? 'Login' : 'Sign Up'}
+              </DialogTitle>
+            </DialogHeader>
             <AuthForm defaultTab={authDialogDefaultTab} onSuccess={() => setIsAuthDialogOpen(false)} />
           </DialogContent>
         </Dialog>
