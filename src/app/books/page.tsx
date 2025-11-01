@@ -99,9 +99,9 @@ export default function BooksPage() {
     onSelect: (id: string) => void;
     title: string;
   }) => (
-    <div className="w-full">
+    <div>
         <h3 className="text-sm font-semibold mb-2">{title}</h3>
-        <div className="flex w-full items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
             <Button
                 variant={selected === "all" ? "default" : "outline"}
                 className={cn("rounded-full flex-shrink-0", selected === "all" && "bg-primary text-primary-foreground")}
