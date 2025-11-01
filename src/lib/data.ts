@@ -88,9 +88,12 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
         const querySnapshot = await getDocs(q);
         const products = querySnapshot.docs.map(doc => {
             const data = doc.data();
+            const imageNames = data.imageNames || [];
+            const primaryImageIndex = data.primaryImageIndex || 0;
             return { 
                 id: doc.id, 
                 ...data,
+                images: getProductImages(imageNames, data.category, data.description, primaryImageIndex),
                 brandIds: data.brandIds || [],
                 authorIds: data.authorIds || [],
             } as Product;
@@ -109,9 +112,12 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
+            const imageNames = data.imageNames || [];
+            const primaryImageIndex = data.primaryImageIndex || 0;
             return {
                 id: docSnap.id,
                 ...data,
+                images: getProductImages(imageNames, data.category, data.description, primaryImageIndex),
                 brandIds: data.brandIds || [],
                 authorIds: data.authorIds || [],
             } as Product;
@@ -151,10 +157,9 @@ export const getAuthors = async (): Promise<Author[]> => {
 
 
 export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[], primaryImageIndex: number }) => {
-  const { imageNames, primaryImageIndex, ...rest } = productData;
+  const { ...rest } = productData;
   const newProductData = {
     ...rest,
-    images: getProductImages(imageNames, productData.category, productData.description, primaryImageIndex),
     rating: Math.floor(Math.random() * 3) + 3, // 3 to 5 stars
     createdAt: serverTimestamp(),
     discountPrice: productData.discountPrice || null,
@@ -162,18 +167,23 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'r
 
   try {
     const docRef = await addDoc(productsCollection, newProductData);
-    return { ...newProductData, id: docRef.id } as Product;
+    // Construct the full product object to return, including generated images
+    const fullProduct = {
+      ...newProductData,
+      id: docRef.id,
+      images: getProductImages(productData.imageNames, productData.category, productData.description, productData.primaryImageIndex)
+    } as Product
+    return fullProduct;
   } catch (error) {
     console.error("Error adding product: ", error);
     throw new Error("Failed to add product to database.");
   }
 };
 
-export const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[], primaryImageIndex: number }) => {
-    const { imageNames, primaryImageIndex, ...rest } = productData;
+export const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value:string}[], primaryImageIndex: number }) => {
+    const { ...rest } = productData;
     const updatedProductData = {
         ...rest,
-        images: getProductImages(imageNames, productData.category, productData.description, primaryImageIndex),
         discountPrice: productData.discountPrice || null,
     };
 
