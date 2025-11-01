@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -123,40 +124,54 @@ export default function CartPage() {
                         <div className="lg:col-span-2">
                            {categoryItems.length > 0 ? (
                                 <div className="flex flex-col gap-4">
-                                    {categoryItems.map(({ product, quantity }) => (
-                                    <Card key={product.id} className="flex items-center overflow-hidden">
-                                        <div className="relative h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32 bg-muted">
-                                          {/* No image */}
-                                        </div>
-                                        <div className="flex flex-grow flex-col p-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex-grow">
-                                            <h2 className="font-headline text-lg font-semibold">{product.name}</h2>
-                                            <p className="text-sm text-muted-foreground">₹{(product.discountPrice || product.price).toFixed(2)}</p>
-                                        </div>
-                                        <div className="mt-4 flex items-center gap-4 sm:mt-0">
-                                            <Input
-                                            type="number"
-                                            min="1"
-                                            value={quantity}
-                                            onChange={(e) => {
-                                                const newQuantity = parseInt(e.target.value, 10);
-                                                updateQuantity(product.id, isNaN(newQuantity) ? 0 : newQuantity);
-                                            }}
-                                            className="h-10 w-20 text-center"
-                                            aria-label={`Quantity for ${product.name}`}
-                                            />
-                                            <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => removeItem(product.id)}
-                                            aria-label={`Remove ${product.name} from cart`}
-                                            >
-                                            <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
-                                            </Button>
-                                        </div>
-                                        </div>
-                                    </Card>
-                                    ))}
+                                    {categoryItems.map(({ product, quantity }) => {
+                                      const mainImage = product.imageNames && product.imageNames.length > 0 ? product.imageNames[0] : null;
+                                      return (
+                                        <Card key={product.id} className="flex items-center overflow-hidden">
+                                            <div className="relative h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32 bg-muted">
+                                              {mainImage ? (
+                                                  <Image
+                                                    src={`/images/products/${mainImage}`}
+                                                    alt={product.name}
+                                                    fill
+                                                    className="object-cover"
+                                                  />
+                                              ) : (
+                                                <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground font-bold text-xl">
+                                                  JASA
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="flex flex-grow flex-col p-4 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex-grow">
+                                                <h2 className="font-headline text-lg font-semibold">{product.name}</h2>
+                                                <p className="text-sm text-muted-foreground">₹{(product.discountPrice || product.price).toFixed(2)}</p>
+                                            </div>
+                                            <div className="mt-4 flex items-center gap-4 sm:mt-0">
+                                                <Input
+                                                type="number"
+                                                min="1"
+                                                value={quantity}
+                                                onChange={(e) => {
+                                                    const newQuantity = parseInt(e.target.value, 10);
+                                                    updateQuantity(product.id, isNaN(newQuantity) ? 0 : newQuantity);
+                                                }}
+                                                className="h-10 w-20 text-center"
+                                                aria-label={`Quantity for ${product.name}`}
+                                                />
+                                                <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeItem(product.id)}
+                                                aria-label={`Remove ${product.name} from cart`}
+                                                >
+                                                <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                                                </Button>
+                                            </div>
+                                            </div>
+                                        </Card>
+                                      )
+                                    })}
                                 </div>
                             ) : (
                                 <div className="text-center py-12 lg:col-span-3">

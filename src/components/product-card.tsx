@@ -109,8 +109,8 @@ export default function ProductCard({ product, className, showAdminControls = fa
           className="object-cover"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-          No Image
+        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground font-bold text-2xl">
+          JASA
         </div>
       )}
     </div>

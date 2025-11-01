@@ -112,7 +112,7 @@ export default function ProductDetailView({ product }: { product: Product }) {
                   key={mainImageIndex}
               />
             ) : (
-              <p className="text-muted-foreground">No Image Available</p>
+              <p className="text-muted-foreground font-bold text-3xl">JASA</p>
             )}
              {hasImages && product.imageNames!.length > 1 && (
                <>
