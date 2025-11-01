@@ -95,14 +95,10 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
         const querySnapshot = await getDocs(q);
         const products = querySnapshot.docs.map(doc => {
             const data = doc.data();
-            const imageNames = data.imageNames || [];
-            const primaryImageIndex = data.primaryImageIndex || 0;
             return { 
                 id: doc.id, 
                 ...data,
-                images: getProductImages(imageNames, data.category, data.description, primaryImageIndex),
-                brandIds: data.brandIds || [],
-                authorIds: data.authorIds || [],
+                images: getProductImages(data.imageNames, data.category, data.description, data.primaryImageIndex || 0),
             } as Product;
         });
         return products;
@@ -119,14 +115,10 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            const imageNames = data.imageNames || [];
-            const primaryImageIndex = data.primaryImageIndex || 0;
             return {
                 id: docSnap.id,
                 ...data,
-                images: getProductImages(imageNames, data.category, data.description, primaryImageIndex),
-                brandIds: data.brandIds || [],
-                authorIds: data.authorIds || [],
+                images: getProductImages(data.imageNames, data.category, data.description, data.primaryImageIndex || 0),
             } as Product;
         } else {
             console.log("No such document!");
