@@ -104,7 +104,7 @@ export default function BooksPage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
             <Button
                 variant={selected === "all" ? "default" : "outline"}
-                className={cn("rounded-full", selected === "all" && "bg-primary text-primary-foreground")}
+                className={cn("rounded-full flex-shrink-0", selected === "all" && "bg-primary text-primary-foreground")}
                 onClick={() => onSelect("all")}
             >
                 All
@@ -113,7 +113,7 @@ export default function BooksPage() {
                 <Button
                 key={item.id}
                 variant={selected === item.id ? "default" : "outline"}
-                className={cn("rounded-full", selected === item.id && "bg-primary text-primary-foreground")}
+                className={cn("rounded-full flex-shrink-0", selected === item.id && "bg-primary text-primary-foreground")}
                 onClick={() => onSelect(item.id)}
                 >
                 {item.name}

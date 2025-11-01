@@ -72,7 +72,7 @@ export default function StationaryPage() {
         tempProducts.sort((a, b) => {
             const priceA = a.discountPrice || a.price;
             const priceB = b.discountPrice || b.price;
-            return priceSort === 'asc' ? priceA - priceB : priceB - a;
+            return priceSort === 'asc' ? priceA - priceB : priceB - priceA;
         });
     }
 
@@ -127,7 +127,7 @@ export default function StationaryPage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
             <Button
                 variant={selected === "all" ? "default" : "outline"}
-                className={cn("rounded-full", selected === "all" && "bg-primary text-primary-foreground")}
+                className={cn("rounded-full flex-shrink-0", selected === "all" && "bg-primary text-primary-foreground")}
                 onClick={() => onSelect("all")}
             >
                 All
@@ -136,7 +136,7 @@ export default function StationaryPage() {
                 <Button
                 key={item.id}
                 variant={selected === item.id ? "default" : "outline"}
-                className={cn("rounded-full", selected === item.id && "bg-primary text-primary-foreground")}
+                className={cn("rounded-full flex-shrink-0", selected === item.id && "bg-primary text-primary-foreground")}
                 onClick={() => onSelect(item.id)}
                 >
                 {item.name}
@@ -177,18 +177,21 @@ export default function StationaryPage() {
                 <Button
                   variant={priceSort === 'all' ? 'default' : 'outline'}
                   onClick={() => setPriceSort('all')}
+                  className="rounded-full"
                 >
                   Default
                 </Button>
                 <Button
                   variant={priceSort === 'asc' ? 'default' : 'outline'}
                   onClick={() => setPriceSort('asc')}
+                  className="rounded-full"
                 >
                   Low to High
                 </Button>
                 <Button
                   variant={priceSort === 'desc' ? 'default' : 'outline'}
                   onClick={() => setPriceSort('desc')}
+                  className="rounded-full"
                 >
                   High to Low
                 </Button>
