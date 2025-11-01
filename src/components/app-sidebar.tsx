@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAuth } from "@/context/auth-provider"
 import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
@@ -147,14 +147,14 @@ export default function AppSidebar() {
                 <>
                     <SidebarMenuItem>
                         <DialogTrigger asChild>
-                           <SidebarMenuButton tooltip="Sign Up" size="icon" onClick={() => setAuthDialogDefaultTab('signup')}>
+                           <SidebarMenuButton tooltip="Sign Up" size="icon" onClick={() => { setAuthDialogDefaultTab('signup'); handleMenuItemClick(); }}>
                               <UserPlus />
                           </SidebarMenuButton>
                         </DialogTrigger>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                         <DialogTrigger asChild>
-                           <SidebarMenuButton tooltip="Login" size="icon" onClick={() => setAuthDialogDefaultTab('login')}>
+                           <SidebarMenuButton tooltip="Login" size="icon" onClick={() => { setAuthDialogDefaultTab('login'); handleMenuItemClick(); }}>
                                 <LogIn />
                             </SidebarMenuButton>
                         </DialogTrigger>
@@ -163,6 +163,9 @@ export default function AppSidebar() {
              )}
         </SidebarMenu>
         <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="sr-only">{authDialogDefaultTab === 'login' ? 'Login' : 'Sign Up'}</DialogTitle>
+            </DialogHeader>
             <AuthForm defaultTab={authDialogDefaultTab} onSuccess={() => setIsAuthDialogOpen(false)} />
         </DialogContent>
       </Dialog>
