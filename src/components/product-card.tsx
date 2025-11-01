@@ -158,7 +158,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
               <CardContentTrigger {...cardContentProps}>
                  <div className='cursor-pointer'>{cardInfo}</div>
               </CardContentTrigger>
-              <div className="mt-4 flex items-baseline justify-between">
+              <div className="mt-4 flex flex-col sm:flex-row items-baseline justify-between">
                   <div className='flex flex-col'>
                   {hasDiscount && (
                       <p className="text-sm text-muted-foreground line-through">
@@ -171,7 +171,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
                   </div>
                   {!showAdminControls && (
                       <>
-                          <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
+                          <Button onClick={handleAddToCart} size="sm" className='rounded-full mt-2 sm:mt-0'>
                               Shop Now
                           </Button>
                           <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
