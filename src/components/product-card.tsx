@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from 'next/image';
@@ -104,7 +105,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
     <div className="relative aspect-square w-full overflow-hidden">
       {mainImage ? (
         <Image
-          src={`/images/products/${mainImage}`}
+          src={mainImage}
           alt={product.name}
           fill
           className="object-cover"

@@ -131,7 +131,7 @@ export default function CartPage() {
                                             <div className="relative h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32 bg-muted">
                                               {mainImage ? (
                                                   <Image
-                                                    src={`/images/products/${mainImage}`}
+                                                    src={mainImage}
                                                     alt={product.name}
                                                     fill
                                                     className="object-cover"
@@ -190,5 +190,3 @@ export default function CartPage() {
     </div>
   );
 }
-
-    

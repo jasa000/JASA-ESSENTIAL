@@ -106,7 +106,7 @@ export default function ProductDetailView({ product }: { product: Product }) {
          <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
            {hasImages && mainImage ? (
               <Image
-                  src={`/images/products/${mainImage}`}
+                  src={mainImage}
                   alt={product.name}
                   fill
                   className="object-cover transition-opacity duration-300"
@@ -139,7 +139,7 @@ export default function ProductDetailView({ product }: { product: Product }) {
                   >
                       <div className="relative w-full h-full">
                          <Image
-                              src={`/images/products/${img}`}
+                              src={img}
                               alt={`${product.name} thumbnail ${index + 1}`}
                               fill
                               className="object-cover"

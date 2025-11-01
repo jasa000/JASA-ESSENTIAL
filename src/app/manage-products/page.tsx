@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, ChevronsUpDown, Pencil, Trash2, PlusCircle, ChevronUp } from "lucide-react";
+import { Check, ChevronsUpDown, Pencil, Trash2, PlusCircle, ChevronUp, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLoading } from "@/hooks/use-loading";
+import { uploadImageAction } from "@/app/actions/upload-image-action";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -65,7 +66,7 @@ const productSchema = z.object({
   category: z.enum(['stationary', 'books', 'electronics']),
   price: z.coerce.number().positive("Price must be a positive number."),
   discountPrice: z.coerce.number().optional().or(z.literal('')),
-  imageNames: z.array(z.object({ value: z.string().min(1, "Filename cannot be empty.") })).optional(),
+  imageNames: z.array(z.object({ value: z.string().min(1, "Image is required.") })).optional(),
   primaryImageIndex: z.string().optional(),
 });
 
@@ -168,7 +169,7 @@ export default function ManageProductsPage() {
   
   useEffect(() => {
     if (editingProduct) {
-      const primaryImageIndex = 0; // The main image is always the first one
+      const primaryImageIndex = 0;
       editForm.reset({
         name: editingProduct.name,
         brandIds: editingProduct.brandIds || [],
@@ -194,14 +195,30 @@ export default function ManageProductsPage() {
     errorMessage: string,
     formToReset?: any
   ) => {
+    setIsLoading(true);
     try {
-        const imageFileNames = values.imageNames?.map(img => img.value) || [];
-        const primaryIndex = parseInt(values.primaryImageIndex || "0", 10);
+        const imageDataUris = values.imageNames?.map(img => img.value) || [];
+        const uploadedImageUrls = [];
+
+        for (const dataUri of imageDataUris) {
+            // If it's already a URL, just add it. Otherwise, upload it.
+            if (dataUri.startsWith('http')) {
+                uploadedImageUrls.push(dataUri);
+            } else if (dataUri.startsWith('data:image')) {
+                const result = await uploadImageAction(dataUri);
+                if (result.success && result.url) {
+                    uploadedImageUrls.push(result.url);
+                } else {
+                    throw new Error(result.error || 'Image upload failed');
+                }
+            }
+        }
         
+        const primaryIndex = parseInt(values.primaryImageIndex || "0", 10);
         let orderedImageNames: string[] = [];
-        if (imageFileNames.length > 0 && primaryIndex < imageFileNames.length) {
-            const primaryImage = imageFileNames[primaryIndex];
-            const otherImages = imageFileNames.filter((_, index) => index !== primaryIndex);
+        if (uploadedImageUrls.length > 0 && primaryIndex < uploadedImageUrls.length) {
+            const primaryImage = uploadedImageUrls[primaryIndex];
+            const otherImages = uploadedImageUrls.filter((_, index) => index !== primaryIndex);
             orderedImageNames = [primaryImage, ...otherImages];
         }
 
@@ -233,35 +250,40 @@ export default function ManageProductsPage() {
                 primaryImageIndex: "0",
             });
         }
-    } catch (error) {
+        return true;
+    } catch (error: any) {
         toast({
             variant: "destructive",
             title: "Error",
-            description: errorMessage,
+            description: errorMessage + (error.message ? `: ${error.message}`: ''),
         });
+        return false;
+    } finally {
+        setIsLoading(false);
     }
   }
 
 
   const onProductSubmit = async (values: z.infer<typeof productSchema>) => {
-    await processAndSubmit(
+    const success = await processAndSubmit(
         values,
         (data) => addProduct(data),
         `${values.name} has been added successfully.`,
         "Failed to create the product.",
         form
     );
+    if(success) setIsProductFormOpen(false);
   };
 
   const onEditSubmit = async (values: z.infer<typeof productSchema>) => {
     if (!editingProduct) return;
-    await processAndSubmit(
+    const success = await processAndSubmit(
         values,
         (data) => updateProduct(editingProduct.id, data),
         "The product has been updated.",
         "Failed to update product."
     );
-    setEditingProduct(null);
+    if(success) setEditingProduct(null);
   }
 
   const handleDelete = async () => {
@@ -283,8 +305,9 @@ export default function ManageProductsPage() {
             title: "Brand Created",
             description: `${values.name} has been added successfully.`,
         });
-        fetchAllData(); // Refresh list
+        fetchAllData();
         brandForm.reset();
+        setIsBrandFormOpen(false);
     } catch (error) {
         toast({
             variant: "destructive",
@@ -301,8 +324,9 @@ export default function ManageProductsPage() {
             title: "Author Created",
             description: `${values.name} has been added successfully.`,
         });
-        fetchAllData(); // Refresh list
+        fetchAllData();
         authorForm.reset();
+        setIsAuthorFormOpen(false);
     } catch (error) {
         toast({
             variant: "destructive",
@@ -319,8 +343,9 @@ export default function ManageProductsPage() {
             title: "Product Type Created",
             description: `${values.name} has been added successfully.`,
         });
-        fetchAllData(); // Refresh list
+        fetchAllData();
         productTypeForm.reset();
+        setIsProductTypeFormOpen(false);
     } catch (error) {
         toast({
             variant: "destructive",
@@ -421,6 +446,24 @@ export default function ManageProductsPage() {
       control: form.control,
       name: "imageNames"
     });
+    
+    const { toast } = useToast();
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 4 * 1024 * 1024) { // 4MB limit
+                toast({ variant: 'destructive', title: 'File too large', description: 'Please select an image smaller than 4MB.'});
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (readResult) => {
+                form.setValue(`imageNames.${index}.value`, readResult.target?.result as string);
+                form.trigger(`imageNames.${index}.value`);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
   
     return (
       <FormField
@@ -432,7 +475,7 @@ export default function ManageProductsPage() {
             <RadioGroup
               onValueChange={radioField.onChange}
               value={radioField.value}
-              className="space-y-1"
+              className="space-y-3"
             >
               {fields.map((item, index) => (
                 <FormField
@@ -441,13 +484,13 @@ export default function ManageProductsPage() {
                   name={`imageNames.${index}.value`}
                   render={({ field: inputField }) => (
                     <FormItem>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-md border p-2">
                          <RadioGroupItem value={index.toString()} id={`image-radio-${index}`} />
                          <FormLabel htmlFor={`image-radio-${index}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                             Main
                          </FormLabel>
                         <FormControl>
-                          <Input {...inputField} placeholder={`Image filename ${index + 1} (e.g., image.png)`} />
+                          <Input type="file" accept="image/*" className="h-auto" onChange={(e) => handleFileChange(e, index)} />
                         </FormControl>
                         <Button
                           type="button"
@@ -621,8 +664,8 @@ export default function ManageProductsPage() {
                             )} />
                             </div>
 
-                            <Button type="submit" className="w-full" disabled={currentForm.formState.isSubmitting}>
-                                {currentForm.formState.isSubmitting ? "Adding..." : "Add Product"}
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</> : "Add Product"}
                             </Button>
                         </form>
                     </Form>
@@ -635,7 +678,7 @@ export default function ManageProductsPage() {
   const renderProductGrid = (category: Product['category']) => {
     const filtered = productList.filter(p => p.category === category);
 
-    if (isLoading) {
+    if (isLoading && !productList.length) {
       return (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -758,8 +801,8 @@ export default function ManageProductsPage() {
                         <DialogClose asChild>
                           <Button type="button" variant="secondary" onClick={() => setEditingProduct(null)}>Cancel</Button>
                         </DialogClose>
-                        <Button type="submit" disabled={editForm.formState.isSubmitting}>
-                          {editForm.formState.isSubmitting ? "Saving..." : "Save Changes"}
+                        <Button type="submit" disabled={isLoading}>
+                          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
                         </Button>
                     </DialogFooter>
                 </form>
