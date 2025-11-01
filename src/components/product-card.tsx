@@ -119,6 +119,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
             )}
             </div>
         </DialogTrigger>
+        
         {showAdminControls ? (
             <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={onEdit}>
@@ -133,6 +134,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
                 <ShoppingCart className="h-4 w-4 text-primary" />
             </Button>
         )}
+        
         <CardContent className="flex flex-1 flex-col p-4">
             <DialogTrigger asChild>
                 <div className="flex-grow cursor-pointer">
