@@ -243,9 +243,6 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
   return (
     <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-blue">
-                <Image src="/favicon.ico" alt="Jasa Essentials Logo" width={32} height={32} />
-            </div>
             <h2 className="font-headline text-2xl mt-4">Jasa Essentials</h2>
         </div>
         <Tabs defaultValue={defaultTab}>
