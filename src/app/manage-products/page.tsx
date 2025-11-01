@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -143,7 +144,7 @@ export default function ManageProductsPage() {
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     form.setValue('category', activeTab);

@@ -91,7 +91,6 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
             return { 
                 id: doc.id, 
                 ...data,
-                // Ensure brandIds and authorIds are arrays
                 brandIds: data.brandIds || [],
                 authorIds: data.authorIds || [],
             } as Product;
