@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { getBrands, getAuthors } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -19,9 +19,12 @@ import { useEffect, useState } from 'react';
 type ProductCardProps = {
   product: Product;
   className?: string;
+  showAdminControls?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
 
-export default function ProductCard({ product, className }: ProductCardProps) {
+export default function ProductCard({ product, className, showAdminControls = false, onEdit, onDelete }: ProductCardProps) {
   const { addItem } = useCart();
   const { toast } = useToast();
   const [names, setNames] = useState('');
@@ -90,9 +93,20 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             </div>
           )}
         </Link>
-        <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={handleAddToCart}>
-            <ShoppingCart className="h-4 w-4 text-primary" />
-        </Button>
+         {showAdminControls ? (
+            <div className="absolute top-2 right-2 flex flex-col gap-2">
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={onEdit}>
+                    <Pencil className="h-4 w-4 text-blue-500" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={onDelete}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+            </div>
+        ) : (
+            <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={handleAddToCart}>
+                <ShoppingCart className="h-4 w-4 text-primary" />
+            </Button>
+        )}
       </div>
       <CardContent className="flex flex-1 flex-col p-4">
         <div className="flex-grow">
@@ -118,9 +132,11 @@ export default function ProductCard({ product, className }: ProductCardProps) {
                   ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
                </p>
             </div>
-            <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
-                Shop Now
-            </Button>
+            {!showAdminControls && (
+                <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
+                    Shop Now
+                </Button>
+            )}
         </div>
       </CardContent>
     </Card>

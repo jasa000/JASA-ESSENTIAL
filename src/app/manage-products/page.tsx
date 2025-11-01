@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProducts, addProduct, getBrands, addBrand, getAuthors, addAuthor } from "@/lib/data";
+import { getProducts, addProduct, updateProduct, deleteProduct, getBrands, addBrand, getAuthors, addAuthor } from "@/lib/data";
 import ProductCard from "@/components/product-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Product, Brand, Author } from "@/lib/types";
@@ -15,12 +15,32 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { PlusCircle, Trash2, Check, ChevronsUpDown, Pencil } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -55,6 +75,10 @@ export default function ManageProductsPage() {
   const [authorList, setAuthorList] = useState<Author[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
@@ -68,6 +92,10 @@ export default function ManageProductsPage() {
       price: 0,
       discountPrice: '',
     },
+  });
+
+  const editForm = useForm<z.infer<typeof productSchema>>({
+    resolver: zodResolver(productSchema),
   });
 
   const brandForm = useForm<z.infer<typeof brandSchema>>({
@@ -85,6 +113,11 @@ export default function ManageProductsPage() {
     name: "imageNames",
   });
   
+  const { fields: editFields, append: editAppend, remove: editRemove } = useFieldArray({
+      control: editForm.control,
+      name: "imageNames"
+  });
+
   const fetchAllData = async () => {
       setIsLoading(true);
       try {
@@ -112,23 +145,47 @@ export default function ManageProductsPage() {
   useEffect(() => {
     form.setValue('category', activeTab);
   }, [activeTab, form]);
+  
+  useEffect(() => {
+    if (editingProduct) {
+      editForm.reset({
+        name: editingProduct.name,
+        brandIds: editingProduct.brandIds || [],
+        authorIds: editingProduct.authorIds || [],
+        description: editingProduct.description,
+        imageNames: editingProduct.images.map(img => {
+            const parts = img.src.split('/');
+            return { value: parts[parts.length -1] };
+        }),
+        category: editingProduct.category,
+        price: editingProduct.price,
+        discountPrice: editingProduct.discountPrice || '',
+      });
+      setIsEditDialogOpen(true);
+    } else {
+        setIsEditDialogOpen(false);
+    }
+  }, [editingProduct, editForm]);
+
 
   const onProductSubmit = async (values: z.infer<typeof productSchema>) => {
     try {
-      const imageNames = values.imageNames.map(img => img.value);
-      const submissionValues = {
-        ...values,
-        discountPrice: values.discountPrice === '' ? undefined : values.discountPrice,
-      };
-      await addProduct({ ...submissionValues, imageNames });
+      await addProduct(values);
       toast({
         title: "Product Created",
         description: `${values.name} has been added successfully.`,
       });
       fetchAllData(); // Refresh list
-      form.reset();
-      form.setValue('category', activeTab);
-      form.setValue('imageNames', [{ value: '' }]);
+      form.reset({
+        name: "",
+        brandIds: [],
+        authorIds: [],
+        description: "",
+        imageNames: [{ value: "" }],
+        category: activeTab,
+        price: 0,
+        discountPrice: '',
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -137,6 +194,30 @@ export default function ManageProductsPage() {
       });
     }
   };
+
+  const onEditSubmit = async (values: z.infer<typeof productSchema>) => {
+    if (!editingProduct) return;
+    try {
+        await updateProduct(editingProduct.id, values);
+        toast({ title: "Product Updated", description: "The product has been updated." });
+        fetchAllData();
+        setEditingProduct(null);
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to update product." });
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deletingProductId) return;
+    try {
+        await deleteProduct(deletingProductId);
+        toast({ title: "Product Deleted", description: "The product has been successfully removed." });
+        fetchAllData();
+        setDeletingProductId(null);
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to delete product." });
+    }
+  }
 
   const onBrandSubmit = async (values: z.infer<typeof brandSchema>, category: Brand['category']) => {
     try {
@@ -390,7 +471,13 @@ export default function ManageProductsPage() {
          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {filtered.length > 0 ? (
                 filtered.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        showAdminControls
+                        onEdit={() => setEditingProduct(product)}
+                        onDelete={() => setDeletingProductId(product.id)}
+                    />
                 ))
             ) : (
                 <div className="col-span-full py-12 text-center">
@@ -437,6 +524,91 @@ export default function ManageProductsPage() {
               {renderProductGrid('electronics')}
           </TabsContent>
       </Tabs>
+      
+       <Dialog open={isEditDialogOpen} onOpenChange={(open) => { if (!open) setEditingProduct(null); }}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Product</DialogTitle>
+              <DialogDescription>
+                Make changes to your product here. Click save when you're done.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...editForm}>
+                <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                     <FormField control={editForm.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    
+                    {editingProduct?.category === 'stationary' && <MultiSelect form={editForm} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+                    {editingProduct?.category === 'books' && <MultiSelect form={editForm} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
+                    {editingProduct?.category === 'electronics' && <MultiSelect form={editForm} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+
+                    <FormField control={editForm.control} name="description" render={({ field }) => (
+                        <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormField control={editForm.control} name="price" render={({ field }) => (
+                          <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="discountPrice" render={({ field }) => (
+                          <FormItem><FormLabel>Discount Price (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+
+                    <div>
+                        <FormLabel>Image Filenames</FormLabel>
+                        {editFields.map((field, index) => (
+                            <FormField
+                                key={field.id}
+                                control={editForm.control}
+                                name={`imageNames.${index}.value`}
+                                render={({ field }) => (
+                                <FormItem className="mt-2 flex items-center gap-2">
+                                    <FormControl>
+                                    <Input {...field} placeholder={`Image ${index + 1} filename`} />
+                                    </FormControl>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => editRemove(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        ))}
+                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => editAppend({ value: "" })}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+                        </Button>
+                         <FormMessage>{(editForm.formState.errors.imageNames as any)?.message}</FormMessage>
+                    </div>
+
+                    <DialogFooter>
+                        <DialogClose asChild>
+                          <Button type="button" variant="secondary" onClick={() => setEditingProduct(null)}>Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={editForm.formState.isSubmitting}>
+                          {editForm.formState.isSubmitting ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+          </DialogContent>
+       </Dialog>
+       
+       <AlertDialog open={!!deletingProductId} onOpenChange={(open) => { if (!open) setDeletingProductId(null); }}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the product from your database.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setDeletingProductId(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+       </AlertDialog>
     </div>
   );
 }

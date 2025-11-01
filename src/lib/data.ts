@@ -3,7 +3,7 @@
 import type { Product, Category, Brand, Author } from './types';
 import imageData from './placeholder-images.json';
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, getDoc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
 
 const getCategoryImage = (id: string, width = 400, height = 400) => {
   const image = imageData.placeholderImages.find(img => img.id === id);
@@ -25,9 +25,9 @@ const getCategoryImage = (id: string, width = 400, height = 400) => {
   };
 };
 
-const getProductImages = (imageNames: string[], category: Product['category'], alt: string) => {
-    return imageNames.map(name => ({
-        src: `/images/${category}/${name}`,
+const getProductImages = (imageNames: {value: string}[], category: Product['category'], alt: string) => {
+    return imageNames.map(img => ({
+        src: `/images/${category}/${img.value}`,
         alt: alt,
     }));
 };
@@ -143,23 +143,51 @@ export const getAuthors = async (): Promise<Author[]> => {
 };
 
 
-export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: string[] }) => {
+export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[] }) => {
   const { imageNames, ...rest } = productData;
-  const newProduct: Omit<Product, 'id' | 'rating' | 'createdAt' | 'images'> & {images: any, rating: any, createdAt: any} = {
+  const newProductData = {
     ...rest,
     images: getProductImages(imageNames, productData.category, productData.description),
     rating: Math.floor(Math.random() * 3) + 3, // 3 to 5 stars
     createdAt: serverTimestamp(),
+    discountPrice: productData.discountPrice || null,
   };
 
   try {
-    const docRef = await addDoc(productsCollection, newProduct);
-    return { ...newProduct, id: docRef.id } as Product;
+    const docRef = await addDoc(productsCollection, newProductData);
+    return { ...newProductData, id: docRef.id } as Product;
   } catch (error) {
     console.error("Error adding product: ", error);
     throw new Error("Failed to add product to database.");
   }
 };
+
+export const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[] }) => {
+    const { imageNames, ...rest } = productData;
+    const updatedProductData = {
+        ...rest,
+        images: getProductImages(imageNames, productData.category, productData.description),
+        discountPrice: productData.discountPrice || null,
+    };
+
+    try {
+        const productDoc = doc(db, 'products', id);
+        await updateDoc(productDoc, updatedProductData);
+    } catch (error) {
+        console.error("Error updating product: ", error);
+        throw new Error("Failed to update product in database.");
+    }
+};
+
+export const deleteProduct = async (id: string) => {
+    try {
+        const productDoc = doc(db, 'products', id);
+        await deleteDoc(productDoc);
+    } catch (error) {
+        console.error("Error deleting product: ", error);
+        throw new Error("Failed to delete product from database.");
+    }
+}
 
 export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt' | 'category'>, category: Brand['category']) => {
     const newBrand = {
