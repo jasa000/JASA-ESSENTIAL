@@ -99,84 +99,99 @@ export default function ProductCard({ product, className, showAdminControls = fa
      </Dialog>
   )
 
+  const cardImage = (
+    <div className="relative aspect-square w-full overflow-hidden cursor-pointer">
+      {mainImage ? (
+        <Image
+          src={`/images/products/${mainImage}`}
+          alt={product.name}
+          fill
+          className="object-cover"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+          No Image
+        </div>
+      )}
+    </div>
+  );
+  
+  const cardInfo = (
+     <div className="flex-grow cursor-pointer">
+      {names && <p className="text-xs text-muted-foreground">{names}</p>}
+      <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
+      <div className="mt-1 flex items-center gap-0.5">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Star
+            key={i}
+            className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-muted text-muted-foreground'}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <>
-    <Dialog>
-      <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg", className)}>
-        <DialogTrigger asChild>
-            <div className="relative aspect-square w-full overflow-hidden cursor-pointer">
-            {mainImage ? (
-                <Image
-                src={`/images/products/${mainImage}`}
-                alt={product.name}
-                fill
-                className="object-cover"
-                />
-            ) : (
-                <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                No Image
-                </div>
-            )}
-            </div>
-        </DialogTrigger>
-        
-        {showAdminControls && (
-            <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
-                    <Pencil className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </div>
-        )}
-        
-        <CardContent className="flex flex-1 flex-col p-4">
+      <Dialog>
+        <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg", className)}>
+          {showAdminControls ? (
+             cardImage
+          ) : (
             <DialogTrigger asChild>
-                <div className="flex-grow cursor-pointer">
-                {names && <p className="text-xs text-muted-foreground">{names}</p>}
-                <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
-                <div className="mt-1 flex items-center gap-0.5">
-                    {Array.from({ length: 5 }, (_, i) => (
-                        <Star
-                        key={i}
-                        className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-muted text-muted-foreground'}`}
-                        />
-                    ))}
-                </div>
-                </div>
+              {cardImage}
             </DialogTrigger>
-            <div className="mt-4 flex items-baseline justify-between">
-                <div className='flex flex-col'>
-                {hasDiscount && (
-                    <p className="text-sm text-muted-foreground line-through">
-                        ₹{product.price.toFixed(2)}
-                    </p>
-                )}
-                <p className="text-lg font-semibold text-foreground">
-                    ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
-                </p>
-                </div>
-                {!showAdminControls && (
-                    <>
-                        <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
-                            Shop Now
-                        </Button>
-                        <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
-                            <ShoppingCart className="h-4 w-4 text-primary" />
-                        </Button>
-                    </>
-                )}
-            </div>
-        </CardContent>
-      </Card>
+          )}
+          
+          {showAdminControls && (
+              <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                  <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
+                      <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
+                      <Trash2 className="h-4 w-4" />
+                  </Button>
+              </div>
+          )}
+          
+          <CardContent className="flex flex-1 flex-col p-4">
+             {showAdminControls ? (
+                cardInfo
+             ) : (
+                <DialogTrigger asChild>
+                  {cardInfo}
+                </DialogTrigger>
+             )}
+              <div className="mt-4 flex items-baseline justify-between">
+                  <div className='flex flex-col'>
+                  {hasDiscount && (
+                      <p className="text-sm text-muted-foreground line-through">
+                          ₹{product.price.toFixed(2)}
+                      </p>
+                  )}
+                  <p className="text-lg font-semibold text-foreground">
+                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                  </p>
+                  </div>
+                  {!showAdminControls && (
+                      <>
+                          <Button onClick={handleAddToCart} size="sm" className='rounded-full'>
+                              Shop Now
+                          </Button>
+                          <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
+                              <ShoppingCart className="h-4 w-4 text-primary" />
+                          </Button>
+                      </>
+                  )}
+              </div>
+          </CardContent>
+        </Card>
 
-       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <ProductDetailView product={product} />
-       </DialogContent>
-    </Dialog>
-    {AuthDialog}
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <ProductDetailView product={product} />
+        </DialogContent>
+      </Dialog>
+      {AuthDialog}
     </>
   );
 }
-
