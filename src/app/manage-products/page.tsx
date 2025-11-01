@@ -55,8 +55,6 @@ const productSchema = z.object({
   brandIds: z.array(z.string()).optional(),
   authorIds: z.array(z.string()).optional(),
   description: z.string().min(10, "Description must be at least 10 characters."),
-  imageNames: z.array(z.object({ value: z.string().min(1, "Image filename is required.") })).min(1, "At least one image is required."),
-  primaryImageIndex: z.coerce.number().min(0, "A primary image must be selected."),
   category: z.enum(['stationary', 'books', 'electronics']),
   price: z.coerce.number().positive("Price must be a positive number."),
   discountPrice: z.coerce.number().optional().or(z.literal('')),
@@ -90,8 +88,6 @@ export default function ManageProductsPage() {
       brandIds: [],
       authorIds: [],
       description: "",
-      imageNames: [{ value: "" }],
-      primaryImageIndex: 0,
       category: activeTab,
       price: 0,
       discountPrice: '',
@@ -110,16 +106,6 @@ export default function ManageProductsPage() {
   const authorForm = useForm<z.infer<typeof authorSchema>>({
     resolver: zodResolver(authorSchema),
     defaultValues: { name: "" },
-  });
-  
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "imageNames",
-  });
-  
-  const { fields: editFields, append: editAppend, remove: editRemove } = useFieldArray({
-      control: editForm.control,
-      name: "imageNames"
   });
 
   const fetchAllData = async () => {
@@ -157,12 +143,6 @@ export default function ManageProductsPage() {
         brandIds: editingProduct.brandIds || [],
         authorIds: editingProduct.authorIds || [],
         description: editingProduct.description,
-        imageNames: editingProduct.images.map(img => {
-            const parts = img.src.split('/');
-            const fileNameWithQuery = parts[parts.length -1];
-            return { value: fileNameWithQuery.split('?')[0] }; // Remove potential query params
-        }),
-        primaryImageIndex: 0, // Primary is always first
         category: editingProduct.category,
         price: editingProduct.price,
         discountPrice: editingProduct.discountPrice || '',
@@ -187,8 +167,6 @@ export default function ManageProductsPage() {
         brandIds: [],
         authorIds: [],
         description: "",
-        imageNames: [{ value: "" }],
-        primaryImageIndex: 0,
         category: activeTab,
         price: 0,
         discountPrice: '',
@@ -390,58 +368,6 @@ export default function ManageProductsPage() {
       </Card>
     );
 
-  const ImageInputs = ({ currentForm, currentFields, appendFn, removeFn }: {
-    currentForm: typeof form | typeof editForm;
-    currentFields: any[];
-    appendFn: (val: { value: string; }) => void;
-    removeFn: (index: number) => void;
-  }) => (
-    <FormField
-        control={currentForm.control}
-        name="primaryImageIndex"
-        render={({ field }) => (
-            <FormItem className="space-y-3">
-                <FormLabel>Image Filenames (select one as primary)</FormLabel>
-                <FormControl>
-                    <RadioGroup
-                        onValueChange={(value) => field.onChange(parseInt(value, 10))}
-                        value={field.value?.toString()}
-                        className="flex flex-col space-y-2"
-                    >
-                        {currentFields.map((item, index) => (
-                            <FormField
-                                key={item.id}
-                                control={currentForm.control}
-                                name={`imageNames.${index}.value`}
-                                render={({ field: imageField }) => (
-                                    <FormItem className="flex items-center gap-2 space-y-0">
-                                        <FormControl>
-                                            <RadioGroupItem value={index.toString()} id={`${imageField.name}-radio`} />
-                                        </FormControl>
-                                        <FormControl className="flex-grow">
-                                            <Input {...imageField} placeholder={`Image ${index + 1} filename (e.g., image.jpg)`} />
-                                        </FormControl>
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeFn(index)} disabled={currentFields.length <= 1}>
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </FormItem>
-                                )}
-                            />
-                        ))}
-                    </RadioGroup>
-                </FormControl>
-                <FormMessage />
-                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendFn({ value: "" })}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-                </Button>
-                <FormMessage>{(currentForm.formState.errors.imageNames as any)?.message}</FormMessage>
-                <FormMessage>{currentForm.formState.errors.primaryImageIndex?.message}</FormMessage>
-            </FormItem>
-        )}
-    />
-  );
-
-
   const renderCreateForm = (category: Product['category']) => (
      <Card className="mb-8">
         <CardHeader>
@@ -471,8 +397,6 @@ export default function ManageProductsPage() {
                           <FormItem><FormLabel>Discount Price (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
-
-                    <ImageInputs currentForm={form} currentFields={fields} appendFn={append} removeFn={remove} />
 
                     <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? "Adding..." : "Add Product"}
@@ -590,8 +514,6 @@ export default function ManageProductsPage() {
                           <FormItem><FormLabel>Discount Price (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
-
-                    <ImageInputs currentForm={editForm} currentFields={editFields} appendFn={editAppend} removeFn={editRemove} />
 
                     <DialogFooter>
                         <DialogClose asChild>

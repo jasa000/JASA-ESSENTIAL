@@ -25,29 +25,6 @@ const getCategoryImage = (id: string, width = 400, height = 400) => {
   };
 };
 
-const getProductImages = (imageNames: {value: string}[], category: Product['category'], alt: string, primaryImageIndex: number) => {
-    // If there are no image names, return an empty array.
-    if (!imageNames || imageNames.length === 0) {
-        return [];
-    }
-
-    // Map over the image names and create the full path.
-    // e.g., category: 'stationary', img.value: 'pen.png' -> '/images/stationary/pen.png'
-    const images = imageNames.map(img => ({
-        src: `/images/${category}/${img.value}`,
-        alt: alt,
-    }));
-
-    // If a primary image is selected and it's not the first one, move it to the front.
-    if (primaryImageIndex > 0 && primaryImageIndex < images.length) {
-        const primaryImage = images.splice(primaryImageIndex, 1)[0];
-        images.unshift(primaryImage);
-    }
-
-    return images;
-};
-
-
 export const categories: Category[] = [
     {
         id: 'cat-1',
@@ -98,7 +75,6 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
             return { 
                 id: doc.id, 
                 ...data,
-                images: getProductImages(data.imageNames, data.category, data.description, data.primaryImageIndex || 0),
             } as Product;
         });
         return products;
@@ -118,7 +94,6 @@ export const getProductById = async (id: string): Promise<Product | null> => {
             return {
                 id: docSnap.id,
                 ...data,
-                images: getProductImages(data.imageNames, data.category, data.description, data.primaryImageIndex || 0),
             } as Product;
         } else {
             console.log("No such document!");
@@ -155,7 +130,7 @@ export const getAuthors = async (): Promise<Author[]> => {
 };
 
 
-export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[], primaryImageIndex: number }) => {
+export const addProduct = async (productData: Omit<Product, 'id' | 'rating' | 'createdAt'>) => {
   const { ...rest } = productData;
   const newProductData = {
     ...rest,
@@ -166,11 +141,9 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'r
 
   try {
     const docRef = await addDoc(productsCollection, newProductData);
-    // Construct the full product object to return, including generated images
     const fullProduct = {
       ...newProductData,
       id: docRef.id,
-      images: getProductImages(productData.imageNames, productData.category, productData.description, productData.primaryImageIndex)
     } as Product
     return fullProduct;
   } catch (error) {
@@ -179,7 +152,7 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'r
   }
 };
 
-export const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value:string}[], primaryImageIndex: number }) => {
+export const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'rating' | 'createdAt'>) => {
     const { ...rest } = productData;
     const updatedProductData = {
         ...rest,

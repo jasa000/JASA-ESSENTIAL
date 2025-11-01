@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useRef, use } from 'react';
@@ -22,10 +23,6 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
   const [isLoading, setIsLoading] = useState(true);
   const { addItem } = useCart();
   const { toast } = useToast();
-
-  const plugin = useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: true, stopOnMouseEnter: true })
-  );
 
   useEffect(() => {
     if (params.id) {
@@ -121,41 +118,9 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
     <div className="container mx-auto max-w-5xl px-4 py-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         <div>
-          <Carousel 
-            plugins={[plugin.current]}
-            className="w-full"
-            onMouseEnter={plugin.current.stop}
-            onMouseLeave={plugin.current.reset}
-          >
-            <CarouselContent>
-              {product.images && product.images.length > 0 ? (
-                product.images.map((image, index) => (
-                  <CarouselItem key={index}>
-                    <div className="aspect-square relative w-full overflow-hidden rounded-lg">
-                      <Image
-                        src={image.src}
-                        alt={image.alt}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  </CarouselItem>
-                ))
-              ) : (
-                 <CarouselItem>
-                    <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
-                      <p className="text-muted-foreground">No Image Available</p>
-                    </div>
-                  </CarouselItem>
-              )}
-            </CarouselContent>
-            {product.images.length > 1 && (
-              <>
-                <CarouselPrevious className="absolute left-4" />
-                <CarouselNext className="absolute right-4" />
-              </>
-            )}
-          </Carousel>
+           <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
+             <p className="text-muted-foreground">No Image Available</p>
+           </div>
         </div>
 
         <div className="flex flex-col justify-center">

@@ -101,13 +101,8 @@ export default function CartPage() {
                                 <div className="flex flex-col gap-4">
                                     {categoryItems.map(({ product, quantity }) => (
                                     <Card key={product.id} className="flex items-center overflow-hidden">
-                                        <div className="relative h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32">
-                                        <Image
-                                            src={product.images[0].src}
-                                            alt={product.images[0].alt}
-                                            fill
-                                            className="object-cover"
-                                            />
+                                        <div className="relative h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32 bg-muted">
+                                          {/* No image */}
                                         </div>
                                         <div className="flex flex-grow flex-col p-4 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex-grow">

@@ -1,5 +1,4 @@
 
-
 export type Product = {
   id: string;
   name: string;
@@ -7,14 +6,12 @@ export type Product = {
   authorIds?: string[];
   description: string;
   category: 'stationary' | 'books' | 'electronics';
-  images: {
-    src: string;
-    alt: string;
-  }[];
   price: number;
   discountPrice?: number;
   rating?: number;
   createdAt: any;
+  imageNames?: { value: string }[];
+  primaryImageIndex?: number;
 };
 
 export type CartItem = {

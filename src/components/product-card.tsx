@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from 'next/image';
@@ -72,7 +73,6 @@ export default function ProductCard({ product, className, showAdminControls = fa
   };
 
   const rating = product.rating || 5;
-  const primaryImage = product.images && product.images.length > 0 ? product.images[0] : null;
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
@@ -80,18 +80,9 @@ export default function ProductCard({ product, className, showAdminControls = fa
     <Card className={cn("group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg w-64 flex-shrink-0", className)}>
       <div className="relative aspect-square w-full overflow-hidden">
         <Link href={`/products/${product.id}`}>
-          {primaryImage ? (
-            <Image
-              src={primaryImage.src}
-              alt={primaryImage.alt}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-              No Image
-            </div>
-          )}
+          <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+            No Image
+          </div>
         </Link>
          {showAdminControls ? (
             <div className="absolute top-2 right-2 flex flex-col gap-2">
