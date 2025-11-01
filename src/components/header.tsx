@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bell, LogIn, Search, ShoppingCart, User, Home } from 'lucide-react';
+import { Bell, LogIn, Search, ShoppingCart, User, Home, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
@@ -11,12 +11,18 @@ import { useAuth } from '@/context/auth-provider';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import AuthForm from './auth-form';
+import { useState } from 'react';
 
 export default function Header() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const pathname = usePathname();
   const isHomePage = pathname === '/';
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [authDialogDefaultTab, setAuthDialogDefaultTab] = useState<'login' | 'signup'>('login');
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -54,38 +60,61 @@ export default function Header() {
             </span>
           </div>
         </div>
-        <div className="flex items-center justify-end space-x-2">
-            {user && (
-              <Button asChild variant="ghost" size="icon" className='rounded-full'>
-                  <Link href="/notifications">
-                      <Bell className="h-5 w-5" />
-                      <span className="sr-only">Notifications</span>
+        
+        <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+          <div className="flex items-center justify-end space-x-2">
+              {user && (
+                <Button asChild variant="ghost" size="icon" className='rounded-full'>
+                    <Link href="/notifications">
+                        <Bell className="h-5 w-5" />
+                        <span className="sr-only">Notifications</span>
+                    </Link>
+                </Button>
+              )}
+              <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
+                  <Link href="/cart">
+                      <ShoppingCart className={isMobile ? "h-5 w-5" : "h-4 w-4"}/>
+                      <span className="hidden md:inline">Cart</span>
                   </Link>
               </Button>
+            {user ? (
+                <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
+                  <Link href="/profile">
+                    <User className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+                    <span className="hidden md:inline">Profile</span>
+                  </Link>
+                </Button>
+            ) : (
+              <>
+                <DialogTrigger asChild>
+                  <Button 
+                    size={isMobile ? "icon" : "default"} 
+                    className='rounded-full' 
+                    onClick={() => setAuthDialogDefaultTab('login')}>
+                    <LogIn className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+                    <span className="hidden md:inline">Login</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogTrigger asChild>
+                   <Button 
+                    variant="secondary"
+                    size={isMobile ? "icon" : "default"} 
+                    className='rounded-full' 
+                    onClick={() => setAuthDialogDefaultTab('signup')}>
+                    <UserPlus className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+                    <span className="hidden md:inline">Sign Up</span>
+                  </Button>
+                </DialogTrigger>
+              </>
             )}
-            <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
-                <Link href="/cart">
-                    <ShoppingCart className={isMobile ? "h-5 w-5" : "h-4 w-4"}/>
-                    <span className="hidden md:inline">Cart</span>
-                </Link>
-            </Button>
-          {user ? (
-              <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
-                <Link href="/profile">
-                  <User className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
-                  <span className="hidden md:inline">Profile</span>
-                </Link>
-              </Button>
-          ) : (
-            <Button asChild size={isMobile ? "icon" : "default"} className='rounded-full'>
-              <Link href="/login">
-                <LogIn className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
-                <span className="hidden md:inline">Login</span>
-              </Link>
-            </Button>
-          )}
-        </div>
+          </div>
+          <DialogContent className="max-w-sm">
+            <AuthForm defaultTab={authDialogDefaultTab} onSuccess={() => setIsAuthDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
     </header>
   );
 }
+
+    

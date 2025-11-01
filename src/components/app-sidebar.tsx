@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { useAuth } from "@/context/auth-provider"
 import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
@@ -34,6 +35,7 @@ import { Skeleton } from "./ui/skeleton"
 import { getShops } from "@/lib/shops"
 import type { Shop } from "@/lib/types"
 import Image from "next/image";
+import AuthForm from "./auth-form";
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
@@ -44,6 +46,8 @@ export default function AppSidebar() {
   const [sellerShops, setSellerShops] = useState<Shop[]>([]);
   const [isLoadingShops, setIsLoadingShops] = useState(false);
   const { setOpenMobile } = useSidebar();
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [authDialogDefaultTab, setAuthDialogDefaultTab] = useState<'login' | 'signup'>('login');
 
   const handleMenuItemClick = () => {
     setOpenMobile(false);
@@ -101,6 +105,7 @@ export default function AppSidebar() {
     }
 
     return (
+      <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
         <SidebarMenu className="flex flex-row justify-around">
             <SidebarMenuItem>
                 <SidebarMenuButton tooltip="Theme" size="icon" onClick={toggleTheme}>
@@ -141,22 +146,26 @@ export default function AppSidebar() {
              ) : (
                 <>
                     <SidebarMenuItem>
-                         <SidebarMenuButton tooltip="Sign Up" size="icon" asChild onClick={handleMenuItemClick}>
-                            <Link href="/signup">
-                                <UserPlus />
-                            </Link>
-                        </SidebarMenuButton>
+                        <DialogTrigger asChild>
+                           <SidebarMenuButton tooltip="Sign Up" size="icon" onClick={() => setAuthDialogDefaultTab('signup')}>
+                              <UserPlus />
+                          </SidebarMenuButton>
+                        </DialogTrigger>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                       <SidebarMenuButton tooltip="Login" size="icon" asChild onClick={handleMenuItemClick}>
-                            <Link href="/login">
+                        <DialogTrigger asChild>
+                           <SidebarMenuButton tooltip="Login" size="icon" onClick={() => setAuthDialogDefaultTab('login')}>
                                 <LogIn />
-                            </Link>
-                        </SidebarMenuButton>
+                            </SidebarMenuButton>
+                        </DialogTrigger>
                     </SidebarMenuItem>
                 </>
              )}
         </SidebarMenu>
+        <DialogContent className="max-w-sm">
+            <AuthForm defaultTab={authDialogDefaultTab} onSuccess={() => setIsAuthDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
     )
   }
   
@@ -325,3 +334,5 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
+
+    
