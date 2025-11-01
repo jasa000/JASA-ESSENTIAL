@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from 'next/image';
@@ -26,9 +25,11 @@ type ProductCardProps = {
   showAdminControls?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  hideRating?: boolean;
+  hideBuyButton?: boolean;
 };
 
-export default function ProductCard({ product, className, showAdminControls = false, onEdit, onDelete }: ProductCardProps) {
+export default function ProductCard({ product, className, showAdminControls = false, onEdit, onDelete, hideRating = false, hideBuyButton = false }: ProductCardProps) {
   const { user } = useAuth();
   const { addItem } = useCart();
   const { toast } = useToast();
@@ -120,14 +121,16 @@ export default function ProductCard({ product, className, showAdminControls = fa
      <div className="flex-grow">
       {names && <p className="text-xs text-muted-foreground">{names}</p>}
       <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
-      <div className="mt-1 flex items-center gap-0.5">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Star
-            key={i}
-            className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-muted text-muted-foreground'}`}
-          />
-        ))}
-      </div>
+      {!hideRating && (
+        <div className="mt-1 flex items-center gap-0.5">
+            {Array.from({ length: 5 }, (_, i) => (
+            <Star
+                key={i}
+                className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-muted text-muted-foreground'}`}
+            />
+            ))}
+        </div>
+      )}
     </div>
   )
   
@@ -169,7 +172,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
                       ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
                   </p>
                   </div>
-                  {!showAdminControls && (
+                  {!showAdminControls && !hideBuyButton && (
                       <>
                           <Button onClick={handleAddToCart} size="sm" className='rounded-full mt-2 sm:mt-0'>
                               Shop Now

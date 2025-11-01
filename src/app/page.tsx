@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -102,7 +101,7 @@ export default function Home() {
         <div className="flex gap-4 overflow-x-auto pb-4">
           {productList.map((product) => (
             <div key={product.id} className="w-56 flex-shrink-0">
-              <ProductCard product={product} />
+              <ProductCard product={product} hideRating hideBuyButton />
             </div>
           ))}
         </div>
