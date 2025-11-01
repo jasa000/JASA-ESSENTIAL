@@ -2,7 +2,7 @@
 "use client";
 
 import Image from 'next/image';
-import type { Product, Brand } from '@/lib/types';
+import type { Product, Author } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import { useCart } from '@/hooks/use-cart';
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Star } from 'lucide-react';
 import Link from 'next/link';
-import { getBrands } from '@/lib/data';
+import { getBrands, getAuthors } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -24,29 +24,35 @@ type ProductCardProps = {
 export default function ProductCard({ product, className }: ProductCardProps) {
   const { addItem } = useCart();
   const { toast } = useToast();
-  const [productBrands, setProductBrands] = useState('');
+  const [names, setNames] = useState('');
 
   useEffect(() => {
-    const fetchBrands = async () => {
-      if (product.brandIds && product.brandIds.length > 0) {
+    const fetchNames = async () => {
         try {
-            const allBrands = await getBrands();
-            const brandNames = product.brandIds
-                .map(id => allBrands.find(b => b.id === id)?.name)
-                .filter(Boolean)
-                .join(', ');
-            setProductBrands(brandNames);
+            if (product.category === 'stationary' && product.brandIds && product.brandIds.length > 0) {
+                const allBrands = await getBrands();
+                const brandNames = product.brandIds
+                    .map(id => allBrands.find(b => b.id === id)?.name)
+                    .filter(Boolean)
+                    .join(', ');
+                setNames(brandNames);
+            } else if (product.category === 'books' && product.authorIds && product.authorIds.length > 0) {
+                const allAuthors = await getAuthors();
+                const authorNames = product.authorIds
+                    .map(id => allAuthors.find(a => a.id === id)?.name)
+                    .filter(Boolean)
+                    .join(', ');
+                setNames(authorNames);
+            } else if (product.category === 'electronics' && Array.isArray(product.brandIds) && product.brandIds.length > 0 && typeof product.brandIds[0] === 'string') {
+                 setNames(product.brandIds.join(', '));
+            }
         } catch (error) {
-            console.error("Could not fetch brands for product card", error);
+            console.error("Could not fetch names for product card", error);
         }
-      } else if (Array.isArray(product.brandIds) && product.brandIds.length > 0 && typeof product.brandIds[0] === 'string') {
-        // Fallback for when brandIds is just an array of strings (for non-stationary items)
-        setProductBrands(product.brandIds.join(', '));
-      }
     };
 
-    fetchBrands();
-  }, [product.brandIds]);
+    fetchNames();
+  }, [product]);
 
 
   const handleAddToCart = () => {
@@ -81,7 +87,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
       </div>
       <CardContent className="flex flex-1 flex-col p-4">
         <div className="flex-grow">
-          {productBrands && <p className="text-xs text-muted-foreground">{productBrands}</p>}
+          {names && <p className="text-xs text-muted-foreground">{names}</p>}
           <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
           <div className="mt-1 flex items-center gap-0.5">
               {Array.from({ length: 5 }, (_, i) => (

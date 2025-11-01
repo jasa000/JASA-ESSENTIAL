@@ -1,5 +1,6 @@
 
-import type { Product, Category, Brand } from './types';
+
+import type { Product, Category, Brand, Author } from './types';
 import imageData from './placeholder-images.json';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
@@ -65,6 +66,8 @@ export const categories: Category[] = [
 
 const productsCollection = collection(db, 'products');
 const brandsCollection = collection(db, 'brands');
+const authorsCollection = collection(db, 'authors');
+
 
 export const getProducts = async (category?: Product['category']): Promise<Product[]> => {
     try {
@@ -75,21 +78,26 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
             q = query(productsCollection, orderBy('createdAt', 'desc'));
         }
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        const products = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id, 
+                ...data,
+                // Ensure brandIds and authorIds are arrays
+                brandIds: data.brandIds || [],
+                authorIds: data.authorIds || [],
+            } as Product;
+        });
+        return products;
     } catch (error) {
         console.error("Error getting products: ", error);
         throw new Error("Failed to fetch products.");
     }
 }
 
-export const getBrands = async (category?: Brand['category']): Promise<Brand[]> => {
+export const getBrands = async (): Promise<Brand[]> => {
     try {
-        let q;
-        if (category) {
-            q = query(brandsCollection, where('category', '==', category), orderBy('name', 'asc'));
-        } else {
-            q = query(brandsCollection, orderBy('name', 'asc'));
-        }
+        const q = query(brandsCollection, where('category', '==', 'stationary'), orderBy('name', 'asc'));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Brand));
     } catch (error) {
@@ -97,6 +105,17 @@ export const getBrands = async (category?: Brand['category']): Promise<Brand[]> 
         throw new Error("Failed to fetch brands.");
     }
 }
+
+export const getAuthors = async (): Promise<Author[]> => {
+    try {
+        const q = query(authorsCollection, orderBy('name', 'asc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Author));
+    } catch (error) {
+        console.error("Error getting authors: ", error);
+        throw new Error("Failed to fetch authors.");
+    }
+};
 
 
 export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: string[] }) => {
@@ -117,9 +136,10 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'r
   }
 };
 
-export const addBrand = async (brandData: Omit<Brand, 'id'>) => {
+export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>) => {
     const newBrand = {
         ...brandData,
+        category: 'stationary' as const,
         createdAt: serverTimestamp(),
     }
     try {
@@ -130,3 +150,17 @@ export const addBrand = async (brandData: Omit<Brand, 'id'>) => {
         throw new Error("Failed to add brand to database.");
     }
 }
+
+export const addAuthor = async (authorData: Omit<Author, 'id' | 'createdAt'>) => {
+    const newAuthor = {
+        ...authorData,
+        createdAt: serverTimestamp(),
+    };
+    try {
+        const docRef = await addDoc(authorsCollection, newAuthor);
+        return { ...newAuthor, id: docRef.id } as Author;
+    } catch (error) {
+        console.error("Error adding author: ", error);
+        throw new Error("Failed to add author to database.");
+    }
+};

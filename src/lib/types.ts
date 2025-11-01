@@ -4,6 +4,7 @@ export type Product = {
   id: string;
   name: string;
   brandIds?: string[];
+  authorIds?: string[];
   description: string;
   category: 'stationary' | 'books' | 'electronics';
   images: {
@@ -79,7 +80,13 @@ export type Shop = {
 export type Brand = {
   id: string;
   name: string;
-  category: 'stationary' | 'books' | 'electronics';
+  category: 'stationary';
+  createdAt: any;
+};
+
+export type Author = {
+  id: string;
+  name: string;
   createdAt: any;
 };
 

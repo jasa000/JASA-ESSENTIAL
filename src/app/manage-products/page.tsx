@@ -2,10 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProducts, addProduct, getBrands, addBrand } from "@/lib/data";
+import { getProducts, addProduct, getBrands, addBrand, getAuthors, addAuthor } from "@/lib/data";
 import ProductCard from "@/components/product-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Product, Brand } from "@/lib/types";
+import type { Product, Brand, Author } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ const categories: { value: Product['category'], label: string }[] = [
 const productSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
   brandIds: z.array(z.string()).optional(),
+  authorIds: z.array(z.string()).optional(),
   description: z.string().min(10, "Description must be at least 10 characters."),
   imageNames: z.array(z.object({ value: z.string().min(1, "Image filename is required.") })).min(1, "At least one image is required."),
   category: z.enum(['stationary', 'books', 'electronics']),
@@ -42,10 +43,15 @@ const brandSchema = z.object({
   name: z.string().min(2, "Brand name must be at least 2 characters."),
 });
 
+const authorSchema = z.object({
+  name: z.string().min(2, "Author name must be at least 2 characters."),
+});
+
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
   const [productList, setProductList] = useState<Product[]>([]);
   const [brandList, setBrandList] = useState<Brand[]>([]);
+  const [authorList, setAuthorList] = useState<Author[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -54,6 +60,7 @@ export default function ManageProductsPage() {
     defaultValues: {
       name: "",
       brandIds: [],
+      authorIds: [],
       description: "",
       imageNames: [{ value: "" }],
       category: activeTab,
@@ -64,9 +71,12 @@ export default function ManageProductsPage() {
 
   const brandForm = useForm<z.infer<typeof brandSchema>>({
     resolver: zodResolver(brandSchema),
-    defaultValues: {
-      name: "",
-    },
+    defaultValues: { name: "" },
+  });
+
+  const authorForm = useForm<z.infer<typeof authorSchema>>({
+    resolver: zodResolver(authorSchema),
+    defaultValues: { name: "" },
   });
   
   const { fields, append, remove } = useFieldArray({
@@ -77,9 +87,10 @@ export default function ManageProductsPage() {
   const fetchAllData = async () => {
       setIsLoading(true);
       try {
-        const [products, brands] = await Promise.all([getProducts(), getBrands()]);
+        const [products, brands, authors] = await Promise.all([getProducts(), getBrands(), getAuthors()]);
         setProductList(products);
         setBrandList(brands);
+        setAuthorList(authors);
       } catch (error) {
         toast({ variant: "destructive", title: "Error", description: "Failed to fetch data from the database." });
       } finally {
@@ -118,7 +129,7 @@ export default function ManageProductsPage() {
 
   const onBrandSubmit = async (values: z.infer<typeof brandSchema>) => {
     try {
-        await addBrand({ ...values, category: activeTab });
+        await addBrand(values);
         toast({
             title: "Brand Created",
             description: `${values.name} has been added successfully.`,
@@ -133,16 +144,41 @@ export default function ManageProductsPage() {
         });
     }
   };
+
+  const onAuthorSubmit = async (values: z.infer<typeof authorSchema>) => {
+    try {
+        await addAuthor(values);
+        toast({
+            title: "Author Created",
+            description: `${values.name} has been added successfully.`,
+        });
+        fetchAllData(); // Refresh list
+        authorForm.reset();
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to create the author.",
+        });
+    }
+  };
   
-  const MultiBrandSelect = ({ form, fieldName, category }: { form: any, fieldName: "brandIds", category: Brand['category'] }) => {
-    const categoryBrands = brandList.filter(b => b.category === category);
+  const MultiSelect = ({ form, fieldName, items, placeholder, searchPlaceholder, emptyMessage, label }: { 
+    form: any, 
+    fieldName: "brandIds" | "authorIds", 
+    items: (Brand | Author)[],
+    placeholder: string,
+    searchPlaceholder: string,
+    emptyMessage: string,
+    label: string
+  }) => {
     return (
         <FormField
             control={form.control}
             name={fieldName}
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Brands</FormLabel>
+                    <FormLabel>{label}</FormLabel>
                     <Popover>
                         <PopoverTrigger asChild>
                             <FormControl>
@@ -153,19 +189,19 @@ export default function ManageProductsPage() {
                                 >
                                     <div className="flex gap-1 flex-wrap">
                                         {field.value?.length > 0 ? (
-                                            brandList
-                                                .filter(brand => field.value.includes(brand.id))
-                                                .map(brand => (
+                                            items
+                                                .filter(item => field.value.includes(item.id))
+                                                .map(item => (
                                                     <Badge
                                                         variant="secondary"
-                                                        key={brand.id}
+                                                        key={item.id}
                                                         className="mr-1"
                                                     >
-                                                        {brand.name}
+                                                        {item.name}
                                                     </Badge>
                                                 ))
                                         ) : (
-                                            "Select brands"
+                                            placeholder
                                         )}
                                     </div>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -174,31 +210,31 @@ export default function ManageProductsPage() {
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                             <Command>
-                                <CommandInput placeholder="Search brands..." />
+                                <CommandInput placeholder={searchPlaceholder} />
                                 <CommandList>
-                                    <CommandEmpty>No brands found.</CommandEmpty>
+                                    <CommandEmpty>{emptyMessage}</CommandEmpty>
                                     <CommandGroup>
-                                        {categoryBrands.map((brand) => (
+                                        {items.map((item) => (
                                             <CommandItem
-                                                value={brand.name}
-                                                key={brand.id}
+                                                value={item.name}
+                                                key={item.id}
                                                 onSelect={() => {
                                                     const currentIds = field.value || [];
-                                                    const newIds = currentIds.includes(brand.id)
-                                                        ? currentIds.filter((id: string) => id !== brand.id)
-                                                        : [...currentIds, brand.id];
+                                                    const newIds = currentIds.includes(item.id)
+                                                        ? currentIds.filter((id: string) => id !== item.id)
+                                                        : [...currentIds, item.id];
                                                     form.setValue(fieldName, newIds);
                                                 }}
                                             >
                                                 <Check
                                                     className={cn(
                                                         "mr-2 h-4 w-4",
-                                                        (field.value || []).includes(brand.id)
+                                                        (field.value || []).includes(item.id)
                                                             ? "opacity-100"
                                                             : "opacity-0"
                                                     )}
                                                 />
-                                                {brand.name}
+                                                {item.name}
                                             </CommandItem>
                                         ))}
                                     </CommandGroup>
@@ -213,14 +249,11 @@ export default function ManageProductsPage() {
     );
   };
   
-  const renderCreateBrandForm = (category: Product['category']) => {
-    if (category !== 'stationary') return null;
-
-    return (
+  const renderCreateBrandForm = () => (
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Create Stationary Brand</CardTitle>
-          <CardDescription>Add a new brand to your inventory for this category.</CardDescription>
+          <CardDescription>Add a new brand for stationary products.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...brandForm}>
@@ -236,7 +269,27 @@ export default function ManageProductsPage() {
         </CardContent>
       </Card>
     );
-  }
+
+  const renderCreateAuthorForm = () => (
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Create Author</CardTitle>
+          <CardDescription>Add a new author for books.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...authorForm}>
+            <form onSubmit={authorForm.handleSubmit(onAuthorSubmit)} className="space-y-4">
+              <FormField control={authorForm.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Author Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <Button type="submit" className="w-full" disabled={authorForm.formState.isSubmitting}>
+                {authorForm.formState.isSubmitting ? "Adding..." : "Add Author"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    );
 
 
   const renderCreateForm = (category: Product['category']) => (
@@ -251,9 +304,11 @@ export default function ManageProductsPage() {
                     <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    {category === 'stationary' && <MultiBrandSelect form={form} fieldName="brandIds" category="stationary" />}
                     
-                    {category !== 'stationary' && <FormField control={form.control} name="brandIds" render={({ field }) => (
+                    {category === 'stationary' && <MultiSelect form={form} fieldName="brandIds" items={brandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+                    {category === 'books' && <MultiSelect form={form} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
+
+                    {category === 'electronics' && <FormField control={form.control} name="brandIds" render={({ field }) => (
                         <FormItem><FormLabel>Brand</FormLabel><FormControl><Input onChange={(e) => field.onChange(e.target.value ? [e.target.value] : [])} placeholder="Enter brand name" /></FormControl><FormMessage /></FormItem>
                     )} />}
 
@@ -357,12 +412,13 @@ export default function ManageProductsPage() {
           </div>
           
           <TabsContent value="stationary" className="mt-8">
-              {renderCreateBrandForm('stationary')}
+              {renderCreateBrandForm()}
               {renderCreateForm('stationary')}
               {renderProductGrid('stationary')}
           </TabsContent>
 
           <TabsContent value="books" className="mt-8">
+              {renderCreateAuthorForm()}
               {renderCreateForm('books')}
               {renderProductGrid('books')}
           </TabsContent>
