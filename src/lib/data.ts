@@ -25,11 +25,19 @@ const getCategoryImage = (id: string, width = 400, height = 400) => {
   };
 };
 
-const getProductImages = (imageNames: {value: string}[], category: Product['category'], alt: string) => {
-    return imageNames.map(img => ({
+const getProductImages = (imageNames: {value: string}[], category: Product['category'], alt: string, primaryImageIndex: number) => {
+    const images = imageNames.map(img => ({
         src: `/images/${category}/${img.value}`,
         alt: alt,
     }));
+
+    if (primaryImageIndex > 0 && primaryImageIndex < images.length) {
+        const primaryImage = images[primaryImageIndex];
+        images.splice(primaryImageIndex, 1);
+        images.unshift(primaryImage);
+    }
+
+    return images;
 };
 
 
@@ -143,11 +151,11 @@ export const getAuthors = async (): Promise<Author[]> => {
 };
 
 
-export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[] }) => {
-  const { imageNames, ...rest } = productData;
+export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[], primaryImageIndex: number }) => {
+  const { imageNames, primaryImageIndex, ...rest } = productData;
   const newProductData = {
     ...rest,
-    images: getProductImages(imageNames, productData.category, productData.description),
+    images: getProductImages(imageNames, productData.category, productData.description, primaryImageIndex),
     rating: Math.floor(Math.random() * 3) + 3, // 3 to 5 stars
     createdAt: serverTimestamp(),
     discountPrice: productData.discountPrice || null,
@@ -162,11 +170,11 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'r
   }
 };
 
-export const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[] }) => {
-    const { imageNames, ...rest } = productData;
+export const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: {value: string}[], primaryImageIndex: number }) => {
+    const { imageNames, primaryImageIndex, ...rest } = productData;
     const updatedProductData = {
         ...rest,
-        images: getProductImages(imageNames, productData.category, productData.description),
+        images: getProductImages(imageNames, productData.category, productData.description, primaryImageIndex),
         discountPrice: productData.discountPrice || null,
     };
 
@@ -217,3 +225,5 @@ export const addAuthor = async (authorData: Omit<Author, 'id' | 'createdAt'>) =>
         throw new Error("Failed to add author to database.");
     }
 };
+
+    

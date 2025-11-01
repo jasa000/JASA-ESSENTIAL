@@ -41,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -54,6 +55,7 @@ const productSchema = z.object({
   authorIds: z.array(z.string()).optional(),
   description: z.string().min(10, "Description must be at least 10 characters."),
   imageNames: z.array(z.object({ value: z.string().min(1, "Image filename is required.") })).min(1, "At least one image is required."),
+  primaryImageIndex: z.coerce.number().min(0, "A primary image must be selected."),
   category: z.enum(['stationary', 'books', 'electronics']),
   price: z.coerce.number().positive("Price must be a positive number."),
   discountPrice: z.coerce.number().optional().or(z.literal('')),
@@ -88,6 +90,7 @@ export default function ManageProductsPage() {
       authorIds: [],
       description: "",
       imageNames: [{ value: "" }],
+      primaryImageIndex: 0,
       category: activeTab,
       price: 0,
       discountPrice: '',
@@ -155,8 +158,10 @@ export default function ManageProductsPage() {
         description: editingProduct.description,
         imageNames: editingProduct.images.map(img => {
             const parts = img.src.split('/');
-            return { value: parts[parts.length -1] };
+            const fileNameWithQuery = parts[parts.length -1];
+            return { value: fileNameWithQuery.split('?')[0] }; // Remove potential query params
         }),
+        primaryImageIndex: 0, // Primary is always first
         category: editingProduct.category,
         price: editingProduct.price,
         discountPrice: editingProduct.discountPrice || '',
@@ -182,6 +187,7 @@ export default function ManageProductsPage() {
         authorIds: [],
         description: "",
         imageNames: [{ value: "" }],
+        primaryImageIndex: 0,
         category: activeTab,
         price: 0,
         discountPrice: '',
@@ -383,6 +389,57 @@ export default function ManageProductsPage() {
       </Card>
     );
 
+  const ImageInputs = ({ currentForm, currentFields, appendFn, removeFn }: {
+    currentForm: typeof form | typeof editForm;
+    currentFields: any[];
+    appendFn: (val: { value: string; }) => void;
+    removeFn: (index: number) => void;
+  }) => (
+    <FormField
+        control={currentForm.control}
+        name="primaryImageIndex"
+        render={({ field }) => (
+            <FormItem className="space-y-3">
+                <FormLabel>Image Filenames (select one as primary)</FormLabel>
+                <FormControl>
+                    <RadioGroup
+                        onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                        value={field.value?.toString()}
+                        className="flex flex-col space-y-2"
+                    >
+                        {currentFields.map((item, index) => (
+                            <FormField
+                                key={item.id}
+                                control={currentForm.control}
+                                name={`imageNames.${index}.value`}
+                                render={({ field: imageField }) => (
+                                    <FormItem className="flex items-center gap-2 space-y-0">
+                                        <FormControl>
+                                            <RadioGroupItem value={index.toString()} id={`${imageField.name}-radio`} />
+                                        </FormControl>
+                                        <FormControl className="flex-grow">
+                                            <Input {...imageField} placeholder={`Image ${index + 1} filename (e.g., image.jpg)`} />
+                                        </FormControl>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeFn(index)} disabled={currentFields.length <= 1}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </FormItem>
+                                )}
+                            />
+                        ))}
+                    </RadioGroup>
+                </FormControl>
+                <FormMessage />
+                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendFn({ value: "" })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+                </Button>
+                <FormMessage>{(currentForm.formState.errors.imageNames as any)?.message}</FormMessage>
+                <FormMessage>{currentForm.formState.errors.primaryImageIndex?.message}</FormMessage>
+            </FormItem>
+        )}
+    />
+  );
+
 
   const renderCreateForm = (category: Product['category']) => (
      <Card className="mb-8">
@@ -414,31 +471,8 @@ export default function ManageProductsPage() {
                       )} />
                     </div>
 
-                    <div>
-                        <FormLabel>Image Filenames</FormLabel>
-                        {fields.map((field, index) => (
-                            <FormField
-                                key={field.id}
-                                control={form.control}
-                                name={`imageNames.${index}.value`}
-                                render={({ field }) => (
-                                <FormItem className="mt-2 flex items-center gap-2">
-                                    <FormControl>
-                                    <Input {...field} placeholder={`Image ${index + 1} filename (e.g., image.jpg)`} />
-                                    </FormControl>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                        ))}
-                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-                        </Button>
-                        <FormMessage>{(form.formState.errors.imageNames as any)?.message}</FormMessage>
-                    </div>
+                    <ImageInputs currentForm={form} currentFields={fields} appendFn={append} removeFn={remove} />
+
                     <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? "Adding..." : "Add Product"}
                     </Button>
@@ -556,31 +590,7 @@ export default function ManageProductsPage() {
                       )} />
                     </div>
 
-                    <div>
-                        <FormLabel>Image Filenames</FormLabel>
-                        {editFields.map((field, index) => (
-                            <FormField
-                                key={field.id}
-                                control={editForm.control}
-                                name={`imageNames.${index}.value`}
-                                render={({ field }) => (
-                                <FormItem className="mt-2 flex items-center gap-2">
-                                    <FormControl>
-                                    <Input {...field} placeholder={`Image ${index + 1} filename`} />
-                                    </FormControl>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => editRemove(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                        ))}
-                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => editAppend({ value: "" })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-                        </Button>
-                         <FormMessage>{(editForm.formState.errors.imageNames as any)?.message}</FormMessage>
-                    </div>
+                    <ImageInputs currentForm={editForm} currentFields={editFields} appendFn={editAppend} removeFn={editRemove} />
 
                     <DialogFooter>
                         <DialogClose asChild>
@@ -612,3 +622,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
