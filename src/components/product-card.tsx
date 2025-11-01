@@ -121,7 +121,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
         </DialogTrigger>
         
         {showAdminControls ? (
-            <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+            <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={onEdit}>
                     <Pencil className="h-4 w-4 text-blue-500" />
                 </Button>
