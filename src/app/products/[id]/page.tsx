@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import { getProductById, getAuthors, getBrands } from '@/lib/data';
 import type { Product, Brand, Author } from '@/lib/types';
 import { notFound } from 'next/navigation';
@@ -15,7 +15,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Autoplay from "embla-carousel-autoplay";
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise);
   const [product, setProduct] = useState<Product | null>(null);
   const [names, setNames] = useState('');
   const [isLoading, setIsLoading] = useState(true);
