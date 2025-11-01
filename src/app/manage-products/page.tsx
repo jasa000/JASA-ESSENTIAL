@@ -16,13 +16,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, ChevronsUpDown, Pencil, Trash2, PlusCircle } from "lucide-react";
+import { Check, ChevronsUpDown, Pencil, Trash2, PlusCircle, ChevronUp } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +88,11 @@ export default function ManageProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  
+  const [isBrandFormOpen, setIsBrandFormOpen] = useState(false);
+  const [isAuthorFormOpen, setIsAuthorFormOpen] = useState(false);
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
@@ -433,87 +443,123 @@ export default function ManageProductsPage() {
     );
   };
   
-  const renderCreateBrandForm = (category: Brand['category']) => (
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Create {category === 'stationary' ? 'Stationary' : 'Electronics'} Brand</CardTitle>
-          <CardDescription>Add a new brand for {category} products.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...brandForm}>
-            <form onSubmit={brandForm.handleSubmit((values) => onBrandSubmit(values, category))} className="space-y-4">
-              <FormField control={brandForm.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Brand Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <Button type="submit" className="w-full" disabled={brandForm.formState.isSubmitting}>
-                {brandForm.formState.isSubmitting ? "Adding..." : "Add Brand"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    );
-
-  const renderCreateAuthorForm = () => (
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Create Author</CardTitle>
-          <CardDescription>Add a new author for books.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...authorForm}>
-            <form onSubmit={authorForm.handleSubmit(onAuthorSubmit)} className="space-y-4">
-              <FormField control={authorForm.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Author Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <Button type="submit" className="w-full" disabled={authorForm.formState.isSubmitting}>
-                {authorForm.formState.isSubmitting ? "Adding..." : "Add Author"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    );
-
-  const renderCreateForm = (category: Product['category'], currentForm: any) => (
-     <Card className="mb-8">
-        <CardHeader>
-            <CardTitle>Create {categories.find(c => c.value === category)?.label} Product</CardTitle>
-            <CardDescription>Add a new item to your inventory for this category.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Form {...currentForm}>
-                <form onSubmit={currentForm.handleSubmit(onProductSubmit)} className="space-y-4">
-                    <FormField control={currentForm.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    
-                    {category === 'stationary' && <MultiSelect form={currentForm} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
-                    {category === 'books' && <MultiSelect form={currentForm} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
-                    {category === 'electronics' && <MultiSelect form={currentForm} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
-
-                    <FormField control={currentForm.control} name="description" render={({ field }) => (
-                        <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-
-                    <ImageFields form={currentForm} />
-                    
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <FormField control={currentForm.control} name="price" render={({ field }) => (
-                          <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={currentForm.control} name="discountPrice" render={({ field }) => (
-                          <FormItem><FormLabel>Discount Price (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                    </div>
-
-                    <Button type="submit" className="w-full" disabled={currentForm.formState.isSubmitting}>
-                        {currentForm.formState.isSubmitting ? "Adding..." : "Add Product"}
+  const renderCreateBrandForm = (category: Brand['category'], isOpen: boolean, onOpenChange: (open: boolean) => void) => (
+      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Create {category === 'stationary' ? 'Stationary' : 'Electronics'} Brand</CardTitle>
+                    <CardDescription>Add a new brand for {category} products.</CardDescription>
+                </div>
+                <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-9 p-0">
+                        <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                        <span className="sr-only">Toggle</span>
                     </Button>
-                </form>
-            </Form>
-        </CardContent>
-    </Card>
+                </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+                <CardContent>
+                <Form {...brandForm}>
+                    <form onSubmit={brandForm.handleSubmit((values) => onBrandSubmit(values, category))} className="space-y-4">
+                    <FormField control={brandForm.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>Brand Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <Button type="submit" className="w-full" disabled={brandForm.formState.isSubmitting}>
+                        {brandForm.formState.isSubmitting ? "Adding..." : "Add Brand"}
+                    </Button>
+                    </form>
+                </Form>
+                </CardContent>
+            </CollapsibleContent>
+        </Card>
+      </Collapsible>
+    );
+
+  const renderCreateAuthorForm = (isOpen: boolean, onOpenChange: (open: boolean) => void) => (
+      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Create Author</CardTitle>
+                    <CardDescription>Add a new author for books.</CardDescription>
+                </div>
+                <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-9 p-0">
+                        <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                        <span className="sr-only">Toggle</span>
+                    </Button>
+                </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+                <CardContent>
+                    <Form {...authorForm}>
+                        <form onSubmit={authorForm.handleSubmit(onAuthorSubmit)} className="space-y-4">
+                        <FormField control={authorForm.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Author Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <Button type="submit" className="w-full" disabled={authorForm.formState.isSubmitting}>
+                            {authorForm.formState.isSubmitting ? "Adding..." : "Add Author"}
+                        </Button>
+                        </form>
+                    </Form>
+                </CardContent>
+            </CollapsibleContent>
+        </Card>
+      </Collapsible>
+    );
+
+  const renderCreateForm = (category: Product['category'], currentForm: any, isOpen: boolean, onOpenChange: (open: boolean) => void) => (
+     <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Create {categories.find(c => c.value === category)?.label} Product</CardTitle>
+                    <CardDescription>Add a new item to your inventory for this category.</CardDescription>
+                </div>
+                 <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-9 p-0">
+                        <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                        <span className="sr-only">Toggle</span>
+                    </Button>
+                </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+                <CardContent>
+                    <Form {...currentForm}>
+                        <form onSubmit={currentForm.handleSubmit(onProductSubmit)} className="space-y-4">
+                            <FormField control={currentForm.control} name="name" render={({ field }) => (
+                                <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            
+                            {category === 'stationary' && <MultiSelect form={currentForm} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+                            {category === 'books' && <MultiSelect form={currentForm} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
+                            {category === 'electronics' && <MultiSelect form={currentForm} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+
+                            <FormField control={currentForm.control} name="description" render={({ field }) => (
+                                <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+
+                            <ImageFields form={currentForm} />
+                            
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <FormField control={currentForm.control} name="price" render={({ field }) => (
+                                <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={currentForm.control} name="discountPrice" render={({ field }) => (
+                                <FormItem><FormLabel>Discount Price (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            </div>
+
+                            <Button type="submit" className="w-full" disabled={currentForm.formState.isSubmitting}>
+                                {currentForm.formState.isSubmitting ? "Adding..." : "Add Product"}
+                            </Button>
+                        </form>
+                    </Form>
+                </CardContent>
+            </CollapsibleContent>
+        </Card>
+     </Collapsible>
   );
 
   const renderProductGrid = (category: Product['category']) => {
@@ -536,23 +582,26 @@ export default function ManageProductsPage() {
     }
     
     return (
-         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {filtered.length > 0 ? (
-                filtered.map((product) => (
-                    <ProductCard 
-                        key={product.id} 
-                        product={product} 
-                        showAdminControls
-                        onEdit={() => setEditingProduct(product)}
-                        onDelete={() => setDeletingProductId(product.id)}
-                    />
-                ))
-            ) : (
-                <div className="col-span-full py-12 text-center">
-                    <p className="text-muted-foreground">No products found in this category.</p>
-                </div>
-            )}
-        </div>
+        <>
+            <h2 className="text-2xl font-bold tracking-tight mb-4">Existing {categories.find(c => c.value === category)?.label} Products</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {filtered.length > 0 ? (
+                    filtered.map((product) => (
+                        <ProductCard 
+                            key={product.id} 
+                            product={product} 
+                            showAdminControls
+                            onEdit={() => setEditingProduct(product)}
+                            onDelete={() => setDeletingProductId(product.id)}
+                        />
+                    ))
+                ) : (
+                    <div className="col-span-full py-12 text-center">
+                        <p className="text-muted-foreground">No products found in this category.</p>
+                    </div>
+                )}
+            </div>
+        </>
     );
   }
 
@@ -565,6 +614,9 @@ export default function ManageProductsPage() {
           const newCategory = value as Product['category'];
           setActiveTab(newCategory);
           form.setValue('category', newCategory);
+          setIsBrandFormOpen(false);
+          setIsAuthorFormOpen(false);
+          setIsProductFormOpen(false);
       }} className="mt-8 w-full">
           <div className="sticky top-20 z-10 bg-background py-4">
               <TabsList className="grid w-full grid-cols-3">
@@ -575,20 +627,20 @@ export default function ManageProductsPage() {
           </div>
           
           <TabsContent value="stationary" className="mt-8">
-              {renderCreateBrandForm('stationary')}
-              {renderCreateForm('stationary', form)}
+              {renderCreateBrandForm('stationary', isBrandFormOpen, setIsBrandFormOpen)}
+              {renderCreateForm('stationary', form, isProductFormOpen, setIsProductFormOpen)}
               {renderProductGrid('stationary')}
           </TabsContent>
 
           <TabsContent value="books" className="mt-8">
-              {renderCreateAuthorForm()}
-              {renderCreateForm('books', form)}
+              {renderCreateAuthorForm(isAuthorFormOpen, setIsAuthorFormOpen)}
+              {renderCreateForm('books', form, isProductFormOpen, setIsProductFormOpen)}
               {renderProductGrid('books')}
           </TabsContent>
 
           <TabsContent value="electronics" className="mt-8">
-              {renderCreateBrandForm('electronics')}
-              {renderCreateForm('electronics', form)}
+              {renderCreateBrandForm('electronics', isBrandFormOpen, setIsBrandFormOpen)}
+              {renderCreateForm('electronics', form, isProductFormOpen, setIsProductFormOpen)}
               {renderProductGrid('electronics')}
           </TabsContent>
       </Tabs>
