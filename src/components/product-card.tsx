@@ -162,16 +162,16 @@ export default function ProductCard({ product, className, showAdminControls = fa
                  <div className='cursor-pointer'>{cardInfo}</div>
               </CardContentTrigger>
               <div className="mt-4 flex flex-col sm:flex-row items-baseline justify-between">
-                  <div className='flex flex-col'>
+                <div className='flex items-baseline gap-2'>
+                  <p className="text-lg font-semibold text-foreground">
+                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                  </p>
                   {hasDiscount && (
                       <p className="text-sm text-muted-foreground line-through">
                           ₹{product.price.toFixed(2)}
                       </p>
                   )}
-                  <p className="text-lg font-semibold text-foreground">
-                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
-                  </p>
-                  </div>
+                </div>
                   {!showAdminControls && !hideBuyButton && (
                       <>
                           <Button onClick={handleAddToCart} size="sm" className='rounded-full mt-2 sm:mt-0'>
