@@ -32,7 +32,7 @@ const getProductImages = (imageNames: {value: string}[], category: Product['cate
     }
 
     // Map over the image names and create the full path.
-    // e.g., category: 'stationary', img.value: 'pen.jpg' -> '/images/stationary/pen.jpg'
+    // e.g., category: 'stationary', img.value: 'pen.png' -> '/images/stationary/pen.png'
     const images = imageNames.map(img => ({
         src: `/images/${category}/${img.value}`,
         alt: alt,
