@@ -26,7 +26,7 @@ export default function StationaryPage() {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [priceSort, setPriceSort] = useState<"all" | "asc" | "desc">("all");
   const { isLoading, setIsLoading } = useLoading();
-  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {

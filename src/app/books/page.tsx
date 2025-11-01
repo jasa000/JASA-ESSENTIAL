@@ -22,7 +22,7 @@ export default function BooksPage() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedType, setSelectedType] = useState<string>("all");
   const { isLoading, setIsLoading } = useLoading();
-  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
