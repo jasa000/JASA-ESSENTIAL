@@ -17,6 +17,7 @@ import { createUserWithEmailAndPassword, sendEmailVerification, GoogleAuthProvid
 import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import PasswordStrength from '@/components/password-strength';
+import { useLoading } from '@/hooks/use-loading';
 
 const emailSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -30,6 +31,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const { setIsLoading } = useLoading();
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -57,6 +59,7 @@ export default function SignupPage() {
         description: "A verification link has been sent to your email. Please check your inbox or spam folder to continue.",
         duration: 9000,
       });
+      setIsLoading(true);
       router.push('/login');
     } catch (error: any) {
       toast({
@@ -89,6 +92,7 @@ export default function SignupPage() {
         title: "Sign Up Successful",
         description: "Welcome! You have successfully signed up with Google.",
       });
+      setIsLoading(true);
       router.push('/');
     } catch (error: any) {
        toast({

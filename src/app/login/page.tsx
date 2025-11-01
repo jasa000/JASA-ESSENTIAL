@@ -16,6 +16,7 @@ import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { useState } from 'react';
 import { useAuth } from '@/context/auth-provider';
+import { useLoading } from '@/hooks/use-loading';
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { user } = useAuth();
+  const { setIsLoading } = useLoading();
   
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -55,6 +57,7 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back! You are now logged in.",
       });
+      setIsLoading(true);
       router.push('/');
     } catch (error: any) {
       toast({
@@ -76,6 +79,7 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back! You have signed in with Google.",
       });
+      setIsLoading(true);
       router.push('/');
     } catch (error: any) {
       toast({
