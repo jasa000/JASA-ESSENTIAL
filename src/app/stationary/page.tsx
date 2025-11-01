@@ -14,6 +14,7 @@ export default function StationaryPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
+  const [priceSort, setPriceSort] = useState<"all" | "asc" | "desc">("all");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -37,16 +38,26 @@ export default function StationaryPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedBrand === "all") {
-      setFilteredProducts(products);
-    } else {
-      setFilteredProducts(
-        products.filter(
-          (product) => product.brandIds && product.brandIds.includes(selectedBrand)
-        )
+    let tempProducts = [...products];
+
+    // Filter by brand
+    if (selectedBrand !== "all") {
+      tempProducts = tempProducts.filter(
+        (product) => product.brandIds && product.brandIds.includes(selectedBrand)
       );
     }
-  }, [selectedBrand, products]);
+    
+    // Sort by price
+    if (priceSort !== "all") {
+        tempProducts.sort((a, b) => {
+            const priceA = a.discountPrice || a.price;
+            const priceB = b.discountPrice || b.price;
+            return priceSort === 'asc' ? priceA - priceB : priceB - priceA;
+        });
+    }
+
+    setFilteredProducts(tempProducts);
+  }, [selectedBrand, priceSort, products]);
 
   const renderProductGrid = () => {
     if (isLoading) {
@@ -70,7 +81,7 @@ export default function StationaryPage() {
         <div className="py-16 text-center">
           <h2 className="text-xl font-semibold">No Products Found</h2>
           <p className="text-muted-foreground">
-            There are no products matching the selected brand.
+            There are no products matching the selected filters.
           </p>
         </div>
       );
@@ -96,7 +107,7 @@ export default function StationaryPage() {
         </p>
       </div>
 
-      <div className="sticky top-20 z-40 bg-background py-4">
+      <div className="sticky top-20 z-40 bg-background py-4 space-y-4">
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
           <Button
             variant={selectedBrand === "all" ? "default" : "outline"}
@@ -116,6 +127,28 @@ export default function StationaryPage() {
             </Button>
           ))}
         </div>
+
+        <div className="grid grid-cols-3 gap-2">
+           <Button
+             variant={priceSort === 'all' ? 'default' : 'outline'}
+             onClick={() => setPriceSort('all')}
+           >
+             All
+           </Button>
+           <Button
+             variant={priceSort === 'asc' ? 'default' : 'outline'}
+             onClick={() => setPriceSort('asc')}
+           >
+             Low to High
+           </Button>
+           <Button
+             variant={priceSort === 'desc' ? 'default' : 'outline'}
+             onClick={() => setPriceSort('desc')}
+           >
+             High to Low
+           </Button>
+        </div>
+
       </div>
 
       <div className="mt-8">{renderProductGrid()}</div>
