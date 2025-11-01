@@ -43,6 +43,16 @@ type AuthFormProps = {
   onSuccess?: () => void;
 };
 
+// Function to generate a random 6-character alphanumeric string
+const generateShortId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
 export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormProps) {
   const { toast } = useToast();
   const router = useRouter();
@@ -113,8 +123,11 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.name });
 
+      const shortId = generateShortId();
+
       await setDoc(doc(db, "users", userCredential.user.uid), {
         uid: userCredential.user.uid,
+        shortId: shortId,
         name: values.name,
         email: values.email,
         role: 'user',
@@ -152,9 +165,11 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      const shortId = generateShortId();
 
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
+        shortId: shortId,
         name: user.displayName,
         email: user.email,
         photoURL: user.photoURL,

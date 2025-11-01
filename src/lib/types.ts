@@ -36,6 +36,7 @@ export type Category = {
 
 export type UserProfile = {
   uid: string;
+  shortId: string;
   name: string;
   email: string;
   role?: 'user' | 'admin' | 'seller' | 'delivery';

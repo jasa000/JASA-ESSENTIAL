@@ -240,7 +240,7 @@ export default function AppSidebar() {
                 <div className="overflow-hidden">
                   <CardTitle className="text-base truncate">{user.displayName || user.name}</CardTitle>
                   <CardDescription className="text-xs">
-                    UID: <Badge variant="secondary" className="px-1">{user.uid}</Badge>
+                    ID: <Badge variant="secondary" className="px-1">{user.shortId}</Badge>
                   </CardDescription>
                 </div>
               </div>
