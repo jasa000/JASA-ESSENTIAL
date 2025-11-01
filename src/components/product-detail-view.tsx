@@ -12,9 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/context/auth-provider';
 import AuthForm from './auth-form';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export default function ProductDetailView({ product }: { product: Product }) {
   const { user } = useAuth();
@@ -100,8 +101,8 @@ export default function ProductDetailView({ product }: { product: Product }) {
 
   return (
     <>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 p-4">
-      <div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 p-0">
+       <div className="md:sticky md:top-0">
          <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
            {hasImages && mainImage ? (
               <Image
@@ -112,7 +113,7 @@ export default function ProductDetailView({ product }: { product: Product }) {
                   key={mainImageIndex}
               />
             ) : (
-              <p className="text-muted-foreground font-bold text-3xl">JASA</p>
+              <p className="text-muted-foreground font-bold text-3xl dark:text-gray-400">JASA</p>
             )}
              {hasImages && product.imageNames!.length > 1 && (
                <>
@@ -150,10 +151,14 @@ export default function ProductDetailView({ product }: { product: Product }) {
           )}
       </div>
 
-      <div className="flex flex-col justify-center">
-        <DialogHeader>
+      <div className="flex flex-col">
+        <DialogHeader className="relative">
           {names && <p className="text-sm font-medium text-muted-foreground">{names}</p>}
-          <DialogTitle className="font-headline text-3xl font-bold lg:text-4xl">{product.name}</DialogTitle>
+          <DialogTitle className="font-headline text-3xl font-bold lg:text-4xl pr-12">{product.name}</DialogTitle>
+            <Button size="icon" variant="outline" className="absolute top-0 right-0 rounded-full h-10 w-10" onClick={handleAddToCart}>
+                <ShoppingCart className="h-5 w-5" />
+                <span className="sr-only">Add to cart</span>
+            </Button>
         </DialogHeader>
         
         <div className="mt-2 flex items-center gap-2">
@@ -170,30 +175,39 @@ export default function ProductDetailView({ product }: { product: Product }) {
 
         <Separator className="my-4" />
         
-        <p className="text-foreground/80 leading-relaxed">{product.description}</p>
-        
-        <div className="mt-6">
-          <div className='flex items-baseline gap-2'>
-            <p className="text-3xl font-bold text-foreground">
-              ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
-            </p>
-            {hasDiscount && (
-              <p className="text-xl text-muted-foreground line-through">
-                ₹{product.price.toFixed(2)}
-              </p>
-            )}
-          </div>
-        </div>
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Description</AccordionTrigger>
+            <AccordionContent>
+              <p className="text-foreground/80 leading-relaxed">{product.description}</p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
-        <div className="mt-6">
-          <Button size="lg" className="w-full max-w-xs rounded-full" onClick={handleAddToCart}>
+        <div className="flex-grow"></div>
+        
+        <DialogFooter className="mt-6 flex-col sm:flex-col sm:justify-start sm:space-x-0 gap-4 sticky bottom-0 bg-background py-4">
+          <div>
+              <div className='flex items-baseline gap-2'>
+                <p className="text-3xl font-bold text-foreground">
+                  ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                </p>
+                {hasDiscount && (
+                  <p className="text-xl text-muted-foreground line-through">
+                    ₹{product.price.toFixed(2)}
+                  </p>
+                )}
+              </div>
+          </div>
+          <Button size="lg" className="w-full rounded-full" onClick={handleAddToCart}>
             <ShoppingCart className="mr-2 h-5 w-5" />
             Add to Cart
           </Button>
-        </div>
+        </DialogFooter>
       </div>
     </div>
     {AuthDialog}
     </>
   );
 }
+
