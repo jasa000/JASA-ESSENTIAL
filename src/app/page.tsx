@@ -69,13 +69,13 @@ export default function Home() {
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-10 w-24" />
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4">
-             {Array.from({ length: 4 }).map((_, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+             {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex flex-col space-y-3">
-                  <Skeleton className="h-[250px] w-64 rounded-xl" />
+                  <Skeleton className="h-[250px] w-full rounded-xl" />
                   <div className="space-y-2">
-                    <Skeleton className="h-4 w-56" />
-                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
                   </div>
                 </div>
               ))}
@@ -97,7 +97,7 @@ export default function Home() {
             </Link>
           </Button>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {productList.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
