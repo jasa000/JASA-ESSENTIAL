@@ -155,11 +155,16 @@ export default function ProductCard({ product, className, showAdminControls = fa
                       </Button>
                   </div>
               )}
+               {hideBuyButton && !showAdminControls && (
+                <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
+                    <ShoppingCart className="h-4 w-4 text-primary" />
+                </Button>
+               )}
             </div>
           
           <CardContent className="flex flex-1 flex-col p-4">
               <CardContentTrigger {...cardContentProps}>
-                 <div className='cursor-pointer'>{cardInfo}</div>
+                 <div className='cursor-pointer flex-grow'>{cardInfo}</div>
               </CardContentTrigger>
               <div className="mt-4 flex flex-col sm:flex-row items-baseline justify-between">
                 <div className='flex items-baseline gap-2'>
@@ -173,14 +178,9 @@ export default function ProductCard({ product, className, showAdminControls = fa
                   )}
                 </div>
                   {!showAdminControls && !hideBuyButton && (
-                      <>
-                          <Button onClick={handleAddToCart} size="sm" className='rounded-full mt-2 sm:mt-0'>
-                              Shop Now
-                          </Button>
-                          <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
-                              <ShoppingCart className="h-4 w-4 text-primary" />
-                          </Button>
-                      </>
+                      <Button onClick={handleAddToCart} size="sm" className='rounded-full mt-2 sm:mt-0'>
+                          Shop Now
+                      </Button>
                   )}
               </div>
           </CardContent>
