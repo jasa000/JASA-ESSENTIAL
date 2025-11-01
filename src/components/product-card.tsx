@@ -3,7 +3,7 @@
 "use client";
 
 import Image from 'next/image';
-import type { Product, Author } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -80,9 +80,18 @@ export default function ProductCard({ product, className, showAdminControls = fa
     <Card className={cn("group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg w-64 flex-shrink-0", className)}>
       <div className="relative aspect-square w-full overflow-hidden">
         <Link href={`/products/${product.id}`}>
-          <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-            No Image
-          </div>
+          {product.imageName ? (
+            <Image
+              src={`/images/products/${product.imageName}`}
+              alt={product.name}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+              No Image
+            </div>
+          )}
         </Link>
          {showAdminControls ? (
             <div className="absolute top-2 right-2 flex flex-col gap-2">

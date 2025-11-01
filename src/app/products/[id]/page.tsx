@@ -2,9 +2,9 @@
 
 "use client";
 
-import { useEffect, useState, useRef, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { getProductById, getAuthors, getBrands } from '@/lib/data';
-import type { Product, Brand, Author } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,6 @@ import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
 import { Star, ShoppingCart } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
@@ -119,7 +117,16 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         <div>
            <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
-             <p className="text-muted-foreground">No Image Available</p>
+             {product.imageName ? (
+                <Image
+                    src={`/images/products/${product.imageName}`}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                />
+              ) : (
+                <p className="text-muted-foreground">No Image Available</p>
+              )}
            </div>
         </div>
 

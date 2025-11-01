@@ -11,12 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Trash2, Check, ChevronsUpDown, Pencil } from "lucide-react";
+import { Check, ChevronsUpDown, Pencil, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +42,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -58,6 +57,7 @@ const productSchema = z.object({
   category: z.enum(['stationary', 'books', 'electronics']),
   price: z.coerce.number().positive("Price must be a positive number."),
   discountPrice: z.coerce.number().optional().or(z.literal('')),
+  imageName: z.string().optional(),
 });
 
 const brandSchema = z.object({
@@ -91,6 +91,7 @@ export default function ManageProductsPage() {
       category: activeTab,
       price: 0,
       discountPrice: '',
+      imageName: "",
     },
   });
 
@@ -146,6 +147,7 @@ export default function ManageProductsPage() {
         category: editingProduct.category,
         price: editingProduct.price,
         discountPrice: editingProduct.discountPrice || '',
+        imageName: editingProduct.imageName || "",
       });
       setIsEditDialogOpen(true);
     } else {
@@ -170,6 +172,7 @@ export default function ManageProductsPage() {
         category: activeTab,
         price: 0,
         discountPrice: '',
+        imageName: "",
       });
     } catch (error) {
       toast({
@@ -388,6 +391,14 @@ export default function ManageProductsPage() {
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
+
+                    <FormField control={form.control} name="imageName" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Image Filename</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g., product-image.png" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
                     
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <FormField control={form.control} name="price" render={({ field }) => (
@@ -506,6 +517,14 @@ export default function ManageProductsPage() {
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
+                    <FormField control={editForm.control} name="imageName" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Image Filename</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g., product-image.png" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <FormField control={editForm.control} name="price" render={({ field }) => (
                           <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
@@ -545,5 +564,3 @@ export default function ManageProductsPage() {
     </div>
   );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   name: string;
@@ -10,8 +11,7 @@ export type Product = {
   discountPrice?: number;
   rating?: number;
   createdAt: any;
-  imageNames?: { value: string }[];
-  primaryImageIndex?: number;
+  imageName?: string;
 };
 
 export type CartItem = {
