@@ -2,22 +2,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProducts } from "@/lib/data";
-import type { Product } from "@/lib/types";
+import { getProducts, getProductTypes } from "@/lib/data";
+import type { Product, ProductType } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoading } from "@/hooks/use-loading";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 export default function BooksPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [selectedType, setSelectedType] = useState<string>("all");
   const { isLoading, setIsLoading } = useLoading();
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const fetchedProducts = await getProducts("books");
+        const [fetchedProducts, fetchedTypes] = await Promise.all([
+          getProducts("books"),
+          getProductTypes("books"),
+        ]);
         setProducts(fetchedProducts);
+        setFilteredProducts(fetchedProducts);
+        setProductTypes(fetchedTypes);
       } catch (error) {
         console.error("Failed to fetch books data:", error);
       } finally {
@@ -26,6 +37,18 @@ export default function BooksPage() {
     };
     fetchData();
   }, [setIsLoading]);
+
+  useEffect(() => {
+    let tempProducts = [...products];
+
+    if (selectedType !== "all") {
+      tempProducts = tempProducts.filter(
+        (product) => product.productTypeIds && product.productTypeIds.includes(selectedType)
+      );
+    }
+
+    setFilteredProducts(tempProducts);
+  }, [selectedType, products]);
 
   const renderProductGrid = () => {
     if (isLoading) {
@@ -44,12 +67,12 @@ export default function BooksPage() {
       );
     }
 
-    if (products.length === 0) {
+    if (filteredProducts.length === 0) {
       return (
         <div className="py-16 text-center">
           <h2 className="text-xl font-semibold">No Books Found</h2>
           <p className="text-muted-foreground">
-            There are no books available at the moment.
+            There are no books available at the moment or matching your filters.
           </p>
         </div>
       );
@@ -57,12 +80,42 @@ export default function BooksPage() {
 
     return (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {products.map((product) => (
+        {filteredProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
     );
   };
+  
+  const FilterButtons = ({ items, selected, onSelect, title }: {
+    items: {id: string, name: string}[];
+    selected: string;
+    onSelect: (id: string) => void;
+    title: string;
+  }) => (
+    <div>
+        <h3 className="text-sm font-semibold mb-2">{title}</h3>
+        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            <Button
+                variant={selected === "all" ? "default" : "outline"}
+                className={cn("rounded-full", selected === "all" && "bg-primary text-primary-foreground")}
+                onClick={() => onSelect("all")}
+            >
+                All
+            </Button>
+            {items.map((item) => (
+                <Button
+                key={item.id}
+                variant={selected === item.id ? "default" : "outline"}
+                className={cn("rounded-full", selected === item.id && "bg-primary text-primary-foreground")}
+                onClick={() => onSelect(item.id)}
+                >
+                {item.name}
+                </Button>
+            ))}
+        </div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -74,6 +127,10 @@ export default function BooksPage() {
           Browse our collection of books.
         </p>
       </div>
+
+       <div className="sticky top-20 z-40 bg-background py-4 space-y-4">
+        <FilterButtons items={productTypes} selected={selectedType} onSelect={setSelectedType} title="Filter by Type" />
+       </div>
 
       <div className="mt-8">{renderProductGrid()}</div>
     </div>

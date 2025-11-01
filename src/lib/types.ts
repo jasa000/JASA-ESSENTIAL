@@ -5,6 +5,7 @@ export type Product = {
   name: string;
   brandIds?: string[];
   authorIds?: string[];
+  productTypeIds?: string[];
   description: string;
   category: 'stationary' | 'books' | 'electronics';
   price: number;
@@ -84,6 +85,13 @@ export type Brand = {
 export type Author = {
   id: string;
   name: string;
+  createdAt: any;
+};
+
+export type ProductType = {
+  id: string;
+  name: string;
+  category: 'stationary' | 'books' | 'electronics';
   createdAt: any;
 };
 

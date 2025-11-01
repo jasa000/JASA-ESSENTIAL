@@ -3,10 +3,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProducts, addProduct, updateProduct, deleteProduct, getBrands, addBrand, getAuthors, addAuthor } from "@/lib/data";
+import { getProducts, addProduct, updateProduct, deleteProduct, getBrands, addBrand, getAuthors, addAuthor, getProductTypes, addProductType } from "@/lib/data";
 import ProductCard from "@/components/product-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Product, Brand, Author } from "@/lib/types";
+import type { Product, Brand, Author, ProductType } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,7 @@ const productSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
   brandIds: z.array(z.string()).optional(),
   authorIds: z.array(z.string()).optional(),
+  productTypeIds: z.array(z.string()).optional(),
   description: z.string().min(10, "Description must be at least 10 characters."),
   category: z.enum(['stationary', 'books', 'electronics']),
   price: z.coerce.number().positive("Price must be a positive number."),
@@ -76,12 +77,17 @@ const authorSchema = z.object({
   name: z.string().min(2, "Author name must be at least 2 characters."),
 });
 
+const productTypeSchema = z.object({
+  name: z.string().min(2, "Product type name must be at least 2 characters."),
+});
+
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
   const [productList, setProductList] = useState<Product[]>([]);
   const [stationaryBrandList, setStationaryBrandList] = useState<Brand[]>([]);
   const [electronicsBrandList, setElectronicsBrandList] = useState<Brand[]>([]);
   const [authorList, setAuthorList] = useState<Author[]>([]);
+  const [productTypeList, setProductTypeList] = useState<ProductType[]>([]);
   const { isLoading, setIsLoading } = useLoading();
   const { toast } = useToast();
   
@@ -91,6 +97,7 @@ export default function ManageProductsPage() {
   
   const [isBrandFormOpen, setIsBrandFormOpen] = useState(false);
   const [isAuthorFormOpen, setIsAuthorFormOpen] = useState(false);
+  const [isProductTypeFormOpen, setIsProductTypeFormOpen] = useState(false);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
 
 
@@ -100,6 +107,7 @@ export default function ManageProductsPage() {
       name: "",
       brandIds: [],
       authorIds: [],
+      productTypeIds: [],
       description: "",
       category: activeTab,
       price: 0,
@@ -122,20 +130,27 @@ export default function ManageProductsPage() {
     resolver: zodResolver(authorSchema),
     defaultValues: { name: "" },
   });
+  
+  const productTypeForm = useForm<z.infer<typeof productTypeSchema>>({
+    resolver: zodResolver(productTypeSchema),
+    defaultValues: { name: "" },
+  });
 
   const fetchAllData = async () => {
       setIsLoading(true);
       try {
-        const [products, stationaryBrands, electronicsBrands, authors] = await Promise.all([
+        const [products, stationaryBrands, electronicsBrands, authors, productTypes] = await Promise.all([
             getProducts(), 
             getBrands('stationary'),
             getBrands('electronics'),
-            getAuthors()
+            getAuthors(),
+            getProductTypes(),
         ]);
         setProductList(products);
         setStationaryBrandList(stationaryBrands);
         setElectronicsBrandList(electronicsBrands);
         setAuthorList(authors);
+        setProductTypeList(productTypes);
       } catch (error) {
         toast({ variant: "destructive", title: "Error", description: "Failed to fetch data from the database." });
       } finally {
@@ -158,6 +173,7 @@ export default function ManageProductsPage() {
         name: editingProduct.name,
         brandIds: editingProduct.brandIds || [],
         authorIds: editingProduct.authorIds || [],
+        productTypeIds: editingProduct.productTypeIds || [],
         description: editingProduct.description,
         category: editingProduct.category,
         price: editingProduct.price,
@@ -208,6 +224,7 @@ export default function ManageProductsPage() {
                 name: "",
                 brandIds: [],
                 authorIds: [],
+                productTypeIds: [],
                 description: "",
                 category: activeTab,
                 price: 0,
@@ -295,10 +312,28 @@ export default function ManageProductsPage() {
     }
   };
   
+  const onProductTypeSubmit = async (values: z.infer<typeof productTypeSchema>, category: ProductType['category']) => {
+    try {
+        await addProductType(values, category);
+        toast({
+            title: "Product Type Created",
+            description: `${values.name} has been added successfully.`,
+        });
+        fetchAllData(); // Refresh list
+        productTypeForm.reset();
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to create the product type.",
+        });
+    }
+  };
+  
   const MultiSelect = ({ form, fieldName, items, placeholder, searchPlaceholder, emptyMessage, label }: { 
     form: any, 
-    fieldName: "brandIds" | "authorIds", 
-    items: (Brand | Author)[],
+    fieldName: "brandIds" | "authorIds" | "productTypeIds", 
+    items: (Brand | Author | ProductType)[],
     placeholder: string,
     searchPlaceholder: string,
     emptyMessage: string,
@@ -509,6 +544,39 @@ export default function ManageProductsPage() {
       </Collapsible>
     );
 
+  const renderCreateProductTypeForm = (category: ProductType['category'], isOpen: boolean, onOpenChange: (open: boolean) => void) => (
+      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Create Product Type</CardTitle>
+                    <CardDescription>Add a new product type for the {category} category (e.g., Pen, Notebook).</CardDescription>
+                </div>
+                <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-9 p-0">
+                        <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                        <span className="sr-only">Toggle</span>
+                    </Button>
+                </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+                <CardContent>
+                <Form {...productTypeForm}>
+                    <form onSubmit={productTypeForm.handleSubmit((values) => onProductTypeSubmit(values, category))} className="space-y-4">
+                    <FormField control={productTypeForm.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>Product Type Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <Button type="submit" className="w-full" disabled={productTypeForm.formState.isSubmitting}>
+                        {productTypeForm.formState.isSubmitting ? "Adding..." : "Add Product Type"}
+                    </Button>
+                    </form>
+                </Form>
+                </CardContent>
+            </CollapsibleContent>
+        </Card>
+      </Collapsible>
+    );
+
   const renderCreateForm = (category: Product['category'], currentForm: any, isOpen: boolean, onOpenChange: (open: boolean) => void) => (
      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
         <Card>
@@ -535,6 +603,8 @@ export default function ManageProductsPage() {
                             {category === 'stationary' && <MultiSelect form={currentForm} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
                             {category === 'books' && <MultiSelect form={currentForm} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
                             {category === 'electronics' && <MultiSelect form={currentForm} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+                            
+                            <MultiSelect form={currentForm} fieldName="productTypeIds" items={productTypeList.filter(pt => pt.category === category)} label="Product Types" placeholder="Select product types" searchPlaceholder="Search product types..." emptyMessage="No product types found." />
 
                             <FormField control={currentForm.control} name="description" render={({ field }) => (
                                 <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
@@ -616,6 +686,7 @@ export default function ManageProductsPage() {
           form.setValue('category', newCategory);
           setIsBrandFormOpen(false);
           setIsAuthorFormOpen(false);
+          setIsProductTypeFormOpen(false);
           setIsProductFormOpen(false);
       }} className="mt-8 w-full">
           <div className="sticky top-20 z-10 bg-background py-4">
@@ -628,18 +699,21 @@ export default function ManageProductsPage() {
           
           <TabsContent value="stationary" className="mt-8">
               {renderCreateBrandForm('stationary', isBrandFormOpen, setIsBrandFormOpen)}
+              {renderCreateProductTypeForm('stationary', isProductTypeFormOpen, setIsProductTypeFormOpen)}
               {renderCreateForm('stationary', form, isProductFormOpen, setIsProductFormOpen)}
               {renderProductGrid('stationary')}
           </TabsContent>
 
           <TabsContent value="books" className="mt-8">
               {renderCreateAuthorForm(isAuthorFormOpen, setIsAuthorFormOpen)}
+              {renderCreateProductTypeForm('books', isProductTypeFormOpen, setIsProductTypeFormOpen)}
               {renderCreateForm('books', form, isProductFormOpen, setIsProductFormOpen)}
               {renderProductGrid('books')}
           </TabsContent>
 
           <TabsContent value="electronics" className="mt-8">
               {renderCreateBrandForm('electronics', isBrandFormOpen, setIsBrandFormOpen)}
+              {renderCreateProductTypeForm('electronics', isProductTypeFormOpen, setIsProductTypeFormOpen)}
               {renderCreateForm('electronics', form, isProductFormOpen, setIsProductFormOpen)}
               {renderProductGrid('electronics')}
           </TabsContent>
@@ -662,6 +736,8 @@ export default function ManageProductsPage() {
                     {editingProduct?.category === 'stationary' && <MultiSelect form={editForm} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
                     {editingProduct?.category === 'books' && <MultiSelect form={editForm} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
                     {editingProduct?.category === 'electronics' && <MultiSelect form={editForm} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+
+                    <MultiSelect form={editForm} fieldName="productTypeIds" items={productTypeList.filter(pt => pt.category === editingProduct?.category)} label="Product Types" placeholder="Select product types" searchPlaceholder="Search product types..." emptyMessage="No product types found." />
 
                     <FormField control={editForm.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>

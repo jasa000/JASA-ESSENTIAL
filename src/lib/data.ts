@@ -1,6 +1,6 @@
 
 
-import type { Product, Category, Brand, Author } from './types';
+import type { Product, Category, Brand, Author, ProductType } from './types';
 import imageData from './placeholder-images.json';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
@@ -59,6 +59,7 @@ export const categories: Category[] = [
 const productsCollection = collection(db, 'products');
 const brandsCollection = collection(db, 'brands');
 const authorsCollection = collection(db, 'authors');
+const productTypesCollection = collection(db, 'productTypes');
 
 
 export const getProducts = async (category?: Product['category']): Promise<Product[]> => {
@@ -126,6 +127,19 @@ export const getAuthors = async (): Promise<Author[]> => {
     } catch (error) {
         console.error("Error getting authors: ", error);
         throw new Error("Failed to fetch authors.");
+    }
+};
+
+export const getProductTypes = async (category?: ProductType['category']): Promise<ProductType[]> => {
+    try {
+        const q = category 
+            ? query(productTypesCollection, where('category', '==', category), orderBy('name', 'asc'))
+            : query(productTypesCollection, orderBy('name', 'asc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductType));
+    } catch (error) {
+        console.error("Error getting product types: ", error);
+        throw new Error("Failed to fetch product types.");
     }
 };
 
@@ -208,4 +222,18 @@ export const addAuthor = async (authorData: Omit<Author, 'id' | 'createdAt'>) =>
     }
 };
 
+export const addProductType = async (productTypeData: Omit<ProductType, 'id' | 'createdAt' | 'category'>, category: ProductType['category']) => {
+    const newProductType = {
+        ...productTypeData,
+        category: category,
+        createdAt: serverTimestamp(),
+    }
+    try {
+        const docRef = await addDoc(productTypesCollection, newProductType);
+        return { ...newProductType, id: docRef.id } as ProductType;
+    } catch (error) {
+        console.error("Error adding product type: ", error);
+        throw new Error("Failed to add product type to database.");
+    }
+};
     
