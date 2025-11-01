@@ -8,6 +8,7 @@ import ProductCard from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLoading } from "@/hooks/use-loading";
 
 export default function StationaryPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -15,7 +16,7 @@ export default function StationaryPage() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
   const [priceSort, setPriceSort] = useState<"all" | "asc" | "desc">("all");
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoading, setIsLoading } = useLoading();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,7 +36,7 @@ export default function StationaryPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [setIsLoading]);
 
   useEffect(() => {
     let tempProducts = [...products];
@@ -52,7 +53,7 @@ export default function StationaryPage() {
         tempProducts.sort((a, b) => {
             const priceA = a.discountPrice || a.price;
             const priceB = b.discountPrice || b.price;
-            return priceSort === 'asc' ? priceA - priceB : priceB - priceA;
+            return priceSort === 'asc' ? priceA - priceB : priceB - a.price;
         });
     }
 

@@ -6,10 +6,11 @@ import { getProducts } from "@/lib/data";
 import type { Product } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoading } from "@/hooks/use-loading";
 
 export default function ElectronicsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoading, setIsLoading } = useLoading();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,7 +25,7 @@ export default function ElectronicsPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [setIsLoading]);
 
   const renderProductGrid = () => {
     if (isLoading) {

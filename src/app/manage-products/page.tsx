@@ -43,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLoading } from "@/hooks/use-loading";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -76,7 +77,7 @@ export default function ManageProductsPage() {
   const [stationaryBrandList, setStationaryBrandList] = useState<Brand[]>([]);
   const [electronicsBrandList, setElectronicsBrandList] = useState<Brand[]>([]);
   const [authorList, setAuthorList] = useState<Author[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoading, setIsLoading } = useLoading();
   const { toast } = useToast();
   
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -134,7 +135,7 @@ export default function ManageProductsPage() {
 
   useEffect(() => {
     fetchAllData();
-  }, [toast]);
+  }, [toast, setIsLoading]);
 
   useEffect(() => {
     form.setValue('category', activeTab);

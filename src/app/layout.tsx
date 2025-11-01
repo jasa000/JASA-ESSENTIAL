@@ -9,6 +9,8 @@ import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar"
 import AppSidebar from "@/components/app-sidebar";
 import { AuthProvider } from "@/context/auth-provider";
 import { ThemeProvider } from "@/context/theme-provider";
+import { LoadingProvider } from "@/context/loading-provider";
+import GlobalLoader from "@/components/global-loader";
 
 export const metadata: Metadata = {
   title: "Jasa Essentials",
@@ -41,18 +43,21 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <CartProvider>
-              <SidebarProvider>
-                <Sidebar>
-                  <AppSidebar />
-                </Sidebar>
-                <SidebarInset>
-                  <div className="flex min-h-screen flex-col">
-                    <Header />
-                    <main className="flex-grow">{children}</main>
-                  </div>
-                  <Toaster />
-                </SidebarInset>
-              </SidebarProvider>
+              <LoadingProvider>
+                <SidebarProvider>
+                  <Sidebar>
+                    <AppSidebar />
+                  </Sidebar>
+                  <SidebarInset>
+                    <GlobalLoader />
+                    <div className="flex min-h-screen flex-col">
+                      <Header />
+                      <main className="flex-grow">{children}</main>
+                    </div>
+                    <Toaster />
+                  </SidebarInset>
+                </SidebarProvider>
+              </LoadingProvider>
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>
