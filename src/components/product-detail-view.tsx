@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,13 +12,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/context/auth-provider';
+import AuthForm from './auth-form';
 
 export default function ProductDetailView({ product }: { product: Product }) {
+  const { user } = useAuth();
   const [names, setNames] = useState('');
   const { addItem } = useCart();
   const { toast } = useToast();
   const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -54,6 +59,10 @@ export default function ProductDetailView({ product }: { product: Product }) {
   }, [product]);
 
   const handleAddToCart = () => {
+    if (!user) {
+        setIsAuthDialogOpen(true);
+        return;
+    }
     addItem(product);
     toast({
       title: "Added to cart",
@@ -77,8 +86,20 @@ export default function ProductDetailView({ product }: { product: Product }) {
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
   const hasImages = product.imageNames && product.imageNames.length > 0;
   const mainImage = hasImages ? product.imageNames![mainImageIndex] : null;
+  
+  const AuthDialog = (
+     <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+        <DialogContent className="max-w-sm">
+           <DialogHeader>
+             <DialogTitle className="sr-only">Authentication</DialogTitle>
+           </DialogHeader>
+           <AuthForm onSuccess={() => setIsAuthDialogOpen(false)} />
+        </DialogContent>
+     </Dialog>
+  )
 
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 p-4">
       <div>
          <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
@@ -172,5 +193,7 @@ export default function ProductDetailView({ product }: { product: Product }) {
         </div>
       </div>
     </div>
+    {AuthDialog}
+    </>
   );
 }

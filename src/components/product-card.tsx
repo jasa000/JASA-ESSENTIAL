@@ -15,8 +15,10 @@ import { ShoppingCart, Star, Pencil, Trash2 } from 'lucide-react';
 import { getBrands, getAuthors } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ProductDetailView from './product-detail-view';
+import { useAuth } from '@/context/auth-provider';
+import AuthForm from './auth-form';
 
 type ProductCardProps = {
   product: Product;
@@ -27,9 +29,11 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product, className, showAdminControls = false, onEdit, onDelete }: ProductCardProps) {
+  const { user } = useAuth();
   const { addItem } = useCart();
   const { toast } = useToast();
   const [names, setNames] = useState('');
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchNames = async () => {
@@ -66,7 +70,11 @@ export default function ProductCard({ product, className, showAdminControls = fa
 
 
   const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent dialog from opening
+    e.stopPropagation(); 
+    if (!user) {
+        setIsAuthDialogOpen(true);
+        return;
+    }
     addItem(product);
     toast({
       title: "Added to cart",
@@ -80,7 +88,19 @@ export default function ProductCard({ product, className, showAdminControls = fa
 
   const mainImage = product.imageNames && product.imageNames.length > 0 ? product.imageNames[0] : null;
 
+  const AuthDialog = (
+     <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+        <DialogContent className="max-w-sm">
+           <DialogHeader>
+             <DialogTitle className="sr-only">Authentication</DialogTitle>
+           </DialogHeader>
+           <AuthForm onSuccess={() => setIsAuthDialogOpen(false)} />
+        </DialogContent>
+     </Dialog>
+  )
+
   return (
+    <>
     <Dialog>
       <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg", className)}>
         <DialogTrigger asChild>
@@ -152,5 +172,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
           <ProductDetailView product={product} />
        </DialogContent>
     </Dialog>
+    {AuthDialog}
+    </>
   );
 }
