@@ -13,6 +13,7 @@ export type Product = {
   price: number;
   discountPrice?: number;
   rating?: number;
+  createdAt: any;
 };
 
 export type CartItem = {
@@ -79,6 +80,7 @@ export type Brand = {
   id: string;
   name: string;
   category: 'stationary' | 'books' | 'electronics';
+  createdAt: any;
 };
 
 export type OrderStatus = "Processing" | "Shipped" | "Delivered" | "Cancelled";

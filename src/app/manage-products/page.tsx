@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { products, addProduct, brands, addBrand } from "@/lib/data";
+import { useState, useEffect } from "react";
+import { getProducts, addProduct, getBrands, addBrand } from "@/lib/data";
 import ProductCard from "@/components/product-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Product, Brand } from "@/lib/types";
@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -43,8 +44,9 @@ const brandSchema = z.object({
 
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
-  const [productList, setProductList] = useState<Product[]>(products);
-  const [brandList, setBrandList] = useState<Brand[]>(brands);
+  const [productList, setProductList] = useState<Product[]>([]);
+  const [brandList, setBrandList] = useState<Brand[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof productSchema>>({
@@ -71,20 +73,37 @@ export default function ManageProductsPage() {
     control: form.control,
     name: "imageNames",
   });
+  
+  const fetchAllData = async () => {
+      setIsLoading(true);
+      try {
+        const [products, brands] = await Promise.all([getProducts(), getBrands()]);
+        setProductList(products);
+        setBrandList(brands);
+      } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to fetch data from the database." });
+      } finally {
+        setIsLoading(false);
+      }
+  }
 
-  useState(() => {
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  useEffect(() => {
     form.setValue('category', activeTab);
-  });
+  }, [activeTab, form]);
 
-  const onProductSubmit = (values: z.infer<typeof productSchema>) => {
+  const onProductSubmit = async (values: z.infer<typeof productSchema>) => {
     try {
       const imageNames = values.imageNames.map(img => img.value);
-      addProduct({ ...values, imageNames });
-      setProductList([...products]);
+      await addProduct({ ...values, imageNames });
       toast({
         title: "Product Created",
         description: `${values.name} has been added successfully.`,
       });
+      fetchAllData(); // Refresh list
       form.reset();
       form.setValue('category', activeTab);
       form.setValue('imageNames', [{ value: '' }]);
@@ -97,14 +116,14 @@ export default function ManageProductsPage() {
     }
   };
 
-  const onBrandSubmit = (values: z.infer<typeof brandSchema>) => {
+  const onBrandSubmit = async (values: z.infer<typeof brandSchema>) => {
     try {
-        addBrand({ ...values, category: activeTab });
-        setBrandList([...brands]);
+        await addBrand({ ...values, category: activeTab });
         toast({
             title: "Brand Created",
             description: `${values.name} has been added successfully.`,
         });
+        fetchAllData(); // Refresh list
         brandForm.reset();
     } catch (error) {
         toast({
@@ -209,7 +228,9 @@ export default function ManageProductsPage() {
               <FormField control={brandForm.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>Brand Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <Button type="submit" className="w-full">Add Brand</Button>
+              <Button type="submit" className="w-full" disabled={brandForm.formState.isSubmitting}>
+                {brandForm.formState.isSubmitting ? "Adding..." : "Add Brand"}
+              </Button>
             </form>
           </Form>
         </CardContent>
@@ -274,7 +295,9 @@ export default function ManageProductsPage() {
                         </Button>
                         <FormMessage>{(form.formState.errors.imageNames as any)?.message}</FormMessage>
                     </div>
-                    <Button type="submit" className="w-full">Add Product</Button>
+                    <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting ? "Adding..." : "Add Product"}
+                    </Button>
                 </form>
             </Form>
         </CardContent>
@@ -283,6 +306,23 @@ export default function ManageProductsPage() {
 
   const renderProductGrid = (category: Product['category']) => {
     const filtered = productList.filter(p => p.category === category);
+
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex flex-col space-y-3">
+              <Skeleton className="h-[250px] w-[250px] rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
     return (
          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {filtered.length > 0 ? (

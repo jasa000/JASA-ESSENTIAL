@@ -2,7 +2,7 @@
 "use client";
 
 import Image from 'next/image';
-import type { Product } from '@/lib/types';
+import type { Product, Brand } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -12,8 +12,9 @@ import { useCart } from '@/hooks/use-cart';
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Star } from 'lucide-react';
 import Link from 'next/link';
-import { brands } from '@/lib/data';
+import { getBrands } from '@/lib/data';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 type ProductCardProps = {
   product: Product;
@@ -23,6 +24,30 @@ type ProductCardProps = {
 export default function ProductCard({ product, className }: ProductCardProps) {
   const { addItem } = useCart();
   const { toast } = useToast();
+  const [productBrands, setProductBrands] = useState('');
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      if (product.brandIds && product.brandIds.length > 0) {
+        try {
+            const allBrands = await getBrands();
+            const brandNames = product.brandIds
+                .map(id => allBrands.find(b => b.id === id)?.name)
+                .filter(Boolean)
+                .join(', ');
+            setProductBrands(brandNames);
+        } catch (error) {
+            console.error("Could not fetch brands for product card", error);
+        }
+      } else if (Array.isArray(product.brandIds) && product.brandIds.length > 0 && typeof product.brandIds[0] === 'string') {
+        // Fallback for when brandIds is just an array of strings (for non-stationary items)
+        setProductBrands(product.brandIds.join(', '));
+      }
+    };
+
+    fetchBrands();
+  }, [product.brandIds]);
+
 
   const handleAddToCart = () => {
     addItem(product);
@@ -34,7 +59,6 @@ export default function ProductCard({ product, className }: ProductCardProps) {
 
   const rating = product.rating || 5;
   const primaryImage = product.images[0];
-  const productBrands = product.brandIds?.map(id => brands.find(b => b.id === id)?.name).filter(Boolean).join(', ');
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 

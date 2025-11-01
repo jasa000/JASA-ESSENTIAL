@@ -6,7 +6,7 @@ import Autoplay from "embla-carousel-autoplay";
 import BannerCard from '@/components/banner-card';
 import WelcomeCard from '@/components/welcome-card';
 import CategoryLinkCard from '@/components/category-link-card';
-import { categories, products } from '@/lib/data';
+import { categories, getProducts } from '@/lib/data';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import PostCarousel from "@/components/post-carousel";
 import type { Product } from "@/lib/types";
@@ -14,12 +14,35 @@ import ProductCard from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function Home() {
   const plugin = React.useRef(
     Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
   );
+
+  const [productsByCategory, setProductsByCategory] = React.useState<{ [key in Product['category']]?: Product[] }>({});
+  const [isLoading, setIsLoading] = React.useState(true);
+  
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const [stationary, books, electronics] = await Promise.all([
+          getProducts('stationary'),
+          getProducts('books'),
+          getProducts('electronics'),
+        ]);
+        setProductsByCategory({ stationary, books, electronics });
+      } catch (error) {
+        console.error("Failed to fetch products for home page:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const banners = [
     { id: 'banner-stationary', href: '/stationary', title: 'Level Up Your Workspace', cta: 'Shop Stationary', imageName: 'stationary.png', alt: 'A modern, well-organized desk with stationary supplies.' },
@@ -28,16 +51,58 @@ export default function Home() {
     { id: 'banner-electronics', href: '/electronics', title: 'Build Your Next Project', cta: 'Explore Kits', imageName: 'electronics.png', alt: 'A person soldering an electronics circuit board.' }
   ];
 
-  const productsByCategory = {
-    stationary: products.filter(p => p.category === 'stationary'),
-    books: products.filter(p => p.category === 'books'),
-    electronics: products.filter(p => p.category === 'electronics'),
-  }
-
   const categoryDisplayInfo = {
       stationary: { title: "Featured Stationary", href: "/stationary" },
       books: { title: "Latest Books", href: "/books" },
       electronics: { title: "Top Electronic Kits", href: "/electronics" },
+  }
+
+  const renderProductSection = (category: Product['category']) => {
+    const catInfo = categoryDisplayInfo[category];
+    const productList = productsByCategory[category] || [];
+
+    if (isLoading) {
+      return (
+        <div className="py-8">
+          <div className="mb-6 flex items-center justify-between">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+             {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col space-y-3">
+                  <Skeleton className="h-[250px] w-64 rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-56" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )
+    }
+
+    if (!productList.length || !catInfo) return null;
+
+    return (
+      <div className="py-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</h2>
+          <Button asChild variant="outline">
+            <Link href={catInfo.href}>
+              <span>View All</span>
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {productList.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -87,29 +152,9 @@ export default function Home() {
           </div>
          </div>
 
-         {Object.entries(productsByCategory).map(([category, productList]) => {
-            const catInfo = categoryDisplayInfo[category as keyof typeof categoryDisplayInfo];
-            if (!productList.length || !catInfo) return null;
-
-            return (
-              <div key={category} className="py-8">
-                <div className="mb-6 flex items-center justify-between">
-                  <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</h2>
-                  <Button asChild variant="outline">
-                    <Link href={catInfo.href}>
-                      <span>View All</span>
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4">
-                  {productList.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              </div>
-            );
-         })}
+         {renderProductSection('stationary')}
+         {renderProductSection('books')}
+         {renderProductSection('electronics')}
 
         <div className="py-8">
           <PostCarousel />
