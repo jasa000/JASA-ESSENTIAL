@@ -23,7 +23,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Store } from 'lucide-react';
 import type { UserProfile, Shop, Product } from '@/lib/types';
-import { useLoading } from '@/hooks/use-loading';
 
 
 const addressSchema = z.object({
@@ -49,7 +48,6 @@ export default function CheckoutForm({ category }: CheckoutFormProps) {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
-  const { setIsLoading } = useLoading();
 
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [allShops, setAllShops] = useState<Shop[]>([]);
@@ -135,7 +133,6 @@ export default function CheckoutForm({ category }: CheckoutFormProps) {
       title: 'Order Placed!',
       description: `Thank you for your purchase. Your order for ${category} items has been sent to ${selectedShop?.name}.`,
     });
-    setIsLoading(true);
     router.push('/profile');
   }
 
@@ -421,3 +418,5 @@ export default function CheckoutForm({ category }: CheckoutFormProps) {
     </div>
   );
 }
+
+    

@@ -22,7 +22,6 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { useLoading } from '@/hooks/use-loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PasswordStrength from '@/components/password-strength';
 import Image from 'next/image';
@@ -48,7 +47,6 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { setIsLoading } = useLoading();
   const [password, setPassword] = useState('');
   const [showResendVerification, setShowResendVerification] = useState(false);
 
@@ -83,7 +81,6 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
         title: "Login Successful",
         description: "Welcome back! You are now logged in.",
       });
-      setIsLoading(true);
       onSuccess?.();
       router.push('/');
     } catch (error: any) {
@@ -157,7 +154,6 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
         title: "Sign In Successful",
         description: "Welcome! You have successfully signed in with Google.",
       });
-      setIsLoading(true);
       onSuccess?.();
       router.push('/');
     } catch (error: any) {
@@ -389,3 +385,5 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
     </div>
   );
 }
+
+    

@@ -31,7 +31,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { sendPasswordResetEmail, deleteUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { useLoading } from "@/hooks/use-loading";
 
 const COOLDOWN_SECONDS = 1800; // 30 minutes
 
@@ -39,7 +38,6 @@ export default function SettingsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const { setIsLoading } = useLoading();
   const [deleteInput, setDeleteInput] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [resetCooldown, setResetCooldown] = useState(0);
@@ -140,7 +138,6 @@ export default function SettingsPage() {
         title: "Account Deleted",
         description: "Your account has been permanently deleted.",
       });
-      setIsLoading(true);
       router.push("/");
     } catch (error: any) {
       toast({
@@ -204,7 +201,7 @@ export default function SettingsPage() {
             </p>
           </CardContent>
           <CardFooter>
-            <Button asChild onClick={() => setIsLoading(true)}>
+            <Button asChild>
               <Link href="/profile">Edit Profile</Link>
             </Button>
           </CardFooter>
@@ -285,3 +282,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
