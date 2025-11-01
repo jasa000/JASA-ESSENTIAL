@@ -76,13 +76,15 @@ export default function ProductCard({ product, className, showAdminControls = fa
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
+  const mainImage = product.imageNames && product.imageNames.length > 0 ? product.imageNames[0] : null;
+
   return (
     <Card className={cn("group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg w-64 flex-shrink-0", className)}>
       <div className="relative aspect-square w-full overflow-hidden">
         <Link href={`/products/${product.id}`}>
-          {product.imageName ? (
+          {mainImage ? (
             <Image
-              src={`/images/products/${product.imageName}`}
+              src={`/images/products/${mainImage}`}
               alt={product.name}
               fill
               className="object-cover"

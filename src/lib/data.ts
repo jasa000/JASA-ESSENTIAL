@@ -137,7 +137,7 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'rating' | 'c
     rating: Math.floor(Math.random() * 3) + 3, // 3 to 5 stars
     createdAt: serverTimestamp(),
     discountPrice: productData.discountPrice || null,
-    imageName: productData.imageName || "",
+    imageNames: productData.imageNames || [],
   };
 
   try {

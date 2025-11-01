@@ -10,9 +10,10 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
-import { Star, ShoppingCart } from 'lucide-react';
+import { Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export default function ProductDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = use(paramsPromise);
@@ -21,6 +22,7 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
   const [isLoading, setIsLoading] = useState(true);
   const { addItem } = useCart();
   const { toast } = useToast();
+  const [mainImageIndex, setMainImageIndex] = useState(0);
 
   useEffect(() => {
     if (params.id) {
@@ -109,25 +111,73 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
     });
   };
 
+  const nextImage = () => {
+    if (product.imageNames) {
+        setMainImageIndex((prev) => (prev + 1) % product.imageNames!.length);
+    }
+  }
+
+  const prevImage = () => {
+     if (product.imageNames) {
+        setMainImageIndex((prev) => (prev - 1 + product.imageNames!.length) % product.imageNames!.length);
+    }
+  }
+
   const rating = product.rating || 5;
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+  const hasImages = product.imageNames && product.imageNames.length > 0;
+  const mainImage = hasImages ? product.imageNames![mainImageIndex] : null;
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         <div>
            <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-muted flex items-center justify-center">
-             {product.imageName ? (
+             {hasImages && mainImage ? (
                 <Image
-                    src={`/images/products/${product.imageName}`}
+                    src={`/images/products/${mainImage}`}
                     alt={product.name}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-opacity duration-300"
+                    key={mainImageIndex}
                 />
               ) : (
                 <p className="text-muted-foreground">No Image Available</p>
               )}
+               {hasImages && product.imageNames!.length > 1 && (
+                 <>
+                    <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/50 hover:bg-background/80" onClick={prevImage}>
+                        <ChevronLeft />
+                    </Button>
+                     <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/50 hover:bg-background/80" onClick={nextImage}>
+                        <ChevronRight />
+                    </Button>
+                 </>
+               )}
            </div>
+            {hasImages && product.imageNames!.length > 1 && (
+            <div className="mt-4 flex gap-2 justify-center">
+                {product.imageNames!.map((img, index) => (
+                    <button 
+                        key={index} 
+                        onClick={() => setMainImageIndex(index)} 
+                        className={cn(
+                            "h-20 w-20 rounded-lg overflow-hidden border-2 transition-all",
+                            mainImageIndex === index ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-100'
+                        )}
+                    >
+                        <div className="relative w-full h-full">
+                           <Image
+                                src={`/images/products/${img}`}
+                                alt={`${product.name} thumbnail ${index + 1}`}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                    </button>
+                ))}
+            </div>
+            )}
         </div>
 
         <div className="flex flex-col justify-center">

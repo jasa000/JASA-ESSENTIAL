@@ -11,17 +11,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, ChevronsUpDown, Pencil, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Pencil, Trash2, PlusCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +58,8 @@ const productSchema = z.object({
   category: z.enum(['stationary', 'books', 'electronics']),
   price: z.coerce.number().positive("Price must be a positive number."),
   discountPrice: z.coerce.number().optional().or(z.literal('')),
-  imageName: z.string().optional(),
+  imageNames: z.array(z.object({ value: z.string().min(1, "Filename cannot be empty.") })).optional(),
+  primaryImageIndex: z.string().optional(),
 });
 
 const brandSchema = z.object({
@@ -91,7 +93,8 @@ export default function ManageProductsPage() {
       category: activeTab,
       price: 0,
       discountPrice: '',
-      imageName: "",
+      imageNames: [],
+      primaryImageIndex: "0",
     },
   });
 
@@ -139,6 +142,7 @@ export default function ManageProductsPage() {
   
   useEffect(() => {
     if (editingProduct) {
+      const primaryImageIndex = 0; // The main image is always the first one
       editForm.reset({
         name: editingProduct.name,
         brandIds: editingProduct.brandIds || [],
@@ -147,7 +151,8 @@ export default function ManageProductsPage() {
         category: editingProduct.category,
         price: editingProduct.price,
         discountPrice: editingProduct.discountPrice || '',
-        imageName: editingProduct.imageName || "",
+        imageNames: editingProduct.imageNames?.map(name => ({ value: name })) || [],
+        primaryImageIndex: primaryImageIndex.toString(),
       });
       setIsEditDialogOpen(true);
     } else {
@@ -155,44 +160,80 @@ export default function ManageProductsPage() {
     }
   }, [editingProduct, editForm]);
 
+  const processAndSubmit = async (
+    values: z.infer<typeof productSchema>, 
+    action: (productData: any) => Promise<any>,
+    successMessage: string,
+    errorMessage: string,
+    formToReset?: any
+  ) => {
+    try {
+        const imageFileNames = values.imageNames?.map(img => img.value) || [];
+        const primaryIndex = parseInt(values.primaryImageIndex || "0", 10);
+        
+        let orderedImageNames: string[] = [];
+        if (imageFileNames.length > 0 && primaryIndex < imageFileNames.length) {
+            const primaryImage = imageFileNames[primaryIndex];
+            const otherImages = imageFileNames.filter((_, index) => index !== primaryIndex);
+            orderedImageNames = [primaryImage, ...otherImages];
+        }
+
+        const productData = {
+            ...values,
+            imageNames: orderedImageNames,
+        };
+        delete productData.primaryImageIndex;
+
+        await action(productData);
+
+        toast({
+            title: "Success",
+            description: successMessage,
+        });
+
+        fetchAllData();
+        if (formToReset) {
+            formToReset.reset({
+                name: "",
+                brandIds: [],
+                authorIds: [],
+                description: "",
+                category: activeTab,
+                price: 0,
+                discountPrice: '',
+                imageNames: [],
+                primaryImageIndex: "0",
+            });
+        }
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: errorMessage,
+        });
+    }
+  }
+
 
   const onProductSubmit = async (values: z.infer<typeof productSchema>) => {
-    try {
-      await addProduct(values);
-      toast({
-        title: "Product Created",
-        description: `${values.name} has been added successfully.`,
-      });
-      fetchAllData(); // Refresh list
-      form.reset({
-        name: "",
-        brandIds: [],
-        authorIds: [],
-        description: "",
-        category: activeTab,
-        price: 0,
-        discountPrice: '',
-        imageName: "",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create the product.",
-      });
-    }
+    await processAndSubmit(
+        values,
+        (data) => addProduct(data),
+        `${values.name} has been added successfully.`,
+        "Failed to create the product.",
+        form
+    );
   };
 
   const onEditSubmit = async (values: z.infer<typeof productSchema>) => {
     if (!editingProduct) return;
-    try {
-        await updateProduct(editingProduct.id, values);
-        toast({ title: "Product Updated", description: "The product has been updated." });
-        fetchAllData();
-        setEditingProduct(null);
-    } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to update product." });
-    }
+    await processAndSubmit(
+        values,
+        (data) => updateProduct(editingProduct.id, data),
+        "The product has been updated.",
+        "Failed to update product."
+    );
+    setEditingProduct(null);
   }
 
   const handleDelete = async () => {
@@ -328,6 +369,68 @@ export default function ManageProductsPage() {
         />
     );
   };
+
+  const ImageFields = ({ form }: { form: any }) => {
+    const { fields, append, remove } = useFieldArray({
+      control: form.control,
+      name: "imageNames"
+    });
+  
+    return (
+      <FormField
+        control={form.control}
+        name="primaryImageIndex"
+        render={({ field: radioField }) => (
+          <FormItem className="space-y-3">
+            <FormLabel>Product Images</FormLabel>
+            <RadioGroup
+              onValueChange={radioField.onChange}
+              value={radioField.value}
+              className="space-y-1"
+            >
+              {fields.map((item, index) => (
+                <FormField
+                  key={item.id}
+                  control={form.control}
+                  name={`imageNames.${index}.value`}
+                  render={({ field: inputField }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                         <RadioGroupItem value={index.toString()} id={`image-radio-${index}`} />
+                         <FormLabel htmlFor={`image-radio-${index}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            Main
+                         </FormLabel>
+                        <FormControl>
+                          <Input {...inputField} placeholder={`Image filename ${index + 1} (e.g., image.png)`} />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </RadioGroup>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ value: "" })}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+            </Button>
+          </FormItem>
+        )}
+      />
+    );
+  };
   
   const renderCreateBrandForm = (category: Brand['category']) => (
       <Card className="mb-8">
@@ -371,46 +474,40 @@ export default function ManageProductsPage() {
       </Card>
     );
 
-  const renderCreateForm = (category: Product['category']) => (
+  const renderCreateForm = (category: Product['category'], currentForm: any) => (
      <Card className="mb-8">
         <CardHeader>
             <CardTitle>Create {categories.find(c => c.value === category)?.label} Product</CardTitle>
             <CardDescription>Add a new item to your inventory for this category.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onProductSubmit)} className="space-y-4">
-                    <FormField control={form.control} name="name" render={({ field }) => (
+            <Form {...currentForm}>
+                <form onSubmit={currentForm.handleSubmit(onProductSubmit)} className="space-y-4">
+                    <FormField control={currentForm.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
-                    {category === 'stationary' && <MultiSelect form={form} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
-                    {category === 'books' && <MultiSelect form={form} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
-                    {category === 'electronics' && <MultiSelect form={form} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+                    {category === 'stationary' && <MultiSelect form={currentForm} fieldName="brandIds" items={stationaryBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
+                    {category === 'books' && <MultiSelect form={currentForm} fieldName="authorIds" items={authorList} label="Authors" placeholder="Select authors" searchPlaceholder="Search authors..." emptyMessage="No authors found." />}
+                    {category === 'electronics' && <MultiSelect form={currentForm} fieldName="brandIds" items={electronicsBrandList} label="Brands" placeholder="Select brands" searchPlaceholder="Search brands..." emptyMessage="No brands found." />}
 
-                    <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormField control={currentForm.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
 
-                    <FormField control={form.control} name="imageName" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Image Filename</FormLabel>
-                            <FormControl><Input {...field} placeholder="e.g., product-image.png" /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
+                    <ImageFields form={currentForm} />
                     
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <FormField control={form.control} name="price" render={({ field }) => (
+                      <FormField control={currentForm.control} name="price" render={({ field }) => (
                           <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
-                      <FormField control={form.control} name="discountPrice" render={({ field }) => (
+                      <FormField control={currentForm.control} name="discountPrice" render={({ field }) => (
                           <FormItem><FormLabel>Discount Price (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? "Adding..." : "Add Product"}
+                    <Button type="submit" className="w-full" disabled={currentForm.formState.isSubmitting}>
+                        {currentForm.formState.isSubmitting ? "Adding..." : "Add Product"}
                     </Button>
                 </form>
             </Form>
@@ -478,19 +575,19 @@ export default function ManageProductsPage() {
           
           <TabsContent value="stationary" className="mt-8">
               {renderCreateBrandForm('stationary')}
-              {renderCreateForm('stationary')}
+              {renderCreateForm('stationary', form)}
               {renderProductGrid('stationary')}
           </TabsContent>
 
           <TabsContent value="books" className="mt-8">
               {renderCreateAuthorForm()}
-              {renderCreateForm('books')}
+              {renderCreateForm('books', form)}
               {renderProductGrid('books')}
           </TabsContent>
 
           <TabsContent value="electronics" className="mt-8">
               {renderCreateBrandForm('electronics')}
-              {renderCreateForm('electronics')}
+              {renderCreateForm('electronics', form)}
               {renderProductGrid('electronics')}
           </TabsContent>
       </Tabs>
@@ -517,13 +614,7 @@ export default function ManageProductsPage() {
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
-                    <FormField control={editForm.control} name="imageName" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Image Filename</FormLabel>
-                            <FormControl><Input {...field} placeholder="e.g., product-image.png" /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
+                    <ImageFields form={editForm} />
                     
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <FormField control={editForm.control} name="price" render={({ field }) => (

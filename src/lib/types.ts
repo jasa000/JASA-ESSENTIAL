@@ -11,7 +11,7 @@ export type Product = {
   discountPrice?: number;
   rating?: number;
   createdAt: any;
-  imageName?: string;
+  imageNames?: string[];
 };
 
 export type CartItem = {
