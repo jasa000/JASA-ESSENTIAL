@@ -36,7 +36,7 @@ const productSchema = z.object({
   imageNames: z.array(z.object({ value: z.string().min(1, "Image filename is required.") })).min(1, "At least one image is required."),
   category: z.enum(['stationary', 'books', 'electronics']),
   price: z.coerce.number().positive("Price must be a positive number."),
-  discountPrice: z.coerce.number().optional(),
+  discountPrice: z.coerce.number().optional().or(z.literal('')),
 });
 
 const brandSchema = z.object({
@@ -66,7 +66,7 @@ export default function ManageProductsPage() {
       imageNames: [{ value: "" }],
       category: activeTab,
       price: 0,
-      discountPrice: undefined,
+      discountPrice: '',
     },
   });
 
@@ -116,7 +116,11 @@ export default function ManageProductsPage() {
   const onProductSubmit = async (values: z.infer<typeof productSchema>) => {
     try {
       const imageNames = values.imageNames.map(img => img.value);
-      await addProduct({ ...values, imageNames });
+      const submissionValues = {
+        ...values,
+        discountPrice: values.discountPrice === '' ? undefined : values.discountPrice,
+      };
+      await addProduct({ ...submissionValues, imageNames });
       toast({
         title: "Product Created",
         description: `${values.name} has been added successfully.`,

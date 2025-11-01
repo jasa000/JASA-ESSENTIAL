@@ -122,7 +122,7 @@ export const getAuthors = async (): Promise<Author[]> => {
 
 export const addProduct = async (productData: Omit<Product, 'id' | 'images' | 'rating' | 'createdAt'> & { imageNames: string[] }) => {
   const { imageNames, ...rest } = productData;
-  const newProduct: Omit<Product, 'id'> = {
+  const newProduct: Omit<Product, 'id' | 'rating' | 'createdAt' | 'images'> & {images: any, rating: any, createdAt: any} = {
     ...rest,
     images: getProductImages(imageNames, productData.category, productData.description),
     rating: Math.floor(Math.random() * 3) + 3, // 3 to 5 stars
@@ -166,3 +166,4 @@ export const addAuthor = async (authorData: Omit<Author, 'id' | 'createdAt'>) =>
         throw new Error("Failed to add author to database.");
     }
 };
+
