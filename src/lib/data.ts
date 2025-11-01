@@ -26,14 +26,21 @@ const getCategoryImage = (id: string, width = 400, height = 400) => {
 };
 
 const getProductImages = (imageNames: {value: string}[], category: Product['category'], alt: string, primaryImageIndex: number) => {
+    // If there are no image names, return an empty array.
+    if (!imageNames || imageNames.length === 0) {
+        return [];
+    }
+
+    // Map over the image names and create the full path.
+    // e.g., category: 'stationary', img.value: 'pen.jpg' -> '/images/stationary/pen.jpg'
     const images = imageNames.map(img => ({
         src: `/images/${category}/${img.value}`,
         alt: alt,
     }));
 
+    // If a primary image is selected and it's not the first one, move it to the front.
     if (primaryImageIndex > 0 && primaryImageIndex < images.length) {
-        const primaryImage = images[primaryImageIndex];
-        images.splice(primaryImageIndex, 1);
+        const primaryImage = images.splice(primaryImageIndex, 1)[0];
         images.unshift(primaryImage);
     }
 
