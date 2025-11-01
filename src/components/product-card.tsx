@@ -69,21 +69,25 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   };
 
   const rating = product.rating || 5;
-  const primaryImage = product.images[0];
+  const primaryImage = product.images && product.images.length > 0 ? product.images[0] : null;
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
   return (
     <Card className={cn("group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg w-64 flex-shrink-0", className)}>
       <div className="relative aspect-square w-full overflow-hidden">
-        <Link href="#">
-          {primaryImage && (
+        <Link href={`/products/${product.id}`}>
+          {primaryImage ? (
             <Image
               src={primaryImage.src}
               alt={primaryImage.alt}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+              No Image
+            </div>
           )}
         </Link>
         <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background" onClick={handleAddToCart}>

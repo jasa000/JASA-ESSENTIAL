@@ -3,7 +3,7 @@
 import type { Product, Category, Brand, Author } from './types';
 import imageData from './placeholder-images.json';
 import { db } from './firebase';
-import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
 
 const getCategoryImage = (id: string, width = 400, height = 400) => {
   const image = imageData.placeholderImages.find(img => img.id === id);
@@ -95,6 +95,29 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
     }
 }
 
+export const getProductById = async (id: string): Promise<Product | null> => {
+    try {
+        const docRef = doc(db, 'products', id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                brandIds: data.brandIds || [],
+                authorIds: data.authorIds || [],
+            } as Product;
+        } else {
+            console.log("No such document!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error getting product by ID: ", error);
+        throw new Error("Failed to fetch product.");
+    }
+};
+
 export const getBrands = async (category?: Brand['category']): Promise<Brand[]> => {
     try {
         const q = category 
@@ -166,4 +189,3 @@ export const addAuthor = async (authorData: Omit<Author, 'id' | 'createdAt'>) =>
         throw new Error("Failed to add author to database.");
     }
 };
-
