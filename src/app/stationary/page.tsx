@@ -51,8 +51,8 @@ export default function StationaryPage() {
   const renderProductGrid = () => {
     if (isLoading) {
       return (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, i) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {Array.from({ length: 8 }).map((_, i) => (
              <div key={i} className="flex flex-col space-y-3">
               <Skeleton className="h-[250px] w-full rounded-xl" />
               <div className="space-y-2">
@@ -77,7 +77,7 @@ export default function StationaryPage() {
     }
 
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {filteredProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

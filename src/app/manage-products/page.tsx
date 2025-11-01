@@ -520,13 +520,13 @@ export default function ManageProductsPage() {
 
     if (isLoading) {
       return (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex flex-col space-y-3">
-              <Skeleton className="h-[250px] w-[250px] rounded-xl" />
+              <Skeleton className="h-[250px] w-full rounded-xl" />
               <div className="space-y-2">
-                <Skeleton className="h-4 w-[250px]" />
-                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
               </div>
             </div>
           ))}
@@ -535,7 +535,7 @@ export default function ManageProductsPage() {
     }
     
     return (
-         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {filtered.length > 0 ? (
                 filtered.map((product) => (
                     <ProductCard 
