@@ -147,14 +147,14 @@ export default function AppSidebar() {
                 <>
                     <SidebarMenuItem>
                         <DialogTrigger asChild>
-                           <SidebarMenuButton tooltip="Sign Up" size="icon" onClick={() => { setAuthDialogDefaultTab('signup'); handleMenuItemClick(); }}>
+                           <SidebarMenuButton tooltip="Sign Up" size="icon" onClick={() => setAuthDialogDefaultTab('signup')}>
                               <UserPlus />
                           </SidebarMenuButton>
                         </DialogTrigger>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                         <DialogTrigger asChild>
-                           <SidebarMenuButton tooltip="Login" size="icon" onClick={() => { setAuthDialogDefaultTab('login'); handleMenuItemClick(); }}>
+                           <SidebarMenuButton tooltip="Login" size="icon" onClick={() => setAuthDialogDefaultTab('login')}>
                                 <LogIn />
                             </SidebarMenuButton>
                         </DialogTrigger>
@@ -163,10 +163,10 @@ export default function AppSidebar() {
              )}
         </SidebarMenu>
         <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="sr-only">{authDialogDefaultTab === 'login' ? 'Login' : 'Sign Up'}</DialogTitle>
-            </DialogHeader>
-            <AuthForm defaultTab={authDialogDefaultTab} onSuccess={() => setIsAuthDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle className="sr-only">{authDialogDefaultTab === 'login' ? 'Login' : 'Sign Up'}</DialogTitle>
+          </DialogHeader>
+          <AuthForm defaultTab={authDialogDefaultTab} onSuccess={() => setIsAuthDialogOpen(false)} />
         </DialogContent>
       </Dialog>
     )
@@ -337,5 +337,3 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
-
-    
