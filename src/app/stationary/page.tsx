@@ -7,26 +7,39 @@ import type { Product, Brand, ProductType } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useLoading } from "@/hooks/use-loading";
 import { Separator } from "@/components/ui/separator";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { SlidersHorizontal } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function StationaryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [selectedBrand, setSelectedBrand] = useState<string>("all");
-  const [selectedType, setSelectedType] = useState<string>("all");
-  const [priceSort, setPriceSort] = useState<"all" | "asc" | "desc">("all");
+  
+  // State for applied filters
+  const [appliedBrands, setAppliedBrands] = useState<string[]>([]);
+  const [appliedTypes, setAppliedTypes] = useState<string[]>([]);
+  const [appliedPriceSort, setAppliedPriceSort] = useState<"all" | "asc" | "desc">("all");
+
+  // State for temporary selections in the dialog
+  const [tempBrands, setTempBrands] = useState<string[]>([]);
+  const [tempTypes, setTempTypes] = useState<string[]>([]);
+  const [tempPriceSort, setTempPriceSort] = useState<"all" | "asc" | "desc">("all");
+  
   const { isLoading, setIsLoading } = useLoading();
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,30 +67,53 @@ export default function StationaryPage() {
     let tempProducts = [...products];
 
     // Filter by brand
-    if (selectedBrand !== "all") {
+    if (appliedBrands.length > 0) {
       tempProducts = tempProducts.filter(
-        (product) => product.brandIds && product.brandIds.includes(selectedBrand)
+        (product) => product.brandIds && product.brandIds.some(id => appliedBrands.includes(id))
       );
     }
     
     // Filter by product type
-    if (selectedType !== "all") {
+    if (appliedTypes.length > 0) {
       tempProducts = tempProducts.filter(
-        (product) => product.productTypeIds && product.productTypeIds.includes(selectedType)
+        (product) => product.productTypeIds && product.productTypeIds.some(id => appliedTypes.includes(id))
       );
     }
     
     // Sort by price
-    if (priceSort !== "all") {
+    if (appliedPriceSort !== "all") {
         tempProducts.sort((a, b) => {
             const priceA = a.discountPrice || a.price;
             const priceB = b.discountPrice || b.price;
-            return priceSort === 'asc' ? priceA - priceB : priceB - a.price;
+            return appliedPriceSort === 'asc' ? priceA - priceB : priceB - a.price;
         });
     }
 
     setFilteredProducts(tempProducts);
-  }, [selectedBrand, selectedType, priceSort, products]);
+  }, [appliedBrands, appliedTypes, appliedPriceSort, products]);
+
+  const handleApplyFilters = () => {
+    setAppliedBrands(tempBrands);
+    setAppliedTypes(tempTypes);
+    setAppliedPriceSort(tempPriceSort);
+    setIsFilterDialogOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    setTempBrands([]);
+    setTempTypes([]);
+    setTempPriceSort("all");
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      // When dialog opens, sync temp state with applied state
+      setTempBrands(appliedBrands);
+      setTempTypes(appliedTypes);
+      setTempPriceSort(appliedPriceSort);
+    }
+    setIsFilterDialogOpen(open);
+  };
 
   const renderProductGrid = () => {
     if (isLoading) {
@@ -116,35 +152,49 @@ export default function StationaryPage() {
     );
   };
   
-  const FilterButtons = ({ items, selected, onSelect, title }: {
-    items: {id: string, name: string}[];
-    selected: string;
-    onSelect: (id: string) => void;
+  const FilterCheckboxGroup = ({ title, items, selected, onSelectionChange }: {
     title: string;
+    items: { id: string, name: string }[];
+    selected: string[];
+    onSelectionChange: (newSelection: string[]) => void;
   }) => (
     <div>
-        <h3 className="text-sm font-semibold mb-2">{title}</h3>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-            <Button
-                variant={selected === "all" ? "default" : "outline"}
-                className={cn("rounded-full flex-shrink-0", selected === "all" && "bg-primary text-primary-foreground")}
-                onClick={() => onSelect("all")}
-            >
-                All
-            </Button>
-            {items.map((item) => (
-                <Button
-                key={item.id}
-                variant={selected === item.id ? "default" : "outline"}
-                className={cn("rounded-full flex-shrink-0", selected === item.id && "bg-primary text-primary-foreground")}
-                onClick={() => onSelect(item.id)}
-                >
-                {item.name}
-                </Button>
-            ))}
-        </div>
+      <h3 className="mb-4 text-lg font-medium">{title}</h3>
+      <div className="grid grid-cols-2 gap-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center space-x-2">
+            <Checkbox
+              id={`${title}-${item.id}`}
+              checked={selected.includes(item.id)}
+              onCheckedChange={(checked) => {
+                const newSelection = checked
+                  ? [...selected, item.id]
+                  : selected.filter((id) => id !== item.id);
+                onSelectionChange(newSelection);
+              }}
+            />
+            <Label htmlFor={`${title}-${item.id}`} className="font-normal">
+              {item.name}
+            </Label>
+          </div>
+        ))}
+      </div>
     </div>
   );
+
+  const SortRadioGroup = ({ selected, onSelectionChange }: {
+    selected: string;
+    onSelectionChange: (value: "all" | "asc" | "desc") => void;
+  }) => (
+     <div>
+        <h3 className="mb-4 text-lg font-medium">Sort by Price</h3>
+        <div className="flex flex-col space-y-2">
+            <Button variant={selected === 'all' ? 'secondary' : 'ghost'} onClick={() => onSelectionChange('all')} className="justify-start">Default</Button>
+            <Button variant={selected === 'asc' ? 'secondary' : 'ghost'} onClick={() => onSelectionChange('asc')} className="justify-start">Low to High</Button>
+            <Button variant={selected === 'desc' ? 'secondary' : 'ghost'} onClick={() => onSelectionChange('desc')} className="justify-start">High to Low</Button>
+        </div>
+    </div>
+  )
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -158,47 +208,31 @@ export default function StationaryPage() {
       </div>
 
       <div className="sticky top-20 z-40 bg-background py-4">
-        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-          <CollapsibleTrigger asChild>
-             <Button variant="outline" className="w-full">
+        <Dialog open={isFilterDialogOpen} onOpenChange={handleOpenChange}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full">
               <SlidersHorizontal className="mr-2 h-4 w-4" />
               Filters & Sorting
             </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="py-4 space-y-4">
-            <FilterButtons items={brands} selected={selectedBrand} onSelect={setSelectedBrand} title="Filter by Brand" />
-            <Separator />
-            <FilterButtons items={productTypes} selected={selectedType} onSelect={setSelectedType} title="Filter by Type" />
-            <Separator />
-            
-            <div>
-              <h3 className="text-sm font-semibold mb-2">Sort by Price</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant={priceSort === 'all' ? 'default' : 'outline'}
-                  onClick={() => setPriceSort('all')}
-                  className="rounded-full flex-shrink-0"
-                >
-                  Default
-                </Button>
-                <Button
-                  variant={priceSort === 'asc' ? 'default' : 'outline'}
-                  onClick={() => setPriceSort('asc')}
-                  className="rounded-full flex-shrink-0"
-                >
-                  Low to High
-                </Button>
-                <Button
-                  variant={priceSort === 'desc' ? 'default' : 'outline'}
-                  onClick={() => setPriceSort('desc')}
-                  className="rounded-full flex-shrink-0"
-                >
-                  High to Low
-                </Button>
-              </div>
+          </DialogTrigger>
+          <DialogContent className="max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Filters & Sorting</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <FilterCheckboxGroup title="Filter by Brand" items={brands} selected={tempBrands} onSelectionChange={setTempBrands} />
+              <Separator />
+              <FilterCheckboxGroup title="Filter by Type" items={productTypes} selected={tempTypes} onSelectionChange={setTempTypes} />
+              <Separator />
+              <SortRadioGroup selected={tempPriceSort} onSelectionChange={setTempPriceSort} />
             </div>
-          </CollapsibleContent>
-        </Collapsible>
+            <DialogFooter className="sticky bottom-0 bg-background py-4">
+              <Button variant="ghost" onClick={handleResetFilters}>Reset</Button>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={handleApplyFilters}>Apply Filters</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="mt-8">{renderProductGrid()}</div>

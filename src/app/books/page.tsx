@@ -8,21 +8,33 @@ import ProductCard from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoading } from "@/hooks/use-loading";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { SlidersHorizontal } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 export default function BooksPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [selectedType, setSelectedType] = useState<string>("all");
+
+  // State for applied filters
+  const [appliedTypes, setAppliedTypes] = useState<string[]>([]);
+  
+  // State for temporary selections in the dialog
+  const [tempTypes, setTempTypes] = useState<string[]>([]);
+
   const { isLoading, setIsLoading } = useLoading();
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,14 +59,30 @@ export default function BooksPage() {
   useEffect(() => {
     let tempProducts = [...products];
 
-    if (selectedType !== "all") {
+    if (appliedTypes.length > 0) {
       tempProducts = tempProducts.filter(
-        (product) => product.productTypeIds && product.productTypeIds.includes(selectedType)
+        (product) => product.productTypeIds && product.productTypeIds.some(id => appliedTypes.includes(id))
       );
     }
 
     setFilteredProducts(tempProducts);
-  }, [selectedType, products]);
+  }, [appliedTypes, products]);
+
+  const handleApplyFilters = () => {
+    setAppliedTypes(tempTypes);
+    setIsFilterDialogOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    setTempTypes([]);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setTempTypes(appliedTypes);
+    }
+    setIsFilterDialogOpen(open);
+  };
 
   const renderProductGrid = () => {
     if (isLoading) {
@@ -93,33 +121,33 @@ export default function BooksPage() {
     );
   };
   
-  const FilterButtons = ({ items, selected, onSelect, title }: {
-    items: {id: string, name: string}[];
-    selected: string;
-    onSelect: (id: string) => void;
+  const FilterCheckboxGroup = ({ title, items, selected, onSelectionChange }: {
     title: string;
+    items: { id: string, name: string }[];
+    selected: string[];
+    onSelectionChange: (newSelection: string[]) => void;
   }) => (
     <div>
-        <h3 className="text-sm font-semibold mb-2">{title}</h3>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-            <Button
-                variant={selected === "all" ? "default" : "outline"}
-                className={cn("rounded-full flex-shrink-0", selected === "all" && "bg-primary text-primary-foreground")}
-                onClick={() => onSelect("all")}
-            >
-                All
-            </Button>
-            {items.map((item) => (
-                <Button
-                key={item.id}
-                variant={selected === item.id ? "default" : "outline"}
-                className={cn("rounded-full flex-shrink-0", selected === item.id && "bg-primary text-primary-foreground")}
-                onClick={() => onSelect(item.id)}
-                >
-                {item.name}
-                </Button>
-            ))}
-        </div>
+      <h3 className="mb-4 text-lg font-medium">{title}</h3>
+      <div className="grid grid-cols-2 gap-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center space-x-2">
+            <Checkbox
+              id={`${title}-${item.id}`}
+              checked={selected.includes(item.id)}
+              onCheckedChange={(checked) => {
+                const newSelection = checked
+                  ? [...selected, item.id]
+                  : selected.filter((id) => id !== item.id);
+                onSelectionChange(newSelection);
+              }}
+            />
+            <Label htmlFor={`${title}-${item.id}`} className="font-normal">
+              {item.name}
+            </Label>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -135,17 +163,27 @@ export default function BooksPage() {
       </div>
 
        <div className="sticky top-20 z-40 bg-background py-4">
-        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-          <CollapsibleTrigger asChild>
+        <Dialog open={isFilterDialogOpen} onOpenChange={handleOpenChange}>
+          <DialogTrigger asChild>
             <Button variant="outline" className="w-full">
               <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Filters & Sorting
+              Filters
             </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="py-4 space-y-4">
-            <FilterButtons items={productTypes} selected={selectedType} onSelect={setSelectedType} title="Filter by Type" />
-          </CollapsibleContent>
-        </Collapsible>
+          </DialogTrigger>
+          <DialogContent className="max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Filters</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <FilterCheckboxGroup title="Filter by Type" items={productTypes} selected={tempTypes} onSelectionChange={setTempTypes} />
+            </div>
+            <DialogFooter className="sticky bottom-0 bg-background py-4">
+                <Button variant="ghost" onClick={handleResetFilters}>Reset</Button>
+                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <Button onClick={handleApplyFilters}>Apply Filters</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
        </div>
 
       <div className="mt-8">{renderProductGrid()}</div>
