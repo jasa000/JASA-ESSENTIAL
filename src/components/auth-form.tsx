@@ -50,6 +50,7 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
   const [showPassword, setShowPassword] = useState(false);
   const { setIsLoading } = useLoading();
   const [password, setPassword] = useState('');
+  const [showResendVerification, setShowResendVerification] = useState(false);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -63,6 +64,7 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
 
   async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
     setLoading(true);
+    setShowResendVerification(false);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       
@@ -70,9 +72,9 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
          toast({
           variant: "destructive",
           title: "Email Not Verified",
-          description: "Please verify your email before logging in. A new verification link has been sent.",
+          description: "Please verify your email before logging in.",
         });
-        await sendEmailVerification(userCredential.user);
+        setShowResendVerification(true);
         setLoading(false);
         return;
       }
@@ -85,11 +87,19 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
       onSuccess?.();
       router.push('/');
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: error.message,
-      });
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Invalid email or password.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message,
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -188,6 +198,47 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
       setLoading(false);
     }
   }
+
+  async function handleResendVerification() {
+    const email = loginForm.getValues("email");
+     if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Email Required",
+        description: "Please enter your email address to resend the verification link.",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      // To resend verification, we need a user object.
+      // We don't have one if login fails. So, we can't call sendEmailVerification on a non-existent user.
+      // The workaround is to inform the user to sign up again or check their spam.
+      // A better UX would involve a backend to handle this, but for client-only, this is a limitation.
+      // However, the current firebaseUser is available on failed login if email is not verified, so let's try to use that.
+      const user = auth.currentUser;
+      if (user && user.email === email && !user.emailVerified) {
+        await sendEmailVerification(user);
+        toast({
+            title: "Verification Email Sent",
+            description: "A new verification link has been sent to your email address.",
+        });
+      } else {
+         toast({
+            title: "Action required",
+            description: "Please attempt to log in first to identify your account.",
+        });
+      }
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Failed to Resend",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
   
   return (
     <div className="w-full max-w-sm">
@@ -242,10 +293,15 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
                             </FormItem>
                         )}
                         />
-                        <div className="text-sm">
+                        <div className="text-sm flex justify-between items-center">
                             <Button type="button" variant="link" className="p-0 font-normal" onClick={handlePasswordReset} disabled={loading}>
                                 Forgot Password?
                             </Button>
+                             {showResendVerification && (
+                                <Button type="button" variant="link" className="p-0 font-normal" onClick={handleResendVerification} disabled={loading}>
+                                Resend Verification
+                                </Button>
+                            )}
                         </div>
                         <Button type="submit" className="w-full" disabled={loading}>
                         {loading ? 'Logging in...' : 'Login'}
@@ -336,6 +392,3 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
     </div>
   );
 }
-
-    
-    
