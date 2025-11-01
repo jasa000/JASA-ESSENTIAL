@@ -71,7 +71,7 @@ export default function Home() {
           </div>
           <div className="flex gap-4 overflow-x-auto pb-4">
              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="w-64 flex-shrink-0">
+                <div key={i} className="w-56 flex-shrink-0">
                     <div className="flex flex-col space-y-3">
                       <Skeleton className="h-[250px] w-full rounded-xl" />
                       <div className="space-y-2">
@@ -101,7 +101,7 @@ export default function Home() {
         </div>
         <div className="flex gap-4 overflow-x-auto pb-4">
           {productList.map((product) => (
-            <div key={product.id} className="w-64 flex-shrink-0">
+            <div key={product.id} className="w-56 flex-shrink-0">
               <ProductCard product={product} />
             </div>
           ))}
