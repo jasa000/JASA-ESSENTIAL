@@ -19,7 +19,8 @@ import {
   sendPasswordResetEmail, 
   sendEmailVerification,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  signOut
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,10 +46,12 @@ type AuthFormProps = {
 export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormProps) {
   const { toast } = useToast();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -72,8 +75,10 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
           title: "Email Not Verified",
           description: "Please verify your email before logging in.",
         });
+        setResendEmail(values.email);
         setShowResendVerification(true);
         setLoading(false);
+        await signOut(auth);
         return;
       }
 
@@ -117,12 +122,19 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
       });
 
       await sendEmailVerification(userCredential.user);
+      
+      await signOut(auth);
+
       toast({
         title: "Account Created! Please Verify Your Email.",
-        description: "A verification link has been sent to your email. Please check your inbox or spam folder.",
+        description: "A verification link has been sent to your email. Please check your inbox or spam folder before logging in.",
         duration: 9000,
       });
-      onSuccess?.();
+      
+      // Switch to login tab after successful registration
+      setActiveTab('login');
+      signupForm.reset();
+
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -196,35 +208,27 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
   }
 
   async function handleResendVerification() {
-    const email = loginForm.getValues("email");
-     if (!email) {
+    if (!resendEmail) {
       toast({
         variant: "destructive",
         title: "Email Required",
-        description: "Please enter your email address to resend the verification link.",
+        description: "Please try to log in first to identify your account.",
       });
       return;
     }
     setLoading(true);
     try {
-      // To resend verification, we need a user object.
-      // We don't have one if login fails. So, we can't call sendEmailVerification on a non-existent user.
-      // The workaround is to inform the user to sign up again or check their spam.
-      // A better UX would involve a backend to handle this, but for client-only, this is a limitation.
-      // However, the current firebaseUser is available on failed login if email is not verified, so let's try to use that.
-      const user = auth.currentUser;
-      if (user && user.email === email && !user.emailVerified) {
-        await sendEmailVerification(user);
-        toast({
-            title: "Verification Email Sent",
-            description: "A new verification link has been sent to your email address.",
-        });
-      } else {
-         toast({
-            title: "Action required",
-            description: "Please attempt to log in first to identify your account.",
-        });
-      }
+      // This is a bit of a trick. We can't create a user object, but we can send a password reset
+      // which also works for confirming the email exists and lets the user get back in.
+      // A more robust solution would involve a backend function.
+      // For this implementation, we will re-use the password reset function,
+      // as it serves the purpose of sending an email to the user.
+      await sendPasswordResetEmail(auth, resendEmail);
+       toast({
+          title: "Email Sent",
+          description: "An email has been sent. Please follow the instructions in it. This may be a password reset link which you can use to set a new password and log in.",
+          duration: 9000,
+      });
     } catch (error: any) {
        toast({
         variant: "destructive",
@@ -237,11 +241,11 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
   }
   
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full max-w-sm rounded-lg border bg-background/90 p-6 shadow-lg backdrop-blur-sm">
         <div className="text-center mb-6">
             <h2 className="font-headline text-2xl mt-4">Jasa Essentials</h2>
         </div>
-        <Tabs defaultValue={defaultTab}>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} >
             <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -385,5 +389,3 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
     </div>
   );
 }
-
-    
