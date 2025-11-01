@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, PenSquare } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
@@ -25,6 +25,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useLoading } from '@/hooks/use-loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PasswordStrength from '@/components/password-strength';
+import Image from 'next/image';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -191,8 +192,8 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
   return (
     <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-            <div className="mx-auto flex w-fit items-center gap-2">
-              <PenSquare className="h-8 w-8" style={{color: '#7EC8E3'}} />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-blue">
+                <Image src="/favicon.ico" alt="Jasa Essentials Logo" width={32} height={32} />
             </div>
             <h2 className="font-headline text-2xl mt-4">Jasa Essentials</h2>
         </div>
@@ -336,4 +337,5 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
   );
 }
 
+    
     
