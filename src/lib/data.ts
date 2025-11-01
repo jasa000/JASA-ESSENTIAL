@@ -95,9 +95,11 @@ export const getProducts = async (category?: Product['category']): Promise<Produ
     }
 }
 
-export const getBrands = async (category: Brand['category']): Promise<Brand[]> => {
+export const getBrands = async (category?: Brand['category']): Promise<Brand[]> => {
     try {
-        const q = query(brandsCollection, where('category', '==', category), orderBy('name', 'asc'));
+        const q = category 
+            ? query(brandsCollection, where('category', '==', category), orderBy('name', 'asc'))
+            : query(brandsCollection, orderBy('name', 'asc'));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Brand));
     } catch (error) {

@@ -43,8 +43,13 @@ export default function ProductCard({ product, className }: ProductCardProps) {
                     .filter(Boolean)
                     .join(', ');
                 setNames(authorNames);
-            } else if (product.category === 'electronics' && Array.isArray(product.brandIds) && product.brandIds.length > 0 && typeof product.brandIds[0] === 'string') {
-                 setNames(product.brandIds.join(', '));
+            } else if (product.category === 'electronics' && Array.isArray(product.brandIds) && product.brandIds.length > 0) {
+                const allBrands = await getBrands();
+                const brandNames = product.brandIds
+                    .map(id => allBrands.find(b => b.id === id)?.name)
+                    .filter(Boolean)
+                    .join(', ');
+                setNames(brandNames);
             }
         } catch (error) {
             console.error("Could not fetch names for product card", error);
