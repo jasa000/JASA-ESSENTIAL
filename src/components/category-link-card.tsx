@@ -32,7 +32,7 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
               {hasUploadedImage ? (
                 <Image 
                   src={category.image.src} 
-                  alt={category.image.alt}
+                  alt={category.name}
                   fill
                   className="object-cover"
                 />

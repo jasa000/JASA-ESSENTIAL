@@ -25,7 +25,7 @@ export default function Home() {
   const [productsByCategory, setProductsByCategory] = React.useState<{ [key in Product['category']]?: Product[] }>({});
   const [homepageContent, setHomepageContent] = React.useState<HomepageContent | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [displayCategories, setDisplayCategories] = React.useState<Category[]>([]);
+  const [displayCategories, setDisplayCategories] = React.useState<Category[]>(defaultCategories);
   
   React.useEffect(() => {
     const fetchPageData = async () => {
@@ -45,24 +45,18 @@ export default function Home() {
         setProductsByCategory({ stationary, books, electronics });
         setHomepageContent(content);
 
-        // Build categories to display based on uploaded images
         if (content?.categoryImages) {
             const categoriesWithImages = defaultCategories.map(cat => {
                 const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
                 const dynamicImageUrl = content.categoryImages?.[categoryKey];
-                // Only return the category if an image for it has been uploaded
-                if (dynamicImageUrl) {
-                    return { 
-                        ...cat, 
-                        image: { 
-                            ...cat.image, 
-                            src: dynamicImageUrl,
-                            alt: cat.name
-                        }
-                    };
-                }
-                return null;
-            }).filter((cat): cat is Category => cat !== null);
+                return { 
+                    ...cat, 
+                    image: { 
+                        ...cat.image, 
+                        src: dynamicImageUrl || '',
+                    }
+                };
+            });
             setDisplayCategories(categoriesWithImages);
         }
 
@@ -182,13 +176,9 @@ export default function Home() {
          <div className="py-8">
           <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
           <div className="flex gap-4 overflow-x-auto pb-4">
-              {displayCategories.length > 0 ? (
-                displayCategories.map((category, index) => (
-                    <CategoryLinkCard key={category.id} category={category} index={index} />
-                ))
-              ) : (
-                 <p className="w-full text-center text-muted-foreground">Category links will appear here once images are uploaded in the admin panel.</p>
-              )}
+              {displayCategories.map((category, index) => (
+                  <CategoryLinkCard key={category.id} category={category} index={index} />
+              ))}
           </div>
          </div>
 
@@ -203,5 +193,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
