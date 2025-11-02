@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/context/auth-provider";
@@ -355,7 +355,7 @@ export default function ManageHomepagePage() {
                       const currentImage = homepageContent?.categoryImages?.[categoryKey];
                       return (
                           <div key={cat.id}>
-                              <FormLabel>{cat.name}</FormLabel>
+                              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{cat.name}</label>
                               <div className="mt-2 aspect-square w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
                                   {currentImage ? <Image src={currentImage} alt={cat.name} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
                               </div>
@@ -412,5 +412,3 @@ export default function ManageHomepagePage() {
     </div>
   );
 }
-
-    
