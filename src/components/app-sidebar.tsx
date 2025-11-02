@@ -379,5 +379,3 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
-
-    
