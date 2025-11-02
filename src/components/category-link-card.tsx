@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Category } from '@/lib/types';
 import Image from 'next/image';
@@ -16,9 +16,9 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
   const hasUploadedImage = category.image.src && category.image.src.startsWith('http');
   
   return (
-    <Link href={category.href} className="group block w-full">
+    <Link href={category.href} className="group block w-full text-center">
         <Card className={cn(
-          "relative w-full overflow-hidden rounded-2xl border-2 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1",
+          "relative w-full overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:shadow-lg group-hover:-translate-y-1",
           "border-transparent hover:border-primary",
           "bg-gray-100 dark:bg-gray-900"
         )}>
@@ -40,10 +40,10 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
                 </div>
             )}
           </CardContent>
-          <CardFooter className="p-3">
-             <h3 className="w-full text-center font-headline text-sm font-semibold truncate">{category.name}</h3>
-          </CardFooter>
         </Card>
+        <p className="mt-3 font-headline text-sm font-semibold text-foreground transition-colors group-hover:text-primary truncate">
+            {category.name}
+        </p>
       </Link>
   );
 }
