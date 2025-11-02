@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload, Save, X, Pencil } from "lucide-react";
 import Image from "next/image";
@@ -34,6 +35,13 @@ const bannerSchema = z.object({
 });
 
 type FormData = z.infer<typeof bannerSchema>;
+
+const bannerLinkOptions = [
+    { value: '/stationary', label: 'Stationary' },
+    { value: '/books', label: 'Books' },
+    { value: '/xerox', label: 'Xerox' },
+    { value: '/electronics', label: 'Electronic Kit' },
+];
 
 export default function ManageHomepagePage() {
   const { user, loading: authLoading } = useAuth();
@@ -333,7 +341,20 @@ export default function ManageHomepagePage() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Link URL</FormLabel>
-                                    <FormControl><Input {...field} placeholder="/stationary" disabled={!isEditing || isSubmitting} /></FormControl>
+                                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isEditing || isSubmitting}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a page to link to" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {bannerLinkOptions.map(option => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
