@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { UserProfile } from "@/lib/types";
+import { updateUserProfile } from "@/lib/users";
 
 const addressSchema = z.object({
   type: z.enum(['Home', 'Work']),
@@ -90,6 +91,23 @@ export default function ProfilePage() {
       });
     }
   }, [user, loading, router, form]);
+  
+  async function onSubmit(values: z.infer<typeof profileSchema>) {
+    if (!user) return;
+    try {
+      await updateUserProfile(user.uid, values);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved.",
+      });
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update profile. " + error.message,
+      });
+    }
+  }
 
   if (loading || !user) {
     return (
@@ -132,16 +150,6 @@ export default function ProfilePage() {
       return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
-  }
-
-  function onSubmit(values: z.infer<typeof profileSchema>) {
-    console.log("Updating profile:", values);
-    // Here you would typically call a function to update the user data in Firestore
-    // e.g. updateUserProfile(user.uid, values);
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved.",
-    });
   }
 
   return (
