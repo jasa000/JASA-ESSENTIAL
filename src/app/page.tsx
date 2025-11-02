@@ -9,7 +9,7 @@ import CategoryLinkCard from '@/components/category-link-card';
 import { categories as defaultCategories, getProducts, getHomepageContent } from '@/lib/data';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import PostCarousel from "@/components/post-carousel";
-import type { Product, HomepageContent } from "@/lib/types";
+import type { Product, HomepageContent, Category } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -25,6 +25,7 @@ export default function Home() {
   const [productsByCategory, setProductsByCategory] = React.useState<{ [key in Product['category']]?: Product[] }>({});
   const [homepageContent, setHomepageContent] = React.useState<HomepageContent | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [displayCategories, setDisplayCategories] = React.useState<Category[]>([]);
   
   React.useEffect(() => {
     const fetchPageData = async () => {
@@ -43,6 +44,27 @@ export default function Home() {
         ]);
         setProductsByCategory({ stationary, books, electronics });
         setHomepageContent(content);
+
+        // Build categories to display based on uploaded images
+        if (content?.categoryImages) {
+            const categoriesWithImages = defaultCategories.map(cat => {
+                const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
+                const dynamicImageUrl = content.categoryImages?.[categoryKey];
+                if (dynamicImageUrl) {
+                    return { 
+                        ...cat, 
+                        image: { 
+                            ...cat.image, 
+                            src: dynamicImageUrl,
+                            alt: cat.name // ensure alt text is updated
+                        }
+                    };
+                }
+                return null;
+            }).filter((cat): cat is Category => cat !== null);
+            setDisplayCategories(categoriesWithImages);
+        }
+
       } catch (error) {
         console.error("Failed to fetch data for home page:", error);
       } finally {
@@ -53,16 +75,6 @@ export default function Home() {
   }, []);
 
   const banners = homepageContent?.banners || [];
-  
-  const categories = defaultCategories.map(cat => {
-      const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
-      const dynamicImageUrl = homepageContent?.categoryImages?.[categoryKey];
-      if (dynamicImageUrl) {
-          return { ...cat, image: { ...cat.image, src: dynamicImageUrl }};
-      }
-      return cat;
-  });
-
 
   const categoryDisplayInfo = {
       stationary: { title: "Featured Stationary", href: "/stationary" },
@@ -169,9 +181,13 @@ export default function Home() {
          <div className="py-8">
           <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
           <div className="flex gap-4 overflow-x-auto pb-4">
-              {categories.map((category, index) => (
-                  <CategoryLinkCard key={category.id} category={category} index={index} />
-              ))}
+              {displayCategories.length > 0 ? (
+                displayCategories.map((category, index) => (
+                    <CategoryLinkCard key={category.id} category={category} index={index} />
+                ))
+              ) : (
+                 <p className="w-full text-center text-muted-foreground">Category links will appear here once images are uploaded in the admin panel.</p>
+              )}
           </div>
          </div>
 
