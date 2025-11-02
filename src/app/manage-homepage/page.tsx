@@ -16,9 +16,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Pencil, Lock, Unlock } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useRef } from "react";
 
 const MAX_BANNERS = 4;
 const TITLE_MAX_LENGTH = 40;
@@ -50,7 +52,15 @@ export default function ManageHomepagePage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingBannerIndex, setEditingBannerIndex] = useState<number | null>(null);
   
+  const categoryFileInputRefs = {
+    stationary: useRef<HTMLInputElement>(null),
+    books: useRef<HTMLInputElement>(null),
+    xerox: useRef<HTMLInputElement>(null),
+    electronics: useRef<HTMLInputElement>(null),
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(homepageSchema),
     defaultValues: {
@@ -138,7 +148,9 @@ export default function ManageHomepagePage() {
     try {
       const contentToUpdate: HomepageContent = {
         categoryImages: values.categoryImages,
-        banners: values.banners,
+        banners: values.banners.map(banner => ({
+          ...banner
+        })),
       };
 
       await updateHomepageContent(contentToUpdate);
@@ -148,6 +160,7 @@ export default function ManageHomepagePage() {
       toast({ variant: "destructive", title: "Error", description: `Failed to update content: ${error.message}` });
     } finally {
       setIsSubmitting(false);
+      setEditingBannerIndex(null);
     }
   }
   
@@ -159,7 +172,6 @@ export default function ManageHomepagePage() {
               form.setValue(`categoryImages.${category}`, uploadedUrl, { shouldDirty: true });
           }
       }
-      // Reset file input to allow re-uploading the same file
       e.target.value = '';
   };
   
@@ -203,7 +215,33 @@ export default function ManageHomepagePage() {
                                 <div className="mt-2 aspect-square w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
                                     {currentImage ? <Image src={currentImage} alt={cat.name} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
                                 </div>
-                                <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleCategoryFileChange(e, categoryKey)} disabled={isSubmitting}/>
+                                <Input type="file" accept="image/*" className="hidden" ref={categoryFileInputRefs[categoryKey]} onChange={(e) => handleCategoryFileChange(e, categoryKey)} disabled={isSubmitting}/>
+                                <div className="mt-2 flex gap-2">
+                                  <Button type="button" variant="outline" className="flex-1" onClick={() => categoryFileInputRefs[categoryKey].current?.click()} disabled={isSubmitting}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button type="button" variant="destructive" className="flex-1" disabled={!currentImage || isSubmitting}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This will remove the image for the {cat.name} category. The service will show a default placeholder.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => form.setValue(`categoryImages.${categoryKey}`, '', { shouldDirty: true })}>
+                                          Confirm Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
                             </div>
                         )
                     })}
@@ -216,14 +254,33 @@ export default function ManageHomepagePage() {
                     <CardDescription>Manage the rotating banners on the homepage. You can have up to {MAX_BANNERS} banners.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {fields.map((field, index) => (
+                    {fields.map((field, index) => {
+                        const isEditing = editingBannerIndex === index;
+                        return (
                         <Card key={field.id} className="p-4 relative">
                            <div className="flex justify-between items-start">
                                 <h4 className="font-bold mb-4">Banner {index + 1}</h4>
                                 <div className="flex gap-1">
                                     <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => move(index, index - 1)}><ArrowUp className="h-4 w-4" /></Button>
                                     <Button type="button" variant="ghost" size="icon" disabled={index === fields.length - 1} onClick={() => move(index, index + 1)}><ArrowDown className="h-4 w-4" /></Button>
-                                    <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4" /></Button>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => setEditingBannerIndex(isEditing ? null : index)}>
+                                        {isEditing ? <Unlock className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button type="button" variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete Banner?</AlertDialogTitle>
+                                                <AlertDialogDescription>This will permanently remove this banner. This action cannot be undone.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => remove(index)}>Delete Banner</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -237,7 +294,7 @@ export default function ManageHomepagePage() {
                                                     <FormLabel>Title</FormLabel>
                                                     <span className="text-xs text-muted-foreground">{titleCharCount(index)}</span>
                                                 </div>
-                                                <FormControl><Input {...field} maxLength={TITLE_MAX_LENGTH} /></FormControl>
+                                                <FormControl><Input {...field} maxLength={TITLE_MAX_LENGTH} disabled={!isEditing} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -251,7 +308,7 @@ export default function ManageHomepagePage() {
                                                     <FormLabel>Call to Action Text</FormLabel>
                                                     <span className="text-xs text-muted-foreground">{ctaCharCount(index)}</span>
                                                 </div>
-                                                <FormControl><Input {...field} maxLength={CTA_MAX_LENGTH} /></FormControl>
+                                                <FormControl><Input {...field} maxLength={CTA_MAX_LENGTH} disabled={!isEditing} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -262,7 +319,7 @@ export default function ManageHomepagePage() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Link URL</FormLabel>
-                                                <FormControl><Input {...field} placeholder="/stationary" /></FormControl>
+                                                <FormControl><Input {...field} placeholder="/stationary" disabled={!isEditing} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -273,14 +330,17 @@ export default function ManageHomepagePage() {
                                     <div className="mt-2 aspect-video w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
                                         {form.watch(`banners.${index}.imageUrl`) ? <Image src={form.watch(`banners.${index}.imageUrl`)} alt={`Banner ${index + 1}`} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
                                     </div>
-                                    <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleBannerFileChange(e, index)} disabled={isSubmitting}/>
+                                    <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleBannerFileChange(e, index)} disabled={isSubmitting || !isEditing}/>
                                     <FormField control={form.control} name={`banners.${index}.imageUrl`} render={({ field }) => <FormMessage />} />
                                 </div>
                             </div>
                         </Card>
-                    ))}
+                    )}})}
                     {fields.length < MAX_BANNERS && (
-                        <Button type="button" variant="outline" onClick={() => append({ title: '', cta: '', href: '', imageUrl: '' })}>
+                        <Button type="button" variant="outline" onClick={() => {
+                            append({ title: '', cta: '', href: '', imageUrl: '' });
+                            setEditingBannerIndex(fields.length);
+                        }}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Banner
                         </Button>
                     )}
