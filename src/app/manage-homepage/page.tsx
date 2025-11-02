@@ -61,6 +61,8 @@ export default function ManageHomepagePage() {
     electronics: useRef<HTMLInputElement>(null),
   };
 
+  const bannerFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const form = useForm<FormData>({
     resolver: zodResolver(homepageSchema),
     defaultValues: {
@@ -172,7 +174,7 @@ export default function ManageHomepagePage() {
               form.setValue(`categoryImages.${category}`, uploadedUrl, { shouldDirty: true });
           }
       }
-      e.target.value = '';
+      if(e.target) e.target.value = '';
   };
   
   const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -183,7 +185,7 @@ export default function ManageHomepagePage() {
               form.setValue(`banners.${index}.imageUrl`, uploadedUrl, { shouldDirty: true });
           }
       }
-      e.target.value = '';
+      if(e.target) e.target.value = '';
   };
 
   if (authLoading || isLoading) {
@@ -330,12 +332,29 @@ export default function ManageHomepagePage() {
                                     <div className="mt-2 aspect-video w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
                                         {form.watch(`banners.${index}.imageUrl`) ? <Image src={form.watch(`banners.${index}.imageUrl`)} alt={`Banner ${index + 1}`} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
                                     </div>
-                                    <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleBannerFileChange(e, index)} disabled={isSubmitting || !isEditing}/>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        ref={(el) => { bannerFileInputRefs.current[index] = el; }}
+                                        onChange={(e) => handleBannerFileChange(e, index)}
+                                        disabled={isSubmitting || !isEditing}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="mt-2 w-full"
+                                        onClick={() => bannerFileInputRefs.current[index]?.click()}
+                                        disabled={isSubmitting || !isEditing}
+                                    >
+                                        Change Image
+                                    </Button>
                                     <FormField control={form.control} name={`banners.${index}.imageUrl`} render={({ field }) => <FormMessage />} />
                                 </div>
                             </div>
                         </Card>
-                    )}})}
+                    )})
+                    }
                     {fields.length < MAX_BANNERS && (
                         <Button type="button" variant="outline" onClick={() => {
                             append({ title: '', cta: '', href: '', imageUrl: '' });
