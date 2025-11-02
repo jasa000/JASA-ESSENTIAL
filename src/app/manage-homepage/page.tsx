@@ -9,7 +9,7 @@ import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
 import { getHomepageContent, updateHomepageContent, categories as defaultCategories } from "@/lib/data";
 import { uploadImageAction } from "@/app/actions/upload-image-action";
-import type { HomepageContent } from "@/lib/types";
+import type { HomepageContent, Category } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +29,7 @@ const bannerSchema = z.object({
   title: z.string().min(1, "Title is required.").max(TITLE_MAX_LENGTH),
   cta: z.string().min(1, "CTA is required.").max(CTA_MAX_LENGTH),
   href: z.string().min(1, "Link is required."),
-  image: z.string().min(1, "Image is required."),
+  imageUrl: z.string().min(1, "Image is required."),
 });
 
 const homepageSchema = z.object({
@@ -49,6 +49,7 @@ export default function ManageHomepagePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormData>({
     resolver: zodResolver(homepageSchema),
@@ -77,6 +78,7 @@ export default function ManageHomepagePage() {
         fetchContent();
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, router, toast]);
 
   const fetchContent = async () => {
@@ -91,7 +93,7 @@ export default function ManageHomepagePage() {
             xerox: content.categoryImages?.xerox || "",
             electronics: content.categoryImages?.electronics || "",
           },
-          banners: content.banners.map(b => ({...b, image: b.imageUrl})) || [],
+          banners: content.banners || [],
         });
       }
     } catch (error) {
@@ -106,38 +108,37 @@ export default function ManageHomepagePage() {
         toast({ variant: 'destructive', title: 'File too large', description: 'Please select an image smaller than 4MB.'});
         return null;
     }
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = async (readResult) => {
-            const base64 = readResult.target?.result as string;
-            const uploadResult = await uploadImageAction(base64);
-            if (uploadResult.success && uploadResult.url) {
-                resolve(uploadResult.url);
-            } else {
-                toast({ variant: 'destructive', title: 'Upload failed', description: uploadResult.error });
-                resolve(null);
-            }
-        };
-        reader.readAsDataURL(file);
-    });
+    
+    setIsSubmitting(true);
+    let uploadedUrl: string | null = null;
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(file);
+      });
+      
+      const uploadResult = await uploadImageAction(base64);
+      if (uploadResult.success && uploadResult.url) {
+          uploadedUrl = uploadResult.url;
+      } else {
+          toast({ variant: 'destructive', title: 'Upload failed', description: uploadResult.error });
+      }
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Upload failed', description: e.message });
+    } finally {
+        setIsSubmitting(false);
+    }
+    return uploadedUrl;
   }
 
   async function onSubmit(values: FormData) {
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
-      // Banners are already uploaded and have URLs.
-      // We just need to format it correctly for Firestore.
-      const finalBanners = values.banners.map(banner => ({
-        id: banner.id || `banner-${Date.now()}-${Math.random()}`,
-        title: banner.title,
-        cta: banner.cta,
-        href: banner.href,
-        imageUrl: banner.image,
-      }));
-      
       const contentToUpdate: HomepageContent = {
         categoryImages: values.categoryImages,
-        banners: finalBanners,
+        banners: values.banners,
       };
 
       await updateHomepageContent(contentToUpdate);
@@ -146,7 +147,7 @@ export default function ManageHomepagePage() {
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: `Failed to update content: ${error.message}` });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   }
   
@@ -155,9 +156,11 @@ export default function ManageHomepagePage() {
       if (file) {
           const uploadedUrl = await handleFileUpload(file);
           if (uploadedUrl) {
-              form.setValue(`categoryImages.${category}`, uploadedUrl);
+              form.setValue(`categoryImages.${category}`, uploadedUrl, { shouldDirty: true });
           }
       }
+      // Reset file input to allow re-uploading the same file
+      e.target.value = '';
   };
   
   const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -165,12 +168,13 @@ export default function ManageHomepagePage() {
       if (file) {
           const uploadedUrl = await handleFileUpload(file);
           if (uploadedUrl) {
-              form.setValue(`banners.${index}.image`, uploadedUrl);
+              form.setValue(`banners.${index}.imageUrl`, uploadedUrl, { shouldDirty: true });
           }
       }
+      e.target.value = '';
   };
 
-  if (authLoading || (!user && !authLoading)) {
+  if (authLoading || isLoading) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }
   
@@ -197,9 +201,9 @@ export default function ManageHomepagePage() {
                             <div key={cat.id}>
                                 <FormLabel>{cat.name}</FormLabel>
                                 <div className="mt-2 aspect-square w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
-                                    {currentImage && <Image src={currentImage} alt={cat.name} fill className="object-cover" />}
+                                    {currentImage ? <Image src={currentImage} alt={cat.name} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
                                 </div>
-                                <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleCategoryFileChange(e, categoryKey)} />
+                                <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleCategoryFileChange(e, categoryKey)} disabled={isSubmitting}/>
                             </div>
                         )
                     })}
@@ -267,16 +271,16 @@ export default function ManageHomepagePage() {
                                 <div>
                                     <FormLabel>Banner Image</FormLabel>
                                     <div className="mt-2 aspect-video w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
-                                        {form.watch(`banners.${index}.image`) && <Image src={form.watch(`banners.${index}.image`)} alt={`Banner ${index + 1}`} fill className="object-cover" />}
+                                        {form.watch(`banners.${index}.imageUrl`) ? <Image src={form.watch(`banners.${index}.imageUrl`)} alt={`Banner ${index + 1}`} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
                                     </div>
-                                    <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleBannerFileChange(e, index)} />
-                                    <FormField control={form.control} name={`banners.${index}.image`} render={({ field }) => <FormMessage />} />
+                                    <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleBannerFileChange(e, index)} disabled={isSubmitting}/>
+                                    <FormField control={form.control} name={`banners.${index}.imageUrl`} render={({ field }) => <FormMessage />} />
                                 </div>
                             </div>
                         </Card>
                     ))}
                     {fields.length < MAX_BANNERS && (
-                        <Button type="button" variant="outline" onClick={() => append({ title: '', cta: '', href: '', image: '' })}>
+                        <Button type="button" variant="outline" onClick={() => append({ title: '', cta: '', href: '', imageUrl: '' })}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Banner
                         </Button>
                     )}
@@ -284,8 +288,8 @@ export default function ManageHomepagePage() {
             </Card>
 
             <div className="sticky bottom-0 bg-background py-4 border-t">
-                <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Homepage Content"}
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isDirty}>
+                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Homepage Content"}
                 </Button>
             </div>
         </form>
@@ -293,5 +297,3 @@ export default function ManageHomepagePage() {
     </div>
   );
 }
-
-    
