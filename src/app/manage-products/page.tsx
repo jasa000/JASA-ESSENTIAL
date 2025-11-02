@@ -192,35 +192,41 @@ export default function ManageProductsPage() {
   ) => {
     setIsLoading(true);
     try {
-        const imageDataUris = values.imageNames?.map(img => img.value) || [];
+        const imageInputs = values.imageNames?.map(img => img.value) || [];
         const uploadedImageUrls: string[] = [];
 
-        for (const dataUri of imageDataUris) {
-            if (dataUri.startsWith('http')) {
-                uploadedImageUrls.push(dataUri);
-            } else if (dataUri.startsWith('data:image')) {
-                const result = await uploadImageAction(dataUri);
+        for (const imageValue of imageInputs) {
+            // Check if it's a URL (already uploaded)
+            if (imageValue.startsWith('http')) {
+                uploadedImageUrls.push(imageValue);
+            } 
+            // Check if it's a new base64 image to be uploaded
+            else if (imageValue.startsWith('data:image')) {
+                const result = await uploadImageAction(imageValue);
                 if (result.success && result.url) {
                     uploadedImageUrls.push(result.url);
                 } else {
-                    throw new Error(result.error || 'Image upload failed');
+                    throw new Error(result.error || 'Image upload failed for one or more images.');
                 }
             }
         }
         
         const primaryIndex = parseInt(values.primaryImageIndex || "0", 10);
-        let orderedImageNames: string[] = [];
-        if (uploadedImageUrls.length > 0 && primaryIndex < uploadedImageUrls.length) {
-            const primaryImage = uploadedImageUrls[primaryIndex];
-            const otherImages = uploadedImageUrls.filter((_, index) => index !== primaryIndex);
-            orderedImageNames = [primaryImage, ...otherImages];
-        } else {
-            orderedImageNames = uploadedImageUrls;
+        let finalImageOrder: string[] = [];
+        if (uploadedImageUrls.length > 0) {
+            if (primaryIndex < uploadedImageUrls.length) {
+                const primaryImage = uploadedImageUrls[primaryIndex];
+                const otherImages = uploadedImageUrls.filter((_, index) => index !== primaryIndex);
+                finalImageOrder = [primaryImage, ...otherImages];
+            } else {
+                // Fallback if primary index is out of bounds
+                finalImageOrder = uploadedImageUrls;
+            }
         }
 
         const productData = {
             ...values,
-            imageNames: orderedImageNames,
+            imageNames: finalImageOrder,
         };
         delete productData.primaryImageIndex;
 
