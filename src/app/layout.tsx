@@ -4,13 +4,10 @@ import { Poppins, PT_Sans } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
 import { Toaster } from "@/components/ui/toaster";
-import { CartProvider } from "@/context/cart-provider";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/app-sidebar";
-import { AuthProvider } from "@/context/auth-provider";
-import { ThemeProvider } from "@/context/theme-provider";
-import { LoadingProvider } from "@/context/loading-provider";
 import GlobalLoader from "@/components/global-loader";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Jasa Essentials",
@@ -40,27 +37,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${poppins.variable} ${ptSans.variable}`}>
       <body className="font-body antialiased">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <AuthProvider>
-            <CartProvider>
-              <LoadingProvider>
-                <SidebarProvider>
-                  <Sidebar>
-                    <AppSidebar />
-                  </Sidebar>
-                  <SidebarInset>
-                    <GlobalLoader />
-                    <div className="flex min-h-screen flex-col">
-                      <Header />
-                      <main className="flex-grow">{children}</main>
-                    </div>
-                    <Toaster />
-                  </SidebarInset>
-                </SidebarProvider>
-              </LoadingProvider>
-            </CartProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          <SidebarProvider>
+            <Sidebar>
+              <AppSidebar />
+            </Sidebar>
+            <SidebarInset>
+              <GlobalLoader />
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-grow">{children}</main>
+              </div>
+              <Toaster />
+            </SidebarInset>
+          </SidebarProvider>
+        </Providers>
       </body>
     </html>
   );
