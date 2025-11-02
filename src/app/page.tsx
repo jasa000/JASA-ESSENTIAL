@@ -45,20 +45,20 @@ export default function Home() {
         setProductsByCategory({ stationary, books, electronics });
         setHomepageContent(content);
 
-        if (content?.categoryImages) {
-            const categoriesWithImages = defaultCategories.map(cat => {
-                const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
-                const dynamicImageUrl = content.categoryImages?.[categoryKey];
-                return { 
-                    ...cat, 
-                    image: { 
-                        ...cat.image, 
-                        src: dynamicImageUrl || '',
-                    }
-                };
-            });
-            setDisplayCategories(categoriesWithImages);
-        }
+        // Always use default categories, but enrich with images if they exist
+        const categoriesWithImages = defaultCategories.map(cat => {
+            const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
+            const dynamicImageUrl = content?.categoryImages?.[categoryKey];
+            return { 
+                ...cat, 
+                image: { 
+                    ...cat.image, 
+                    src: dynamicImageUrl || '', // Will be an empty string if no image is uploaded
+                }
+            };
+        });
+        setDisplayCategories(categoriesWithImages);
+
 
       } catch (error) {
         console.error("Failed to fetch data for home page:", error);
@@ -88,7 +88,7 @@ export default function Home() {
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-10 w-24" />
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
              {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="w-56 flex-shrink-0">
                     <div className="flex flex-col space-y-3">
@@ -118,7 +118,7 @@ export default function Home() {
             </Link>
           </Button>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
           {productList.map((product) => (
             <div key={product.id} className="w-56 flex-shrink-0">
               <ProductCard product={product} hideRating hideBuyButton />
@@ -175,7 +175,7 @@ export default function Home() {
        <div className="container mx-auto px-4">
          <div className="py-8">
           <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {displayCategories.map((category, index) => (
                   <CategoryLinkCard key={category.id} category={category} index={index} />
               ))}
