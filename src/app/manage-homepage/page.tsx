@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload, Save, X } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload, Save, X, Pencil } from "lucide-react";
 import Image from "next/image";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
@@ -103,8 +103,9 @@ export default function ManageHomepagePage() {
 
       if (uploadResult.success && uploadResult.url) {
         const newCategoryImages = { ...homepageContent.categoryImages, [categoryKey]: uploadResult.url };
-        await updateHomepageContent({ ...homepageContent, categoryImages: newCategoryImages });
-        setHomepageContent(prev => prev ? { ...prev, categoryImages: newCategoryImages } : null);
+        const newHomepageContent = { ...homepageContent, categoryImages: newCategoryImages };
+        await updateHomepageContent(newHomepageContent);
+        setHomepageContent(newHomepageContent); // Correctly update the state
         setCategoryPreviews(prev => ({...prev, [categoryKey]: null}));
         toast({ title: "Success", description: "Category image updated." });
       } else {
@@ -122,10 +123,11 @@ export default function ManageHomepagePage() {
   const handleCategoryDelete = async (categoryKey: keyof HomepageContent['categoryImages']) => {
       if (homepageContent) {
           const newCategoryImages = { ...homepageContent.categoryImages, [categoryKey]: '' };
+          const newHomepageContent = { ...homepageContent, categoryImages: newCategoryImages };
           setIsSubmitting(true);
           try {
-            await updateHomepageContent({ ...homepageContent, categoryImages: newCategoryImages });
-            setHomepageContent(prev => prev ? { ...prev, categoryImages: newCategoryImages } : null);
+            await updateHomepageContent(newHomepageContent);
+            setHomepageContent(newHomepageContent); // Correctly update the state
             toast({ title: "Success", description: "Category image removed." });
           } catch(e: any) {
              toast({ variant: "destructive", title: "Error", description: `Failed to delete image: ${e.message}` });
@@ -152,9 +154,10 @@ export default function ManageHomepagePage() {
 
             const newBanners = [...homepageContent.banners];
             newBanners[index] = {...updatedBanner, imageUrl: finalImageUrl};
-
-            await updateHomepageContent({ ...homepageContent, banners: newBanners });
-            setHomepageContent(prev => prev ? { ...prev, banners: newBanners } : null);
+            
+            const newHomepageContent = { ...homepageContent, banners: newBanners };
+            await updateHomepageContent(newHomepageContent);
+            setHomepageContent(newHomepageContent); // Correctly update the state
             toast({ title: "Success", description: "Banner updated." });
             return true; // Indicate success to form
           } catch (e: any) {
@@ -177,10 +180,11 @@ export default function ManageHomepagePage() {
             imageUrl: '',
         };
         const newBanners = [...homepageContent.banners, newBanner];
+        const newHomepageContent = { ...homepageContent, banners: newBanners };
         setIsSubmitting(true);
         try {
-            await updateHomepageContent({ ...homepageContent, banners: newBanners });
-            setHomepageContent(prev => prev ? { ...prev, banners: newBanners } : null);
+            await updateHomepageContent(newHomepageContent);
+            setHomepageContent(newHomepageContent); // Correctly update the state
             toast({ title: "Success", description: "New banner added. Please edit it and save." });
         } catch(e: any) {
              toast({ variant: "destructive", title: "Error", description: `Failed to add banner: ${e.message}` });
@@ -195,10 +199,11 @@ export default function ManageHomepagePage() {
           const newBanners = [...homepageContent.banners];
           const [movedItem] = newBanners.splice(from, 1);
           newBanners.splice(to, 0, movedItem);
+          const newHomepageContent = { ...homepageContent, banners: newBanners };
           setIsSubmitting(true);
           try {
-              await updateHomepageContent({ ...homepageContent, banners: newBanners });
-              setHomepageContent(prev => prev ? { ...prev, banners: newBanners } : null);
+              await updateHomepageContent(newHomepageContent);
+              setHomepageContent(newHomepageContent); // Correctly update the state
               toast({ title: "Success", description: "Banner order updated." });
           } catch(e: any) {
               toast({ variant: "destructive", title: "Error", description: `Failed to reorder banners: ${e.message}` });
@@ -211,10 +216,11 @@ export default function ManageHomepagePage() {
   const handleDeleteBanner = async (index: number) => {
       if (homepageContent) {
           const newBanners = homepageContent.banners.filter((_, i) => i !== index);
+          const newHomepageContent = { ...homepageContent, banners: newBanners };
           setIsSubmitting(true);
           try {
-              await updateHomepageContent({ ...homepageContent, banners: newBanners });
-              setHomepageContent(prev => prev ? { ...prev, banners: newBanners } : null);
+              await updateHomepageContent(newHomepageContent);
+              setHomepageContent(newHomepageContent); // Correctly update the state
               toast({ title: "Success", description: "Banner deleted." });
           } catch(e: any) {
               toast({ variant: "destructive", title: "Error", description: `Failed to delete banner: ${e.message}` });
@@ -463,5 +469,3 @@ export default function ManageHomepagePage() {
     </div>
   );
 }
-
-    
