@@ -165,7 +165,6 @@ export default function ManageProductsPage() {
   
   useEffect(() => {
     if (editingProduct) {
-      const primaryImageIndex = 0;
       editForm.reset({
         name: editingProduct.name,
         brandIds: editingProduct.brandIds || [],
@@ -176,7 +175,7 @@ export default function ManageProductsPage() {
         price: editingProduct.price,
         discountPrice: editingProduct.discountPrice || '',
         imageNames: editingProduct.imageNames?.map(name => ({ value: name })) || [],
-        primaryImageIndex: primaryImageIndex.toString(),
+        primaryImageIndex: "0",
       });
       setIsEditDialogOpen(true);
     } else {
@@ -194,10 +193,9 @@ export default function ManageProductsPage() {
     setIsLoading(true);
     try {
         const imageDataUris = values.imageNames?.map(img => img.value) || [];
-        const uploadedImageUrls = [];
+        const uploadedImageUrls: string[] = [];
 
         for (const dataUri of imageDataUris) {
-            // If it's already a URL, just add it. Otherwise, upload it.
             if (dataUri.startsWith('http')) {
                 uploadedImageUrls.push(dataUri);
             } else if (dataUri.startsWith('data:image')) {
@@ -216,6 +214,8 @@ export default function ManageProductsPage() {
             const primaryImage = uploadedImageUrls[primaryIndex];
             const otherImages = uploadedImageUrls.filter((_, index) => index !== primaryIndex);
             orderedImageNames = [primaryImage, ...otherImages];
+        } else {
+            orderedImageNames = uploadedImageUrls;
         }
 
         const productData = {
