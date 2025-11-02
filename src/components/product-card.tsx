@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from 'next/image';
@@ -88,7 +87,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
-  const mainImage = product.imageNames && product.imageNames.length > 0 && typeof product.imageNames[0] === 'string' ? product.imageNames[0] : null;
+  const mainImage = product.imageNames && product.imageNames.length > 0 && typeof product.imageNames[0] === 'string' && product.imageNames[0].startsWith('http') ? product.imageNames[0] : null;
 
   const AuthDialog = (
      <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>

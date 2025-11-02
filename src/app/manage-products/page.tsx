@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -174,7 +173,7 @@ export default function ManageProductsPage() {
         category: editingProduct.category,
         price: editingProduct.price,
         discountPrice: editingProduct.discountPrice || '',
-        imageNames: editingProduct.imageNames?.map(name => ({ value: name })) || [],
+        imageNames: (editingProduct.imageNames || []).map(name => ({ value: name })),
         primaryImageIndex: "0",
       });
       setIsEditDialogOpen(true);
@@ -196,19 +195,20 @@ export default function ManageProductsPage() {
         const uploadedImageUrls: string[] = [];
 
         for (const imageValue of imageInputs) {
-            // Check if it's a URL (already uploaded)
-            if (imageValue.startsWith('http')) {
-                uploadedImageUrls.push(imageValue);
-            } 
-            // Check if it's a new base64 image to be uploaded
-            else if (imageValue.startsWith('data:image')) {
+            // If it's a new base64 image, upload it
+            if (imageValue.startsWith('data:image')) {
                 const result = await uploadImageAction(imageValue);
                 if (result.success && result.url) {
                     uploadedImageUrls.push(result.url);
                 } else {
                     throw new Error(result.error || 'Image upload failed for one or more images.');
                 }
+            } 
+            // If it's already a valid Cloudinary URL, keep it
+            else if (imageValue.startsWith('https://res.cloudinary.com')) {
+                uploadedImageUrls.push(imageValue);
             }
+            // Ignore any other invalid values (like old filenames)
         }
         
         const primaryIndex = parseInt(values.primaryImageIndex || "0", 10);
@@ -219,7 +219,6 @@ export default function ManageProductsPage() {
                 const otherImages = uploadedImageUrls.filter((_, index) => index !== primaryIndex);
                 finalImageOrder = [primaryImage, ...otherImages];
             } else {
-                // Fallback if primary index is out of bounds
                 finalImageOrder = uploadedImageUrls;
             }
         }
