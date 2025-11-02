@@ -153,7 +153,7 @@ export default function Home() {
                         <Skeleton className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem]" />
                     </div>
                  </CarouselItem>
-            ) : banners.map((banner) => {
+            ) : banners.filter(banner => banner.imageUrl).map((banner) => {
               return (
                 <CarouselItem key={banner.id}>
                   <BannerCard
