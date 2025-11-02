@@ -1,19 +1,26 @@
 
 'use server';
 
-import { unsignedUpload } from '@/lib/cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 import 'dotenv/config';
+
+// Configure Cloudinary within the server action
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
 
 export async function uploadImageAction(
   base64Image: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-    if (!uploadPreset) {
-        throw new Error("Cloudinary upload preset is not configured. Please set CLOUDINARY_UPLOAD_PRESET in your environment variables.");
-    }
-    
-    const result = await unsignedUpload(base64Image, uploadPreset);
+    // For server-side actions, it's more robust to use a standard authenticated upload
+    // rather than relying on unsigned presets which can have configuration issues.
+    const result = await cloudinary.uploader.upload(base64Image, {
+      folder: "jasa_essentials" // Optional: organize uploads in a specific folder
+    });
     
     return { success: true, url: result.secure_url };
   } catch (error: any) {
