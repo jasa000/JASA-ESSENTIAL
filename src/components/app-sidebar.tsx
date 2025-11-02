@@ -224,7 +224,7 @@ export default function AppSidebar() {
     <SidebarContent className="p-2">
         <div className="flex items-center justify-center p-4 gap-2">
             <div className="relative h-10 w-10">
-              <Image src="/favicon.ico" alt="Jasa Essentials Logo" layout="fill" className="rounded-full border-2 border-black dark:border-white" />
+              <Image src="/favicon.ico" alt="Jasa Essentials Logo" fill className="rounded-full border-2 border-black dark:border-white" />
             </div>
             <h2 className="font-headline text-xl font-bold text-sidebar-foreground">JASA ESSENTIAL</h2>
         </div>
