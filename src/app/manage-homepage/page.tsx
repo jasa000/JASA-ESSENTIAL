@@ -16,9 +16,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload, Save, X } from "lucide-react";
 import Image from "next/image";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 
 const MAX_BANNERS = 4;
 const TITLE_MAX_LENGTH = 40;
@@ -41,16 +42,13 @@ export default function ManageHomepagePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [homepageContent, setHomepageContent] = useState<HomepageContent | null>(null);
-
-  const categoryFileInputRefs = {
-    stationary: useRef<HTMLInputElement>(null),
-    books: useRef<HTMLInputElement>(null),
-    xerox: useRef<HTMLInputElement>(null),
-    electronics: useRef<HTMLInputElement>(null),
-  };
   
-  const bannerFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // State for image previews before upload
+  const [categoryPreviews, setCategoryPreviews] = useState<{[key: string]: string | null}>({});
+  const [uploadProgress, setUploadProgress] = useState(0);
 
+  const categoryFileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
+  
   useEffect(() => {
     if (!authLoading) {
       if (!user || user.role !== 'admin') {
@@ -74,50 +72,53 @@ export default function ManageHomepagePage() {
     }
   };
   
-  const handleFileUpload = async (file: File): Promise<string | null> => {
+  const handleFileSelect = (file: File, categoryKey: string) => {
     if (file.size > 4 * 1024 * 1024) { // 4MB limit
         toast({ variant: 'destructive', title: 'File too large', description: 'Please select an image smaller than 4MB.'});
-        return null;
+        return;
     }
-    
+    const reader = new FileReader();
+    reader.onload = () => {
+        setCategoryPreviews(prev => ({ ...prev, [categoryKey]: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  }
+  
+  const handleSaveCategoryImage = async (categoryKey: keyof HomepageContent['categoryImages']) => {
+    const previewUrl = categoryPreviews[categoryKey];
+    if (!previewUrl || !homepageContent) return;
+
     setIsSubmitting(true);
+    setUploadProgress(0);
+    
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
+    }, 200);
+
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = (error) => reject(error);
-          reader.readAsDataURL(file);
-      });
-      
-      const uploadResult = await uploadImageAction(base64);
+      const uploadResult = await uploadImageAction(previewUrl);
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
       if (uploadResult.success && uploadResult.url) {
-          return uploadResult.url;
+        const newCategoryImages = { ...homepageContent.categoryImages, [categoryKey]: uploadResult.url };
+        await updateHomepageContent({ ...homepageContent, categoryImages: newCategoryImages });
+        setHomepageContent(prev => prev ? { ...prev, categoryImages: newCategoryImages } : null);
+        setCategoryPreviews(prev => ({...prev, [categoryKey]: null}));
+        toast({ title: "Success", description: "Category image updated." });
       } else {
-          toast({ variant: 'destructive', title: 'Upload failed', description: uploadResult.error });
-          return null;
+        throw new Error(uploadResult.error || 'Upload failed');
       }
     } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Upload failed', description: e.message });
-        return null;
+      clearInterval(progressInterval);
+      toast({ variant: "destructive", title: "Error", description: `Failed to upload image: ${e.message}` });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
+      setTimeout(() => setUploadProgress(0), 1000);
     }
   }
 
-  const handleCategoryFileChange = async (e: React.ChangeEvent<HTMLInputElement>, categoryKey: keyof HomepageContent['categoryImages']) => {
-      const file = e.target.files?.[0];
-      if (file && homepageContent) {
-          const uploadedUrl = await handleFileUpload(file);
-          if (uploadedUrl) {
-            const newCategoryImages = { ...homepageContent.categoryImages, [categoryKey]: uploadedUrl };
-            await updateHomepageContent({ ...homepageContent, categoryImages: newCategoryImages });
-            setHomepageContent(prev => prev ? { ...prev, categoryImages: newCategoryImages } : null);
-            toast({ title: "Success", description: "Category image updated." });
-          }
-      }
-      if(e.target) e.target.value = '';
-  };
-  
   const handleCategoryDelete = async (categoryKey: keyof HomepageContent['categoryImages']) => {
       if (homepageContent) {
           const newCategoryImages = { ...homepageContent.categoryImages, [categoryKey]: '' };
@@ -136,19 +137,34 @@ export default function ManageHomepagePage() {
 
   const handleBannerUpdate = async (index: number, updatedBanner: Banner) => {
       if (homepageContent) {
-          const newBanners = [...homepageContent.banners];
-          newBanners[index] = updatedBanner;
           setIsSubmitting(true);
           try {
+            // Check if image needs uploading
+            let finalImageUrl = updatedBanner.imageUrl;
+            if (finalImageUrl.startsWith('data:image')) {
+                const uploadResult = await uploadImageAction(finalImageUrl);
+                if (uploadResult.success && uploadResult.url) {
+                    finalImageUrl = uploadResult.url;
+                } else {
+                    throw new Error(uploadResult.error || 'Banner image upload failed.');
+                }
+            }
+
+            const newBanners = [...homepageContent.banners];
+            newBanners[index] = {...updatedBanner, imageUrl: finalImageUrl};
+
             await updateHomepageContent({ ...homepageContent, banners: newBanners });
             setHomepageContent(prev => prev ? { ...prev, banners: newBanners } : null);
             toast({ title: "Success", description: "Banner updated." });
+            return true; // Indicate success to form
           } catch (e: any) {
             toast({ variant: "destructive", title: "Error", description: `Failed to update banner: ${e.message}` });
+            return false; // Indicate failure
           } finally {
             setIsSubmitting(false);
           }
       }
+      return false;
   };
   
   const handleAddBanner = async () => {
@@ -217,24 +233,36 @@ export default function ManageHomepagePage() {
       resolver: zodResolver(bannerSchema),
       defaultValues: banner,
     });
+    const bannerFileInputRef = useRef<HTMLInputElement>(null);
+    const [isEditing, setIsEditing] = useState(false);
     
-    const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    useEffect(() => {
+        form.reset(banner);
+        setIsEditing(banner.imageUrl === '');
+    }, [banner, form]);
+    
+    const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-          const uploadedUrl = await handleFileUpload(file);
-          if (uploadedUrl) {
-              form.setValue(`imageUrl`, uploadedUrl, { shouldValidate: true, shouldDirty: true });
-          }
+          const reader = new FileReader();
+          reader.onload = () => {
+              form.setValue('imageUrl', reader.result as string, { shouldValidate: true, shouldDirty: true });
+          };
+          reader.readAsDataURL(file);
       }
-      if(e.target) e.target.value = '';
     };
 
-    const onBannerSubmit = (data: FormData) => {
-        handleBannerUpdate(index, data);
+    const onBannerSubmit = async (data: FormData) => {
+        const success = await handleBannerUpdate(index, data);
+        if (success) {
+            setIsEditing(false);
+            form.reset(data); // Resets dirty state
+        }
     }
     
     const titleCharCount = `${form.watch(`title`)?.length || 0} / ${TITLE_MAX_LENGTH}`;
     const ctaCharCount = `${form.watch(`cta`)?.length || 0} / ${CTA_MAX_LENGTH}`;
+    const imageUrl = form.watch('imageUrl');
 
     return (
         <Card className="p-4 relative">
@@ -245,6 +273,7 @@ export default function ManageHomepagePage() {
                     <div className="flex gap-1">
                         <Button type="button" variant="ghost" size="icon" disabled={isSubmitting || index === 0} onClick={() => handleMoveBanner(index, index - 1)}><ArrowUp className="h-4 w-4" /></Button>
                         <Button type="button" variant="ghost" size="icon" disabled={isSubmitting || index === (homepageContent?.banners.length ?? 0) - 1} onClick={() => handleMoveBanner(index, index + 1)}><ArrowDown className="h-4 w-4" /></Button>
+                        {!isEditing && <Button type="button" variant="secondary" size="icon" disabled={isSubmitting} onClick={() => setIsEditing(true)}><Pencil className="h-4 w-4" /></Button>}
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button type="button" variant="destructive" size="icon" disabled={isSubmitting}><Trash2 className="h-4 w-4" /></Button>
@@ -273,7 +302,7 @@ export default function ManageHomepagePage() {
                                         <FormLabel>Title</FormLabel>
                                         <span className="text-xs text-muted-foreground">{titleCharCount}</span>
                                     </div>
-                                    <FormControl><Input {...field} maxLength={TITLE_MAX_LENGTH} /></FormControl>
+                                    <FormControl><Input {...field} maxLength={TITLE_MAX_LENGTH} disabled={!isEditing || isSubmitting} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -287,7 +316,7 @@ export default function ManageHomepagePage() {
                                         <FormLabel>Call to Action Text</FormLabel>
                                         <span className="text-xs text-muted-foreground">{ctaCharCount}</span>
                                     </div>
-                                    <FormControl><Input {...field} maxLength={CTA_MAX_LENGTH} /></FormControl>
+                                    <FormControl><Input {...field} maxLength={CTA_MAX_LENGTH} disabled={!isEditing || isSubmitting} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -298,7 +327,7 @@ export default function ManageHomepagePage() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Link URL</FormLabel>
-                                    <FormControl><Input {...field} placeholder="/stationary" /></FormControl>
+                                    <FormControl><Input {...field} placeholder="/stationary" disabled={!isEditing || isSubmitting} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -307,31 +336,36 @@ export default function ManageHomepagePage() {
                     <div>
                         <FormLabel>Banner Image</FormLabel>
                         <div className="mt-2 aspect-video w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
-                            {form.watch(`imageUrl`) ? <Image src={form.watch(`imageUrl`)} alt={`Banner ${index + 1}`} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
+                            {imageUrl ? <Image src={imageUrl} alt={`Banner ${index + 1}`} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
                         </div>
                         <Input
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            ref={(el) => { bannerFileInputRefs.current[index] = el; }}
+                            ref={bannerFileInputRef}
                             onChange={handleBannerFileChange}
-                            disabled={isSubmitting}
+                            disabled={!isEditing || isSubmitting}
                         />
                         <Button
                             type="button"
                             variant="outline"
                             className="mt-2 w-full"
-                            onClick={() => bannerFileInputRefs.current[index]?.click()}
-                            disabled={isSubmitting}
+                            onClick={() => bannerFileInputRef.current?.click()}
+                            disabled={!isEditing || isSubmitting}
                         >
                             <Upload className="mr-2 h-4 w-4" /> Change Image
                         </Button>
                         <FormField control={form.control} name={`imageUrl`} render={({ field }) => <FormMessage {...field} />} />
                     </div>
                 </div>
-                <Button type="submit" className="w-full mt-4" disabled={isSubmitting || !form.formState.isDirty}>
-                  {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Banner"}
-                </Button>
+                {isEditing && (
+                    <div className="flex gap-2 mt-4">
+                        <Button type="button" variant="secondary" className="w-full" onClick={() => { setIsEditing(false); form.reset(banner); }}>Cancel</Button>
+                        <Button type="submit" className="w-full" disabled={isSubmitting || !form.formState.isDirty}>
+                          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Banner"}
+                        </Button>
+                    </div>
+                )}
             </form>
             </Form>
         </Card>
@@ -341,51 +375,68 @@ export default function ManageHomepagePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Manage Homepage</h1>
-      <p className="mt-2 text-muted-foreground">Update category images and promotional banners. Changes are saved immediately.</p>
+      <p className="mt-2 text-muted-foreground">Update category images and promotional banners.</p>
       
       <div className="mt-8 space-y-8">
           <Card>
               <CardHeader>
                   <CardTitle>Category Images</CardTitle>
-                  <CardDescription>Update the images for the main service categories.</CardDescription>
+                  <CardDescription>Update the images for the main service categories. Changes are saved individually.</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {defaultCategories.map(cat => {
                       const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
                       const currentImage = homepageContent?.categoryImages?.[categoryKey];
+                      const previewImage = categoryPreviews[categoryKey];
+                      const displayImage = previewImage || currentImage;
+
                       return (
                           <div key={cat.id}>
-                              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{cat.name}</label>
+                              <label className="text-sm font-medium leading-none">{cat.name}</label>
                               <div className="mt-2 aspect-square w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
-                                  {currentImage ? <Image src={currentImage} alt={cat.name} fill className="object-cover" /> : <span className="text-muted-foreground">No Image</span>}
+                                  {displayImage ? <Image src={displayImage} alt={cat.name} fill className="object-cover" /> : <span className="text-muted-foreground font-bold text-2xl">JASA</span>}
                               </div>
-                              <Input type="file" accept="image/*" className="hidden" ref={categoryFileInputRefs[categoryKey]} onChange={(e) => handleCategoryFileChange(e, categoryKey)} disabled={isSubmitting}/>
-                              <div className="mt-2 flex gap-2">
-                                <Button type="button" variant="outline" className="flex-1" onClick={() => categoryFileInputRefs[categoryKey].current?.click()} disabled={isSubmitting}>
-                                    <Upload className="mr-2 h-4 w-4" /> {currentImage ? 'Change' : 'Upload'}
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button type="button" variant="destructive" className="flex-1" disabled={!currentImage || isSubmitting}>
-                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              <Input type="file" accept="image/*" className="hidden" ref={ref => categoryFileInputRefs.current[categoryKey] = ref} onChange={(e) => e.target.files && handleFileSelect(e.target.files[0], categoryKey)} disabled={isSubmitting}/>
+                              
+                              {previewImage ? (
+                                <div className="mt-2 space-y-2">
+                                    {isSubmitting && uploadProgress > 0 && <Progress value={uploadProgress} />}
+                                    <div className="flex gap-2">
+                                        <Button type="button" variant="secondary" className="flex-1" onClick={() => setCategoryPreviews(prev => ({...prev, [categoryKey]: null}))} disabled={isSubmitting}>
+                                            <X className="mr-2 h-4 w-4"/> Cancel
+                                        </Button>
+                                        <Button type="button" className="flex-1" onClick={() => handleSaveCategoryImage(categoryKey)} disabled={isSubmitting}>
+                                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                                            Save
+                                        </Button>
+                                    </div>
+                                </div>
+                              ) : (
+                                <div className="mt-2 flex gap-2">
+                                    <Button type="button" variant="outline" className="flex-1" onClick={() => categoryFileInputRefs.current[categoryKey]?.click()} disabled={isSubmitting}>
+                                        <Upload className="mr-2 h-4 w-4" /> {currentImage ? 'Change' : 'Upload'}
                                     </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        This will remove the image for the {cat.name} category.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleCategoryDelete(categoryKey)}>
-                                        Confirm Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button type="button" variant="destructive" className="h-10 w-10 p-0" disabled={!currentImage || isSubmitting}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will remove the image for the {cat.name} category.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleCategoryDelete(categoryKey)}>
+                                                Confirm Delete
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                              )}
                           </div>
                       )
                   })}
@@ -412,3 +463,5 @@ export default function ManageHomepagePage() {
     </div>
   );
 }
+
+    
