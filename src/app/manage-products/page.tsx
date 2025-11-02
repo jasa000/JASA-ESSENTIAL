@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProducts, addProduct, updateProduct, deleteProduct, getBrands, addBrand, getAuthors, addAuthor, getProductTypes, addProductType } from "@/lib/data";
+import { getProducts, addProduct, updateProduct, deleteProduct, getBrands, addBrand, getAuthors, addAuthor, getProductTypes, addProductType, updateBrand, deleteBrand, updateAuthor, deleteAuthor, updateProductType, deleteProductType } from "@/lib/data";
 import ProductCard from "@/components/product-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Product, Brand, Author, ProductType } from "@/lib/types";
@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLoading } from "@/hooks/use-loading";
 import { uploadImageAction } from "@/app/actions/upload-image-action";
+import { Separator } from "@/components/ui/separator";
 
 const categories: { value: Product['category'], label: string }[] = [
     { value: 'stationary', label: 'Stationary' },
@@ -70,17 +71,11 @@ const productSchema = z.object({
   primaryImageIndex: z.string().optional(),
 });
 
-const brandSchema = z.object({
-  name: z.string().min(2, "Brand name must be at least 2 characters."),
+const metadataSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters."),
 });
 
-const authorSchema = z.object({
-  name: z.string().min(2, "Author name must be at least 2 characters."),
-});
-
-const productTypeSchema = z.object({
-  name: z.string().min(2, "Product type name must be at least 2 characters."),
-});
+type MetadataItem = Brand | Author | ProductType;
 
 export default function ManageProductsPage() {
   const [activeTab, setActiveTab] = useState<Product['category']>('stationary');
@@ -100,6 +95,9 @@ export default function ManageProductsPage() {
   const [isAuthorFormOpen, setIsAuthorFormOpen] = useState(false);
   const [isProductTypeFormOpen, setIsProductTypeFormOpen] = useState(false);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  
+  const [editingMetadata, setEditingMetadata] = useState<{item: MetadataItem, type: 'brand' | 'author' | 'productType'} | null>(null);
+  const [deletingMetadata, setDeletingMetadata] = useState<{item: MetadataItem, type: 'brand' | 'author' | 'productType'} | null>(null);
 
 
   const form = useForm<z.infer<typeof productSchema>>({
@@ -122,20 +120,17 @@ export default function ManageProductsPage() {
     resolver: zodResolver(productSchema),
   });
 
-  const brandForm = useForm<z.infer<typeof brandSchema>>({
-    resolver: zodResolver(brandSchema),
-    defaultValues: { name: "" },
-  });
-
-  const authorForm = useForm<z.infer<typeof authorSchema>>({
-    resolver: zodResolver(authorSchema),
+  const metadataForm = useForm<z.infer<typeof metadataSchema>>({
+    resolver: zodResolver(metadataSchema),
     defaultValues: { name: "" },
   });
   
-  const productTypeForm = useForm<z.infer<typeof productTypeSchema>>({
-    resolver: zodResolver(productTypeSchema),
-    defaultValues: { name: "" },
-  });
+  useEffect(() => {
+    if (editingMetadata) {
+        metadataForm.setValue('name', editingMetadata.item.name);
+    }
+  }, [editingMetadata, metadataForm]);
+
 
   const fetchAllData = async () => {
       setIsLoading(true);
@@ -161,6 +156,7 @@ export default function ManageProductsPage() {
 
   useEffect(() => {
     fetchAllData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast, setIsLoading]);
 
   useEffect(() => {
@@ -298,62 +294,78 @@ export default function ManageProductsPage() {
     }
   }
 
-  const onBrandSubmit = async (values: z.infer<typeof brandSchema>, category: Brand['category']) => {
+  const onMetadataSubmit = async (values: z.infer<typeof metadataSchema>, category: Brand['category'] | ProductType['category'], type: 'brand' | 'author' | 'productType') => {
+    setIsLoading(true);
     try {
-        await addBrand(values, category);
-        toast({
-            title: "Brand Created",
-            description: `${values.name} has been added successfully.`,
-        });
-        fetchAllData();
-        brandForm.reset();
-        setIsBrandFormOpen(false);
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to create the brand.",
-        });
+      let action;
+      switch (type) {
+        case 'brand': action = addBrand(values, category as Brand['category']); break;
+        case 'author': action = addAuthor(values); break;
+        case 'productType': action = addProductType(values, category as ProductType['category']); break;
+        default: throw new Error("Invalid metadata type");
+      }
+      await action;
+      toast({ title: "Success", description: `${values.name} has been added.` });
+      fetchAllData();
+      metadataForm.reset();
+      switch (type) {
+        case 'brand': setIsBrandFormOpen(false); break;
+        case 'author': setIsAuthorFormOpen(false); break;
+        case 'productType': setIsProductTypeFormOpen(false); break;
+      }
+    } catch(e: any) {
+       toast({ variant: "destructive", title: "Error", description: e.message });
+    } finally {
+       setIsLoading(false);
     }
   };
 
-  const onAuthorSubmit = async (values: z.infer<typeof authorSchema>) => {
+  const onEditMetadataSubmit = async (values: z.infer<typeof metadataSchema>) => {
+    if (!editingMetadata) return;
+    setIsLoading(true);
     try {
-        await addAuthor(values);
-        toast({
-            title: "Author Created",
-            description: `${values.name} has been added successfully.`,
-        });
-        fetchAllData();
-        authorForm.reset();
-        setIsAuthorFormOpen(false);
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to create the author.",
-        });
+      const { item, type } = editingMetadata;
+      let action;
+      switch (type) {
+        case 'brand': action = updateBrand(item.id, values); break;
+        case 'author': action = updateAuthor(item.id, values); break;
+        case 'productType': action = updateProductType(item.id, values); break;
+        default: throw new Error("Invalid metadata type");
+      }
+      await action;
+      toast({ title: "Success", description: `${item.name} has been updated.` });
+      fetchAllData();
+      setEditingMetadata(null);
+    } catch(e: any) {
+       toast({ variant: "destructive", title: "Error", description: e.message });
+    } finally {
+       setIsLoading(false);
     }
   };
-  
-  const onProductTypeSubmit = async (values: z.infer<typeof productTypeSchema>, category: ProductType['category']) => {
+
+  const onDeleteMetadata = async () => {
+    if (!deletingMetadata) return;
+    setIsLoading(true);
     try {
-        await addProductType(values, category);
-        toast({
-            title: "Product Type Created",
-            description: `${values.name} has been added successfully.`,
-        });
-        fetchAllData();
-        productTypeForm.reset();
-        setIsProductTypeFormOpen(false);
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to create the product type.",
-        });
+      const { item, type } = deletingMetadata;
+      let action;
+      switch (type) {
+        case 'brand': action = deleteBrand(item.id); break;
+        case 'author': action = deleteAuthor(item.id); break;
+        case 'productType': action = deleteProductType(item.id); break;
+        default: throw new Error("Invalid metadata type");
+      }
+      await action;
+      toast({ title: "Success", description: `${item.name} has been deleted.` });
+      fetchAllData();
+      setDeletingMetadata(null);
+    } catch(e: any) {
+       toast({ variant: "destructive", title: "Error", description: e.message });
+    } finally {
+       setIsLoading(false);
     }
   };
+
   
   const MultiSelect = ({ form, fieldName, items, placeholder, searchPlaceholder, emptyMessage, label }: { 
     form: any, 
@@ -521,120 +533,100 @@ export default function ManageProductsPage() {
     );
   };
   
-  const renderCreateBrandForm = (category: Brand['category'], isOpen: boolean, onOpenChange: (open: boolean) => void) => (
-      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Create {category === 'stationary' ? 'Stationary' : 'Electronics'} Brand</CardTitle>
-                    <CardDescription>Add a new brand for {category} products.</CardDescription>
-                </div>
+  const renderCreateMetadataForm = (
+    category: Brand['category'] | ProductType['category'],
+    type: 'brand' | 'author' | 'productType',
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void
+  ) => {
+      const title = type === 'brand' ? `Create ${category} Brand` : type === 'author' ? 'Create Author' : 'Create Product Type';
+      const description = `Add a new ${type.replace(/([A-Z])/g, ' $1').toLowerCase()} for this category.`;
+      
+      return (
+        <Collapsible open={isOpen} onOpenChange={onOpenChange}>
+            <Card>
                 <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="w-9 p-0">
-                        <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-                        <span className="sr-only">Toggle</span>
-                    </Button>
+                    <div className="flex w-full cursor-pointer items-center justify-between p-4">
+                        <div>
+                            <CardTitle>{title}</CardTitle>
+                            <CardDescription>{description}</CardDescription>
+                        </div>
+                        <Button variant="ghost" size="sm" className="w-9 p-0">
+                            <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                            <span className="sr-only">Toggle</span>
+                        </Button>
+                    </div>
                 </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-                <CardContent>
-                <Form {...brandForm}>
-                    <form onSubmit={brandForm.handleSubmit((values) => onBrandSubmit(values, category))} className="space-y-4">
-                    <FormField control={brandForm.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Brand Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <Button type="submit" className="w-full" disabled={brandForm.formState.isSubmitting}>
-                        {brandForm.formState.isSubmitting ? "Adding..." : "Add Brand"}
-                    </Button>
-                    </form>
-                </Form>
-                </CardContent>
-            </CollapsibleContent>
-        </Card>
-      </Collapsible>
-    );
-
-  const renderCreateAuthorForm = (isOpen: boolean, onOpenChange: (open: boolean) => void) => (
-      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Create Author</CardTitle>
-                    <CardDescription>Add a new author for books.</CardDescription>
-                </div>
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="w-9 p-0">
-                        <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-                        <span className="sr-only">Toggle</span>
-                    </Button>
-                </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-                <CardContent>
-                    <Form {...authorForm}>
-                        <form onSubmit={authorForm.handleSubmit(onAuthorSubmit)} className="space-y-4">
-                        <FormField control={authorForm.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Author Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <CollapsibleContent>
+                    <CardContent>
+                    <Form {...metadataForm}>
+                        <form onSubmit={metadataForm.handleSubmit((values) => onMetadataSubmit(values, category, type))} className="space-y-4">
+                        <FormField control={metadataForm.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <Button type="submit" className="w-full" disabled={authorForm.formState.isSubmitting}>
-                            {authorForm.formState.isSubmitting ? "Adding..." : "Add Author"}
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? "Adding..." : `Add ${type.replace(/([A-Z])/g, ' $1')}`}
                         </Button>
                         </form>
                     </Form>
-                </CardContent>
-            </CollapsibleContent>
-        </Card>
-      </Collapsible>
+                    </CardContent>
+                </CollapsibleContent>
+            </Card>
+        </Collapsible>
     );
-
-  const renderCreateProductTypeForm = (category: ProductType['category'], isOpen: boolean, onOpenChange: (open: boolean) => void) => (
-      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
+  }
+  
+  const renderMetadataList = (
+    items: MetadataItem[], 
+    type: 'brand' | 'author' | 'productType',
+    title: string
+  ) => {
+    return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Create Product Type</CardTitle>
-                    <CardDescription>Add a new product type for the {category} category (e.g., Pen, Notebook).</CardDescription>
-                </div>
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="w-9 p-0">
-                        <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-                        <span className="sr-only">Toggle</span>
-                    </Button>
-                </CollapsibleTrigger>
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
             </CardHeader>
-            <CollapsibleContent>
-                <CardContent>
-                <Form {...productTypeForm}>
-                    <form onSubmit={productTypeForm.handleSubmit((values) => onProductTypeSubmit(values, category))} className="space-y-4">
-                    <FormField control={productTypeForm.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Product Type Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <Button type="submit" className="w-full" disabled={productTypeForm.formState.isSubmitting}>
-                        {productTypeForm.formState.isSubmitting ? "Adding..." : "Add Product Type"}
-                    </Button>
-                    </form>
-                </Form>
-                </CardContent>
-            </CollapsibleContent>
+            <CardContent>
+                {items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No items found.</p>
+                ) : (
+                    <div className="space-y-2">
+                        {items.map(item => (
+                            <div key={item.id} className="flex items-center justify-between rounded-md border p-2">
+                                <span className="font-medium">{item.name}</span>
+                                <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingMetadata({item, type})}>
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeletingMetadata({item, type})}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
         </Card>
-      </Collapsible>
-    );
+    )
+  }
+
 
   const renderCreateForm = (category: Product['category'], currentForm: any, isOpen: boolean, onOpenChange: (open: boolean) => void) => (
-     <Collapsible open={isOpen} onOpenChange={onOpenChange} className="mb-8">
+     <Collapsible open={isOpen} onOpenChange={onOpenChange}>
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Create {categories.find(c => c.value === category)?.label} Product</CardTitle>
-                    <CardDescription>Add a new item to your inventory for this category.</CardDescription>
-                </div>
-                 <CollapsibleTrigger asChild>
+            <CollapsibleTrigger asChild>
+                 <div className="flex w-full cursor-pointer items-center justify-between p-4">
+                    <div>
+                        <CardTitle>Create {categories.find(c => c.value === category)?.label} Product</CardTitle>
+                        <CardDescription>Add a new item to your inventory for this category.</CardDescription>
+                    </div>
                     <Button variant="ghost" size="sm" className="w-9 p-0">
                         <ChevronUp className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
                         <span className="sr-only">Toggle</span>
                     </Button>
-                </CollapsibleTrigger>
-            </CardHeader>
+                </div>
+            </CollapsibleTrigger>
             <CollapsibleContent>
                 <CardContent>
                     <Form {...currentForm}>
@@ -696,7 +688,7 @@ export default function ManageProductsPage() {
     
     return (
         <>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">Existing {categories.find(c => c.value === category)?.label} Products</h2>
+            <h2 className="text-2xl font-bold tracking-tight mb-4 mt-8">Existing {categories.find(c => c.value === category)?.label} Products</h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {filtered.length > 0 ? (
                     filtered.map((product) => (
@@ -721,7 +713,7 @@ export default function ManageProductsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Manage Products</h1>
-      <p className="mt-2 text-muted-foreground">Add, edit, and manage your products.</p>
+      <p className="mt-2 text-muted-foreground">Add, edit, and manage your products and their metadata.</p>
 
       <Tabs value={activeTab} onValueChange={(value) => {
           const newCategory = value as Product['category'];
@@ -740,24 +732,54 @@ export default function ManageProductsPage() {
               </TabsList>
           </div>
           
-          <TabsContent value="stationary" className="mt-8">
-              {renderCreateBrandForm('stationary', isBrandFormOpen, setIsBrandFormOpen)}
-              {renderCreateProductTypeForm('stationary', isProductTypeFormOpen, setIsProductTypeFormOpen)}
+          <TabsContent value="stationary" className="mt-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  {renderCreateMetadataForm('stationary', 'brand', isBrandFormOpen, setIsBrandFormOpen)}
+                  {!isBrandFormOpen && <div className="mt-8">{renderMetadataList(stationaryBrandList, 'brand', 'Manage Stationary Brands')}</div>}
+                </div>
+                <div>
+                  {renderCreateMetadataForm('stationary', 'productType', isProductTypeFormOpen, setIsProductTypeFormOpen)}
+                  {!isProductTypeFormOpen && <div className="mt-8">{renderMetadataList(productTypeList.filter(pt => pt.category === 'stationary'), 'productType', 'Manage Stationary Types')}</div>}
+                </div>
+              </div>
+              <Separator />
               {renderCreateForm('stationary', form, isProductFormOpen, setIsProductFormOpen)}
+              <Separator />
               {renderProductGrid('stationary')}
           </TabsContent>
 
-          <TabsContent value="books" className="mt-8">
-              {renderCreateAuthorForm(isAuthorFormOpen, setIsAuthorFormOpen)}
-              {renderCreateProductTypeForm('books', isProductTypeFormOpen, setIsProductTypeFormOpen)}
+          <TabsContent value="books" className="mt-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    {renderCreateMetadataForm('books', 'author', isAuthorFormOpen, setIsAuthorFormOpen)}
+                    {!isAuthorFormOpen && <div className="mt-8">{renderMetadataList(authorList, 'author', 'Manage Authors')}</div>}
+                  </div>
+                  <div>
+                    {renderCreateMetadataForm('books', 'productType', isProductTypeFormOpen, setIsProductTypeFormOpen)}
+                    {!isProductTypeFormOpen && <div className="mt-8">{renderMetadataList(productTypeList.filter(pt => pt.category === 'books'), 'productType', 'Manage Book Types')}</div>}
+                  </div>
+              </div>
+              <Separator />
               {renderCreateForm('books', form, isProductFormOpen, setIsProductFormOpen)}
+              <Separator />
               {renderProductGrid('books')}
           </TabsContent>
 
-          <TabsContent value="electronics" className="mt-8">
-              {renderCreateBrandForm('electronics', isBrandFormOpen, setIsBrandFormOpen)}
-              {renderCreateProductTypeForm('electronics', isProductTypeFormOpen, setIsProductTypeFormOpen)}
+          <TabsContent value="electronics" className="mt-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  {renderCreateMetadataForm('electronics', 'brand', isBrandFormOpen, setIsBrandFormOpen)}
+                  {!isBrandFormOpen && <div className="mt-8">{renderMetadataList(electronicsBrandList, 'brand', 'Manage Electronics Brands')}</div>}
+                </div>
+                <div>
+                  {renderCreateMetadataForm('electronics', 'productType', isProductTypeFormOpen, setIsProductTypeFormOpen)}
+                  {!isProductTypeFormOpen && <div className="mt-8">{renderMetadataList(productTypeList.filter(pt => pt.category === 'electronics'), 'productType', 'Manage Electronics Types')}</div>}
+                </div>
+              </div>
+              <Separator />
               {renderCreateForm('electronics', form, isProductFormOpen, setIsProductFormOpen)}
+              <Separator />
               {renderProductGrid('electronics')}
           </TabsContent>
       </Tabs>
@@ -824,6 +846,55 @@ export default function ManageProductsPage() {
               </AlertDialogFooter>
           </AlertDialogContent>
        </AlertDialog>
+
+       {/* Edit Metadata Dialog */}
+       <Dialog open={!!editingMetadata} onOpenChange={(open) => { if (!open) setEditingMetadata(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {editingMetadata?.type}</DialogTitle>
+          </DialogHeader>
+          <Form {...metadataForm}>
+            <form onSubmit={metadataForm.handleSubmit(onEditMetadataSubmit)} className="space-y-4">
+              <FormField
+                control={metadataForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="secondary" onClick={() => setEditingMetadata(null)}>Cancel</Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Metadata Alert */}
+      <AlertDialog open={!!deletingMetadata} onOpenChange={(open) => { if (!open) setDeletingMetadata(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{deletingMetadata?.item.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onDeleteMetadata} className="bg-destructive hover:bg-destructive/90">
+              {isLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

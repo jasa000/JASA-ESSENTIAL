@@ -159,7 +159,7 @@ export const getProductTypes = async (category?: ProductType['category']): Promi
     try {
         const q = category 
             ? query(productTypesCollection, where('category', '==', category))
-            : query(productTypesCollection);
+            : query(productTypesCollection, orderBy('name', 'asc'));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductType));
     } catch (error) {
@@ -262,4 +262,35 @@ export const addProductType = async (productTypeData: Omit<ProductType, 'id' | '
     }
 };
 
+// Update and Delete functions for metadata
+
+export const updateBrand = async (id: string, data: { name: string }): Promise<void> => {
+    const brandDoc = doc(db, 'brands', id);
+    await updateDoc(brandDoc, data);
+};
+
+export const deleteBrand = async (id: string): Promise<void> => {
+    const brandDoc = doc(db, 'brands', id);
+    await deleteDoc(brandDoc);
+};
+
+export const updateAuthor = async (id: string, data: { name: string }): Promise<void> => {
+    const authorDoc = doc(db, 'authors', id);
+    await updateDoc(authorDoc, data);
+};
+
+export const deleteAuthor = async (id: string): Promise<void> => {
+    const authorDoc = doc(db, 'authors', id);
+    await deleteDoc(authorDoc);
+};
+
+export const updateProductType = async (id: string, data: { name: string }): Promise<void> => {
+    const productTypeDoc = doc(db, 'productTypes', id);
+    await updateDoc(productTypeDoc, data);
+};
+
+export const deleteProductType = async (id: string): Promise<void> => {
+    const productTypeDoc = doc(db, 'productTypes', id);
+    await deleteDoc(productTypeDoc);
+};
     
