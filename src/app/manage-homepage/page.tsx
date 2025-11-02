@@ -184,7 +184,7 @@ export default function ManageHomepagePage() {
             id: `banner-${Date.now()}`,
             title: 'New Banner',
             cta: 'Shop Now',
-            href: '/',
+            href: '/stationary', // Use a valid default href
             imageUrl: '',
         };
         const newBanners = [...homepageContent.banners, newBanner];
@@ -490,3 +490,5 @@ export default function ManageHomepagePage() {
     </div>
   );
 }
+
+    
