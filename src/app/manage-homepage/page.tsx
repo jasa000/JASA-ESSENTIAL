@@ -223,7 +223,7 @@ export default function ManageHomepagePage() {
       if (file) {
           const uploadedUrl = await handleFileUpload(file);
           if (uploadedUrl) {
-              form.setValue(`imageUrl`, uploadedUrl, { shouldDirty: true });
+              form.setValue(`imageUrl`, uploadedUrl, { shouldValidate: true, shouldDirty: true });
           }
       }
       if(e.target) e.target.value = '';
@@ -324,9 +324,9 @@ export default function ManageHomepagePage() {
                             onClick={() => bannerFileInputRefs.current[index]?.click()}
                             disabled={isSubmitting}
                         >
-                            Change Image
+                            <Upload className="mr-2 h-4 w-4" /> Change Image
                         </Button>
-                        <FormField control={form.control} name={`imageUrl`} render={({ field }) => <FormMessage />} />
+                        <FormField control={form.control} name={`imageUrl`} render={({ field }) => <FormMessage {...field} />} />
                     </div>
                 </div>
                 <Button type="submit" className="w-full mt-4" disabled={isSubmitting || !form.formState.isDirty}>
@@ -362,7 +362,7 @@ export default function ManageHomepagePage() {
                               <Input type="file" accept="image/*" className="hidden" ref={categoryFileInputRefs[categoryKey]} onChange={(e) => handleCategoryFileChange(e, categoryKey)} disabled={isSubmitting}/>
                               <div className="mt-2 flex gap-2">
                                 <Button type="button" variant="outline" className="flex-1" onClick={() => categoryFileInputRefs[categoryKey].current?.click()} disabled={isSubmitting}>
-                                    <Upload className="mr-2 h-4 w-4" /> Upload
+                                    <Upload className="mr-2 h-4 w-4" /> {currentImage ? 'Change' : 'Upload'}
                                 </Button>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
