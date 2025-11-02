@@ -1,0 +1,297 @@
+
+"use client";
+
+import { useEffect, useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/context/auth-provider";
+import { useRouter } from "next/navigation";
+import { getHomepageContent, updateHomepageContent, categories as defaultCategories } from "@/lib/data";
+import { uploadImageAction } from "@/app/actions/upload-image-action";
+import type { HomepageContent } from "@/lib/types";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import Image from "next/image";
+import { Separator } from "@/components/ui/separator";
+
+const MAX_BANNERS = 4;
+const TITLE_MAX_LENGTH = 40;
+const CTA_MAX_LENGTH = 25;
+
+const bannerSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1, "Title is required.").max(TITLE_MAX_LENGTH),
+  cta: z.string().min(1, "CTA is required.").max(CTA_MAX_LENGTH),
+  href: z.string().min(1, "Link is required."),
+  image: z.string().min(1, "Image is required."),
+});
+
+const homepageSchema = z.object({
+  categoryImages: z.object({
+    stationary: z.string().optional(),
+    books: z.string().optional(),
+    xerox: z.string().optional(),
+    electronics: z.string().optional(),
+  }),
+  banners: z.array(bannerSchema).max(MAX_BANNERS),
+});
+
+type FormData = z.infer<typeof homepageSchema>;
+
+export default function ManageHomepagePage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const form = useForm<FormData>({
+    resolver: zodResolver(homepageSchema),
+    defaultValues: {
+      categoryImages: {
+        stationary: "",
+        books: "",
+        xerox: "",
+        electronics: "",
+      },
+      banners: [],
+    },
+  });
+
+  const { fields, append, remove, move } = useFieldArray({
+    control: form.control,
+    name: "banners",
+  });
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user || user.role !== 'admin') {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'You do not have permission to view this page.' });
+        router.push('/');
+      } else {
+        fetchContent();
+      }
+    }
+  }, [user, authLoading, router, toast]);
+
+  const fetchContent = async () => {
+    setIsLoading(true);
+    try {
+      const content = await getHomepageContent();
+      if (content) {
+        form.reset({
+          categoryImages: {
+            stationary: content.categoryImages?.stationary || "",
+            books: content.categoryImages?.books || "",
+            xerox: content.categoryImages?.xerox || "",
+            electronics: content.categoryImages?.electronics || "",
+          },
+          banners: content.banners.map(b => ({...b, image: b.imageUrl})) || [],
+        });
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to fetch homepage content." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleFileUpload = async (file: File): Promise<string | null> => {
+    if (file.size > 4 * 1024 * 1024) { // 4MB limit
+        toast({ variant: 'destructive', title: 'File too large', description: 'Please select an image smaller than 4MB.'});
+        return null;
+    }
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = async (readResult) => {
+            const base64 = readResult.target?.result as string;
+            const uploadResult = await uploadImageAction(base64);
+            if (uploadResult.success && uploadResult.url) {
+                resolve(uploadResult.url);
+            } else {
+                toast({ variant: 'destructive', title: 'Upload failed', description: uploadResult.error });
+                resolve(null);
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+  }
+
+  async function onSubmit(values: FormData) {
+    setIsLoading(true);
+    try {
+      // Banners are already uploaded and have URLs.
+      // We just need to format it correctly for Firestore.
+      const finalBanners = values.banners.map(banner => ({
+        id: banner.id || `banner-${Date.now()}-${Math.random()}`,
+        title: banner.title,
+        cta: banner.cta,
+        href: banner.href,
+        imageUrl: banner.image,
+      }));
+      
+      const contentToUpdate: HomepageContent = {
+        categoryImages: values.categoryImages,
+        banners: finalBanners,
+      };
+
+      await updateHomepageContent(contentToUpdate);
+      toast({ title: "Success", description: "Homepage content has been updated." });
+
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: `Failed to update content: ${error.message}` });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  
+  const handleCategoryFileChange = async (e: React.ChangeEvent<HTMLInputElement>, category: 'stationary' | 'books' | 'xerox' | 'electronics') => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const uploadedUrl = await handleFileUpload(file);
+          if (uploadedUrl) {
+              form.setValue(`categoryImages.${category}`, uploadedUrl);
+          }
+      }
+  };
+  
+  const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const uploadedUrl = await handleFileUpload(file);
+          if (uploadedUrl) {
+              form.setValue(`banners.${index}.image`, uploadedUrl);
+          }
+      }
+  };
+
+  if (authLoading || (!user && !authLoading)) {
+    return <div className="container mx-auto px-4 py-8">Loading...</div>;
+  }
+  
+  const titleCharCount = (index: number) => `${form.watch(`banners.${index}.title`)?.length || 0} / ${TITLE_MAX_LENGTH}`;
+  const ctaCharCount = (index: number) => `${form.watch(`banners.${index}.cta`)?.length || 0} / ${CTA_MAX_LENGTH}`;
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Manage Homepage</h1>
+      <p className="mt-2 text-muted-foreground">Update category images and promotional banners.</p>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8 space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Category Images</CardTitle>
+                    <CardDescription>Update the images for the main service categories.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {defaultCategories.map(cat => {
+                        const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
+                        const currentImage = form.watch(`categoryImages.${categoryKey}`);
+                        return (
+                            <div key={cat.id}>
+                                <FormLabel>{cat.name}</FormLabel>
+                                <div className="mt-2 aspect-square w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
+                                    {currentImage && <Image src={currentImage} alt={cat.name} fill className="object-cover" />}
+                                </div>
+                                <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleCategoryFileChange(e, categoryKey)} />
+                            </div>
+                        )
+                    })}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Promotional Banners</CardTitle>
+                    <CardDescription>Manage the rotating banners on the homepage. You can have up to {MAX_BANNERS} banners.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {fields.map((field, index) => (
+                        <Card key={field.id} className="p-4 relative">
+                           <div className="flex justify-between items-start">
+                                <h4 className="font-bold mb-4">Banner {index + 1}</h4>
+                                <div className="flex gap-1">
+                                    <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => move(index, index - 1)}><ArrowUp className="h-4 w-4" /></Button>
+                                    <Button type="button" variant="ghost" size="icon" disabled={index === fields.length - 1} onClick={() => move(index, index + 1)}><ArrowDown className="h-4 w-4" /></Button>
+                                    <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4" /></Button>
+                                </div>
+                           </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-4">
+                                     <FormField
+                                        control={form.control}
+                                        name={`banners.${index}.title`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <div className="flex justify-between">
+                                                    <FormLabel>Title</FormLabel>
+                                                    <span className="text-xs text-muted-foreground">{titleCharCount(index)}</span>
+                                                </div>
+                                                <FormControl><Input {...field} maxLength={TITLE_MAX_LENGTH} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name={`banners.${index}.cta`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <div className="flex justify-between">
+                                                    <FormLabel>Call to Action Text</FormLabel>
+                                                    <span className="text-xs text-muted-foreground">{ctaCharCount(index)}</span>
+                                                </div>
+                                                <FormControl><Input {...field} maxLength={CTA_MAX_LENGTH} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name={`banners.${index}.href`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Link URL</FormLabel>
+                                                <FormControl><Input {...field} placeholder="/stationary" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <div>
+                                    <FormLabel>Banner Image</FormLabel>
+                                    <div className="mt-2 aspect-video w-full relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
+                                        {form.watch(`banners.${index}.image`) && <Image src={form.watch(`banners.${index}.image`)} alt={`Banner ${index + 1}`} fill className="object-cover" />}
+                                    </div>
+                                    <Input type="file" accept="image/*" className="mt-2" onChange={(e) => handleBannerFileChange(e, index)} />
+                                    <FormField control={form.control} name={`banners.${index}.image`} render={({ field }) => <FormMessage />} />
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                    {fields.length < MAX_BANNERS && (
+                        <Button type="button" variant="outline" onClick={() => append({ title: '', cta: '', href: '', image: '' })}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Banner
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
+
+            <div className="sticky bottom-0 bg-background py-4 border-t">
+                <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Homepage Content"}
+                </Button>
+            </div>
+        </form>
+      </Form>
+    </div>
+  );
+}
+
+    

@@ -119,4 +119,23 @@ export type Order = {
   };
   cancellationReason?: string;
 };
+
+export type Banner = {
+  id: string;
+  title: string;
+  cta: string;
+  href: string;
+  imageUrl: string;
+};
+
+export type HomepageContent = {
+    categoryImages: {
+        stationary?: string;
+        books?: string;
+        xerox?: string;
+        electronics?: string;
+    },
+    banners: Banner[];
+};
+
     

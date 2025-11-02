@@ -28,7 +28,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, Image as ImageIcon } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -333,6 +333,14 @@ export default function AppSidebar() {
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
+                   <SidebarMenuItem>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-homepage')}>
+                          <Link href="/manage-homepage">
+                              <LayoutDashboard />
+                              <span>Manage Homepage</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/post-update')}>
                           <Link href="/post-update">
@@ -371,3 +379,5 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
+
+    

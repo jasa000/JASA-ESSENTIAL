@@ -6,10 +6,10 @@ import Autoplay from "embla-carousel-autoplay";
 import BannerCard from '@/components/banner-card';
 import WelcomeCard from '@/components/welcome-card';
 import CategoryLinkCard from '@/components/category-link-card';
-import { categories, getProducts } from '@/lib/data';
+import { categories as defaultCategories, getProducts, getHomepageContent } from '@/lib/data';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import PostCarousel from "@/components/post-carousel";
-import type { Product } from "@/lib/types";
+import type { Product, HomepageContent } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -23,33 +23,46 @@ export default function Home() {
   );
 
   const [productsByCategory, setProductsByCategory] = React.useState<{ [key in Product['category']]?: Product[] }>({});
+  const [homepageContent, setHomepageContent] = React.useState<HomepageContent | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   
   React.useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchPageData = async () => {
       setIsLoading(true);
       try {
-        const [stationary, books, electronics] = await Promise.all([
+        const [
+          stationary, 
+          books, 
+          electronics, 
+          content
+        ] = await Promise.all([
           getProducts('stationary'),
           getProducts('books'),
           getProducts('electronics'),
+          getHomepageContent(),
         ]);
         setProductsByCategory({ stationary, books, electronics });
+        setHomepageContent(content);
       } catch (error) {
-        console.error("Failed to fetch products for home page:", error);
+        console.error("Failed to fetch data for home page:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchProducts();
+    fetchPageData();
   }, []);
 
-  const banners = [
-    { id: 'banner-stationary', href: '/stationary', title: 'Level Up Your Workspace', cta: 'Shop Stationary', imageName: 'stationary.png', alt: 'A modern, well-organized desk with stationary supplies.' },
-    { id: 'banner-books', href: '/books', title: 'Explore New Worlds', cta: 'Browse Books', imageName: 'books.png', alt: 'A cozy library aisle with shelves full of books.' },
-    { id: 'banner-xerox', href: '/xerox', title: 'High-Quality Printing', cta: 'Print Now', imageName: 'xerox.png', alt: 'Close-up of a modern printer in a bright office.' },
-    { id: 'banner-electronics', href: '/electronics', title: 'Build Your Next Project', cta: 'Explore Kits', imageName: 'electronics.png', alt: 'A person soldering an electronics circuit board.' }
-  ];
+  const banners = homepageContent?.banners || [];
+  
+  const categories = defaultCategories.map(cat => {
+      const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
+      const dynamicImageUrl = homepageContent?.categoryImages?.[categoryKey];
+      if (dynamicImageUrl) {
+          return { ...cat, image: { ...cat.image, src: dynamicImageUrl }};
+      }
+      return cat;
+  });
+
 
   const categoryDisplayInfo = {
       stationary: { title: "Featured Stationary", href: "/stationary" },
@@ -127,15 +140,21 @@ export default function Home() {
             <CarouselItem>
                 <WelcomeCard />
             </CarouselItem>
-            {banners.map((banner) => {
+            {isLoading ? (
+                 <CarouselItem>
+                    <div className="relative w-full overflow-hidden">
+                        <Skeleton className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem]" />
+                    </div>
+                 </CarouselItem>
+            ) : banners.map((banner) => {
               return (
                 <CarouselItem key={banner.id}>
                   <BannerCard
                     href={banner.href}
                     title={banner.title}
                     cta={banner.cta}
-                    imageSrc={`/images/banner/${banner.imageName}`}
-                    imageAlt={banner.alt}
+                    imageSrc={banner.imageUrl}
+                    imageAlt={banner.title}
                   />
                 </CarouselItem>
               );
@@ -167,3 +186,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

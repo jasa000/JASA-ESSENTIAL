@@ -1,9 +1,8 @@
 
-
-import type { Product, Category, Brand, Author, ProductType } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent } from './types';
 import imageData from './placeholder-images.json';
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc } from 'firebase/firestore';
 
 const getCategoryImage = (id: string, width = 400, height = 400) => {
   const image = imageData.placeholderImages.find(img => img.id === id);
@@ -60,6 +59,32 @@ const productsCollection = collection(db, 'products');
 const brandsCollection = collection(db, 'brands');
 const authorsCollection = collection(db, 'authors');
 const productTypesCollection = collection(db, 'productTypes');
+const homepageContentCollection = collection(db, 'homepageContent');
+
+
+export const getHomepageContent = async (): Promise<HomepageContent | null> => {
+    try {
+        const docRef = doc(homepageContentCollection, 'main');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return docSnap.data() as HomepageContent;
+        }
+        return null; // No content set yet
+    } catch (error) {
+        console.error("Error getting homepage content: ", error);
+        throw new Error("Failed to fetch homepage content.");
+    }
+}
+
+export const updateHomepageContent = async (content: HomepageContent): Promise<void> => {
+    try {
+        const docRef = doc(homepageContentCollection, 'main');
+        await setDoc(docRef, content, { merge: true });
+    } catch (error) {
+        console.error("Error updating homepage content: ", error);
+        throw new Error("Failed to update homepage content.");
+    }
+}
 
 
 export const getProducts = async (category?: Product['category']): Promise<Product[]> => {
@@ -236,4 +261,5 @@ export const addProductType = async (productTypeData: Omit<ProductType, 'id' | '
         throw new Error("Failed to add product type to database.");
     }
 };
+
     
