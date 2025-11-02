@@ -50,13 +50,14 @@ export default function Home() {
             const categoriesWithImages = defaultCategories.map(cat => {
                 const categoryKey = cat.href.replace('/', '') as keyof HomepageContent['categoryImages'];
                 const dynamicImageUrl = content.categoryImages?.[categoryKey];
+                // Only return the category if an image for it has been uploaded
                 if (dynamicImageUrl) {
                     return { 
                         ...cat, 
                         image: { 
                             ...cat.image, 
                             src: dynamicImageUrl,
-                            alt: cat.name // ensure alt text is updated
+                            alt: cat.name
                         }
                     };
                 }
