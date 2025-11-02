@@ -2,7 +2,9 @@
 'use server';
 import { v2 as cloudinary } from 'cloudinary';
 import { getProducts } from './data';
+import 'dotenv/config';
 
+// Configuration must be at the top, before any other cloudinary calls
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
   api_key: process.env.CLOUDINARY_API_KEY, 

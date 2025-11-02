@@ -2,6 +2,7 @@
 'use server';
 
 import { unsignedUpload } from '@/lib/cloudinary';
+import 'dotenv/config';
 
 export async function uploadImageAction(
   base64Image: string
@@ -16,6 +17,7 @@ export async function uploadImageAction(
     
     return { success: true, url: result.secure_url };
   } catch (error: any) {
+    console.error('Upload action error:', error.message);
     return { success: false, error: error.message };
   }
 }
