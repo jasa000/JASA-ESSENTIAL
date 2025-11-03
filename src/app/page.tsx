@@ -19,7 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
+    Autoplay({ 
+      delay: 5000, 
+      stopOnInteraction: false, // Continue after interaction
+      stopOnMouseEnter: true, // Stop on hover
+    })
   );
 
   const [productsByCategory, setProductsByCategory] = React.useState<{ [key in Product['category']]?: Product[] }>({});
@@ -136,10 +140,8 @@ export default function Home() {
           plugins={[plugin.current]}
           className="w-full"
           onMouseEnter={plugin.current.stop}
-          onMouseLeave={plugin.current.reset}
+          onMouseLeave={plugin.current.play}
           opts={{
-            stopOnInteraction: false,
-            stopOnMouseEnter: true,
             loop: true,
           }}
         >
