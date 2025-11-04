@@ -28,7 +28,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -39,6 +39,7 @@ import AuthForm from "./auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { Badge } from "./ui/badge"
+import { Button } from "./ui/button"
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
@@ -96,6 +97,16 @@ export default function AppSidebar() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
   
+  const handleCopyId = () => {
+    if (user?.shortId) {
+      navigator.clipboard.writeText(user.shortId);
+      toast({
+        title: "Copied to Clipboard",
+        description: `User ID: ${user.shortId}`,
+      });
+    }
+  };
+
   const getInitials = (name?: string | null) => {
     if (!name) return "";
     const names = name.split(' ');
@@ -233,10 +244,17 @@ export default function AppSidebar() {
            <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton variant="outline" size="lg" className="h-auto flex-col items-start p-2" disabled>
+                   <div className="flex flex-col items-start p-2 rounded-md border border-input h-auto w-full">
                       <span className="font-semibold text-base truncate">{user.displayName || user.name}</span>
-                      {user.shortId && <span className="text-xs text-muted-foreground">ID: <Badge variant="secondary" className="px-1">{user.shortId}</Badge></span>}
-                  </SidebarMenuButton>
+                       {user.shortId && (
+                         <div className="flex items-center gap-1">
+                           <span className="text-xs text-muted-foreground">ID: <Badge variant="secondary" className="px-1">{user.shortId}</Badge></span>
+                           <Button variant="ghost" size="icon" className="h-5 w-5" onClick={handleCopyId}>
+                             <Copy className="h-3 w-3" />
+                           </Button>
+                         </div>
+                       )}
+                  </div>
                 </SidebarMenuItem>
               </SidebarMenu>
           </SidebarGroup>
@@ -379,5 +397,3 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
-
-    
