@@ -1,7 +1,7 @@
 
 'use server';
 import { v2 as cloudinary } from 'cloudinary';
-import { getProducts } from './data';
+import { getProducts, getHomepageContent } from './data';
 import 'dotenv/config';
 
 // Configuration must be at the top, before any other cloudinary calls
@@ -30,8 +30,33 @@ export async function getAllCloudinaryImages() {
       .max_results(500)
       .execute();
 
-    const allProducts = await getProducts();
-    const usedUrls = new Set(allProducts.flatMap(p => p.imageNames || []));
+    // Fetch all data sources that use images
+    const [allProducts, homepageContent] = await Promise.all([
+      getProducts(),
+      getHomepageContent()
+    ]);
+
+    // Create a set of all used image URLs
+    const usedUrls = new Set<string>();
+
+    // Add product images
+    allProducts.forEach(p => {
+      if (p.imageNames) {
+        p.imageNames.forEach(url => usedUrls.add(url));
+      }
+    });
+
+    // Add homepage images
+    if (homepageContent) {
+      // Add category images
+      Object.values(homepageContent.categoryImages).forEach(url => {
+        if (url) usedUrls.add(url);
+      });
+      // Add banner images
+      homepageContent.banners.forEach(banner => {
+        if (banner.imageUrl) usedUrls.add(banner.imageUrl);
+      });
+    }
 
     const images = resources.map((resource: any) => ({
       id: resource.public_id,
