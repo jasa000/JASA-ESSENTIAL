@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -17,10 +18,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload, Save, X, Pencil } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload, Save, X, Pencil, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const MAX_BANNERS = 10;
 const TITLE_MAX_LENGTH = 40;
@@ -32,6 +35,7 @@ const bannerSchema = z.object({
   cta: z.string().min(1, "CTA is required.").max(CTA_MAX_LENGTH),
   href: z.string().min(1, "Link is required."),
   imageUrl: z.string().min(1, "Image is required."),
+  isVisible: z.boolean(),
 });
 
 type FormData = z.infer<typeof bannerSchema>;
@@ -74,11 +78,33 @@ export default function ManageHomepagePage() {
     setIsLoading(true);
     try {
       const content = await getHomepageContent();
-      setHomepageContent(content ?? { categoryImages: {}, banners: [], welcomeImageUrl: '' });
+      // Set default visibility if not present
+      const defaultContent = {
+        isWelcomeVisible: content?.isWelcomeVisible ?? true,
+        categoryImages: content?.categoryImages || {},
+        banners: (content?.banners || []).map(b => ({ ...b, isVisible: b.isVisible ?? true })),
+        welcomeImageUrl: content?.welcomeImageUrl || ''
+      };
+      setHomepageContent(defaultContent);
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to fetch homepage content." });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleWelcomeVisibility = async (isVisible: boolean) => {
+    if (!homepageContent) return;
+    setIsSubmitting(true);
+    try {
+      const newContent = { ...homepageContent, isWelcomeVisible: isVisible };
+      await updateHomepageContent(newContent);
+      setHomepageContent(newContent);
+      toast({ title: "Success", description: `Welcome card is now ${isVisible ? 'visible' : 'hidden'}.` });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: `Failed to update visibility: ${e.message}` });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -167,7 +193,7 @@ export default function ManageHomepagePage() {
             setIsSubmitting(false);
           }
       }
-  }
+  };
 
 
   const handleBannerUpdate = async (index: number, updatedBanner: Banner) => {
@@ -190,7 +216,7 @@ export default function ManageHomepagePage() {
             
             const newHomepageContent = { ...homepageContent, banners: newBanners };
             await updateHomepageContent(newHomepageContent);
-            setHomepageContent(newHomepageContent); // Correctly update the state
+            setHomepageContent(newHomepageContent);
             toast({ title: "Success", description: "Banner updated." });
             return true; // Indicate success to form
           } catch (e: any) {
@@ -211,13 +237,14 @@ export default function ManageHomepagePage() {
             cta: 'Shop Now',
             href: '/stationary', // Use a valid default href
             imageUrl: '',
+            isVisible: true,
         };
         const newBanners = [...homepageContent.banners, newBanner];
         const newHomepageContent = { ...homepageContent, banners: newBanners };
         setIsSubmitting(true);
         try {
             await updateHomepageContent(newHomepageContent);
-            setHomepageContent(newHomepageContent); // Correctly update the state
+            setHomepageContent(newHomepageContent);
             toast({ title: "Success", description: "New banner added. Please edit it and save." });
         } catch(e: any) {
              toast({ variant: "destructive", title: "Error", description: `Failed to add banner: ${e.message}` });
@@ -236,7 +263,7 @@ export default function ManageHomepagePage() {
           setIsSubmitting(true);
           try {
               await updateHomepageContent(newHomepageContent);
-              setHomepageContent(newHomepageContent); // Correctly update the state
+              setHomepageContent(newHomepageContent);
               toast({ title: "Success", description: "Banner order updated." });
           } catch(e: any) {
               toast({ variant: "destructive", title: "Error", description: `Failed to reorder banners: ${e.message}` });
@@ -253,7 +280,7 @@ export default function ManageHomepagePage() {
           setIsSubmitting(true);
           try {
               await updateHomepageContent(newHomepageContent);
-              setHomepageContent(newHomepageContent); // Correctly update the state
+              setHomepageContent(newHomepageContent);
               toast({ title: "Success", description: "Banner deleted." });
           } catch(e: any) {
               toast({ variant: "destructive", title: "Error", description: `Failed to delete banner: ${e.message}` });
@@ -261,6 +288,36 @@ export default function ManageHomepagePage() {
               setIsSubmitting(false);
           }
       }
+  };
+
+   const handleToggleBannerVisibility = async (index: number, isVisible: boolean) => {
+    if (!homepageContent) return;
+
+    // Rule: At least one banner must be visible
+    const visibleBannersCount = homepageContent.banners.filter(b => b.isVisible).length;
+    if (visibleBannersCount === 1 && !isVisible) {
+      toast({
+        variant: 'destructive',
+        title: 'Action Denied',
+        description: 'At least one banner must be visible.',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const newBanners = [...homepageContent.banners];
+      newBanners[index].isVisible = isVisible;
+      const newHomepageContent = { ...homepageContent, banners: newBanners };
+
+      await updateHomepageContent(newHomepageContent);
+      setHomepageContent(newHomepageContent);
+      toast({ title: 'Success', description: `Banner is now ${isVisible ? 'visible' : 'hidden'}.` });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error', description: `Failed to update visibility: ${e.message}` });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (authLoading || isLoading) {
@@ -308,7 +365,21 @@ export default function ManageHomepagePage() {
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onBannerSubmit)}>
                 <div className="flex justify-between items-start mb-4">
-                    <h4 className="font-bold">Banner {index + 1}</h4>
+                     <div className="flex items-center gap-4">
+                        <h4 className="font-bold">Banner {index + 1}</h4>
+                        <div className="flex items-center space-x-2">
+                           <Switch
+                                id={`visibility-switch-${index}`}
+                                checked={banner.isVisible}
+                                onCheckedChange={(checked) => handleToggleBannerVisibility(index, checked)}
+                                disabled={isSubmitting}
+                            />
+                            <Label htmlFor={`visibility-switch-${index}`} className="flex items-center gap-1 text-sm">
+                                {banner.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                {banner.isVisible ? 'Visible' : 'Hidden'}
+                            </Label>
+                        </div>
+                    </div>
                     <div className="flex gap-1">
                         <Button type="button" variant="ghost" size="icon" disabled={isSubmitting || index === 0} onClick={() => handleMoveBanner(index, index - 1)}><ArrowUp className="h-4 w-4" /></Button>
                         <Button type="button" variant="ghost" size="icon" disabled={isSubmitting || index === (homepageContent?.banners.length ?? 0) - 1} onClick={() => handleMoveBanner(index, index + 1)}><ArrowDown className="h-4 w-4" /></Button>
@@ -425,6 +496,7 @@ export default function ManageHomepagePage() {
   }
 
   const renderWelcomeImageUploader = () => {
+    const isVisible = homepageContent?.isWelcomeVisible ?? true;
     const currentImage = homepageContent?.welcomeImageUrl;
     const previewImage = welcomeImagePreview;
     const displayImage = previewImage || currentImage;
@@ -432,8 +504,24 @@ export default function ManageHomepagePage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Welcome Card Background</CardTitle>
-          <CardDescription>Update the main background image for the welcome card. If no image is set, a gradient will be shown.</CardDescription>
+           <div className="flex items-center justify-between">
+                <div>
+                    <CardTitle>Welcome Card Background</CardTitle>
+                    <CardDescription>Update the main background image for the welcome card. If no image is set, a gradient will be shown.</CardDescription>
+                </div>
+                 <div className="flex items-center space-x-2">
+                    <Switch
+                        id="welcome-visibility-switch"
+                        checked={isVisible}
+                        onCheckedChange={handleToggleWelcomeVisibility}
+                        disabled={isSubmitting}
+                    />
+                    <Label htmlFor="welcome-visibility-switch" className="flex items-center gap-1 text-sm">
+                        {isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        {isVisible ? 'Visible' : 'Hidden'}
+                    </Label>
+                </div>
+           </div>
         </CardHeader>
         <CardContent>
           <div className="aspect-video w-full max-w-sm mx-auto relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">

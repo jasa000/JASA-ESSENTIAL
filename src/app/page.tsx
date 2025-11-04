@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -100,7 +101,12 @@ export default function Home() {
     }
   }, [emblaApi]);
 
-  const banners = homepageContent?.banners.filter(banner => banner.imageUrl) || [];
+  const isWelcomeVisible = homepageContent?.isWelcomeVisible ?? true;
+  const visibleBanners = (homepageContent?.banners || []).filter(banner => banner.imageUrl && banner.isVisible);
+  const carouselItems = [
+    ...(isWelcomeVisible ? [{ type: 'welcome' }] : []),
+    ...visibleBanners.map(banner => ({ type: 'banner', banner }))
+  ];
 
   const categoryDisplayInfo = {
       stationary: { title: "Featured Stationary", href: "/stationary" },
@@ -170,47 +176,68 @@ export default function Home() {
           onMouseEnter={plugin.current.stop}
           onMouseLeave={plugin.current.reset}
           opts={{
-            loop: true,
+            loop: carouselItems.length > 1,
           }}
         >
           <CarouselContent>
-            <CarouselItem>
-                <WelcomeCard imageUrl={homepageContent?.welcomeImageUrl} />
-            </CarouselItem>
             {isLoading ? (
                  <CarouselItem>
                     <div className="relative w-full overflow-hidden">
                         <Skeleton className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem]" />
                     </div>
                  </CarouselItem>
-            ) : banners.map((banner) => {
-              return (
-                <CarouselItem key={banner.id}>
-                  <BannerCard
-                    href={banner.href}
-                    title={banner.title}
-                    cta={banner.cta}
-                    imageSrc={banner.imageUrl}
-                    imageAlt={banner.title}
-                  />
-                </CarouselItem>
-              );
+            ) : carouselItems.map((item, index) => {
+              if (item.type === 'welcome') {
+                return (
+                  <CarouselItem key="welcome">
+                    <WelcomeCard imageUrl={homepageContent?.welcomeImageUrl} />
+                  </CarouselItem>
+                );
+              }
+              if (item.type === 'banner' && item.banner) {
+                const banner = item.banner;
+                return (
+                  <CarouselItem key={banner.id}>
+                    <BannerCard
+                      href={banner.href}
+                      title={banner.title}
+                      cta={banner.cta}
+                      imageSrc={banner.imageUrl}
+                      imageAlt={banner.title}
+                    />
+                  </CarouselItem>
+                );
+              }
+              return null;
             })}
+             {
+              !isLoading && carouselItems.length === 0 && (
+                <CarouselItem>
+                    <div className="relative w-full overflow-hidden">
+                       <div className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
+                          <p className="text-muted-foreground">No promotional content available right now.</p>
+                       </div>
+                    </div>
+                 </CarouselItem>
+              )
+            }
           </CarouselContent>
         </Carousel>
-        <div className="mt-4 flex justify-center gap-2">
-            {scrollSnaps.map((_, index) => (
-                <button
-                    key={index}
-                    onClick={() => emblaApi?.scrollTo(index)}
-                    className={cn(
-                        "h-2 w-2 rounded-full transition-all duration-300",
-                        currentSlide === index ? "w-6 bg-primary" : "bg-muted-foreground/50"
-                    )}
-                    aria-label={`Go to slide ${index + 1}`}
-                />
-            ))}
-        </div>
+        {scrollSnaps.length > 1 && (
+            <div className="mt-4 flex justify-center gap-2">
+                {scrollSnaps.map((_, index) => (
+                    <button
+                        key={index}
+                        onClick={() => emblaApi?.scrollTo(index)}
+                        className={cn(
+                            "h-2 w-2 rounded-full transition-all duration-300",
+                            currentSlide === index ? "w-6 bg-primary" : "bg-muted-foreground/50"
+                        )}
+                        aria-label={`Go to slide ${index + 1}`}
+                    />
+                ))}
+            </div>
+        )}
       </div>
        
        <div className="container mx-auto px-4">

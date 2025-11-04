@@ -126,9 +126,11 @@ export type Banner = {
   cta: string;
   href: string;
   imageUrl: string;
+  isVisible: boolean;
 };
 
 export type HomepageContent = {
+    isWelcomeVisible: boolean;
     welcomeImageUrl?: string;
     categoryImages: {
         stationary?: string;
