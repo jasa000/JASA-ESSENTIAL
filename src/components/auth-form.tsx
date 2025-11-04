@@ -22,7 +22,7 @@ import {
   updateProfile,
   signOut
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PasswordStrength from '@/components/password-strength';
 import Image from 'next/image';
@@ -180,6 +180,13 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
           role: 'user',
           createdAt: new Date(),
         });
+      } else {
+        // If user exists, check if they have a shortId. If not, create and update.
+        const userData = userDoc.data();
+        if (!userData.shortId) {
+            const shortId = generateShortId();
+            await updateDoc(userDocRef, { shortId: shortId });
+        }
       }
 
 
@@ -410,3 +417,5 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
     </div>
   );
 }
+
+    
