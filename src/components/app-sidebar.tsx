@@ -383,6 +383,14 @@ export default function AppSidebar() {
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
+                   <SidebarMenuItem>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/admin/xerox-manage')}>
+                          <Link href="/admin/xerox-manage">
+                              <Copy />
+                              <span>Manage Xerox</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-cloudinary')}>
                           <Link href="/manage-cloudinary">
