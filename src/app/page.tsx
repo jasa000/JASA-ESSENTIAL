@@ -23,8 +23,7 @@ export default function Home() {
   const plugin = React.useRef(
     Autoplay({ 
       delay: 5000, 
-      stopOnInteraction: true, // Stop on interaction
-      stopOnMouseEnter: true, // Stop on hover
+      stopOnInteraction: false,
     })
   );
 
@@ -216,9 +215,11 @@ export default function Home() {
        <div className="container mx-auto px-4">
          <div className="py-8">
           <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="flex w-full gap-4 overflow-x-auto pb-4 no-scrollbar">
               {displayCategories.map((category, index) => (
-                  <CategoryLinkCard key={category.id} category={category} index={index} />
+                  <div key={category.id} className="w-40 flex-shrink-0 sm:w-1/4">
+                    <CategoryLinkCard category={category} index={index} />
+                  </div>
               ))}
           </div>
          </div>
