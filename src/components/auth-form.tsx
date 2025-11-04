@@ -22,7 +22,7 @@ import {
   updateProfile,
   signOut
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PasswordStrength from '@/components/password-strength';
 import Image from 'next/image';
@@ -45,7 +45,7 @@ type AuthFormProps = {
 
 // Function to generate a random 6-character alphanumeric string
 const generateShortId = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
     for (let i = 0; i < 6; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -165,17 +165,23 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      const shortId = generateShortId();
+      
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
 
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        shortId: shortId,
-        name: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        role: 'user',
-        createdAt: new Date(),
-      }, { merge: true });
+      if (!userDoc.exists()) {
+        const shortId = generateShortId();
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          shortId: shortId,
+          name: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          role: 'user',
+          createdAt: new Date(),
+        });
+      }
+
 
       toast({
         title: "Sign In Successful",
