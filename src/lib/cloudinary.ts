@@ -48,6 +48,10 @@ export async function getAllCloudinaryImages() {
 
     // Add homepage images
     if (homepageContent) {
+      // Add welcome card image
+      if (homepageContent.welcomeImageUrl) {
+        usedUrls.add(homepageContent.welcomeImageUrl);
+      }
       // Add category images
       Object.values(homepageContent.categoryImages).forEach(url => {
         if (url) usedUrls.add(url);
