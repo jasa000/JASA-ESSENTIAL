@@ -3,11 +3,12 @@
 
 import * as React from "react";
 import Autoplay from "embla-carousel-autoplay";
+import type { EmblaCarouselType } from "embla-carousel-react";
 import BannerCard from '@/components/banner-card';
 import WelcomeCard from '@/components/welcome-card';
 import CategoryLinkCard from '@/components/category-link-card';
 import { categories as defaultCategories, getProducts, getHomepageContent } from '@/lib/data';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import PostCarousel from "@/components/post-carousel";
 import type { Product, HomepageContent, Category } from "@/lib/types";
 import ProductCard from "@/components/product-card";
@@ -15,13 +16,14 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 
 export default function Home() {
   const plugin = React.useRef(
     Autoplay({ 
       delay: 5000, 
-      stopOnInteraction: false, // Continue after interaction
+      stopOnInteraction: true, // Stop on interaction
       stopOnMouseEnter: true, // Stop on hover
     })
   );
@@ -31,6 +33,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [displayCategories, setDisplayCategories] = React.useState<Category[]>(defaultCategories);
   
+  const [emblaApi, setEmblaApi] = React.useState<EmblaCarouselType | null>(null);
+  const [currentSlide, setCurrentSlide] = React.useState(0);
+  const [scrollSnaps, setScrollSnaps] = React.useState<number[]>([]);
+
   React.useEffect(() => {
     const fetchPageData = async () => {
       setIsLoading(true);
@@ -73,7 +79,28 @@ export default function Home() {
     fetchPageData();
   }, []);
 
-  const banners = homepageContent?.banners || [];
+  React.useEffect(() => {
+    if (!emblaApi) return;
+    
+    const onSelect = (api: EmblaCarouselType) => {
+      setCurrentSlide(api.selectedScrollSnap());
+    };
+
+    const onInit = (api: EmblaCarouselType) => {
+      setScrollSnaps(api.scrollSnapList());
+    }
+
+    onInit(emblaApi);
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onInit);
+
+    return () => {
+        emblaApi.off("select", onSelect);
+        emblaApi.off("reInit", onInit);
+    }
+  }, [emblaApi]);
+
+  const banners = homepageContent?.banners.filter(banner => banner.imageUrl) || [];
 
   const categoryDisplayInfo = {
       stationary: { title: "Featured Stationary", href: "/stationary" },
@@ -137,6 +164,7 @@ export default function Home() {
     <div className="w-screen overflow-x-hidden">
        <div className="w-full py-8">
          <Carousel
+          setApi={setEmblaApi}
           plugins={[plugin.current]}
           className="w-full"
           onMouseEnter={plugin.current.stop}
@@ -155,7 +183,7 @@ export default function Home() {
                         <Skeleton className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem]" />
                     </div>
                  </CarouselItem>
-            ) : banners.filter(banner => banner.imageUrl).map((banner) => {
+            ) : banners.map((banner) => {
               return (
                 <CarouselItem key={banner.id}>
                   <BannerCard
@@ -169,15 +197,26 @@ export default function Home() {
               );
             })}
           </CarouselContent>
-          <CarouselPrevious className="absolute left-4" />
-          <CarouselNext className="absolute right-4" />
         </Carousel>
+        <div className="mt-4 flex justify-center gap-2">
+            {scrollSnaps.map((_, index) => (
+                <button
+                    key={index}
+                    onClick={() => emblaApi?.scrollTo(index)}
+                    className={cn(
+                        "h-2 w-2 rounded-full transition-all duration-300",
+                        currentSlide === index ? "w-6 bg-primary" : "bg-muted-foreground/50"
+                    )}
+                    aria-label={`Go to slide ${index + 1}`}
+                />
+            ))}
+        </div>
       </div>
        
        <div className="container mx-auto px-4">
          <div className="py-8">
           <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {displayCategories.map((category, index) => (
                   <CategoryLinkCard key={category.id} category={category} index={index} />
               ))}
