@@ -83,6 +83,16 @@ export async function deleteCloudinaryImage(publicId: string) {
     }
 }
 
+export async function deleteCloudinaryImages(publicIds: string[]) {
+    try {
+        const result = await cloudinary.api.delete_resources(publicIds);
+        return result;
+    } catch (error) {
+        console.error('Error deleting multiple Cloudinary images:', error);
+        throw new Error('Could not delete images from Cloudinary.');
+    }
+}
+
 export async function unsignedUpload(file: string, preset: string) {
     try {
         const result = await cloudinary.uploader.upload(file, {

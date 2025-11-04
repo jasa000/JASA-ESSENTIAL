@@ -8,6 +8,7 @@ import {
   getAllCloudinaryImages,
   getCloudinaryUsage,
   deleteCloudinaryImage,
+  deleteCloudinaryImages,
 } from "@/lib/cloudinary";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,14 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,9 +33,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { Trash2, ExternalLink } from "lucide-react";
+import { Trash2, ExternalLink, Check, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 type CloudinaryImage = {
   id: string;
@@ -86,6 +81,9 @@ export default function ManageCloudinaryPage() {
   const [deletingImage, setDeletingImage] = useState<CloudinaryImage | null>(
     null
   );
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -122,6 +120,10 @@ export default function ManageCloudinaryPage() {
     }
   }, [user, authLoading, router, toast, fetchData]);
 
+  useEffect(() => {
+    setSelectedImages([]);
+  }, [activeTab]);
+
   const handleDelete = async () => {
     if (!deletingImage) return;
     try {
@@ -140,6 +142,28 @@ export default function ManageCloudinaryPage() {
       });
     }
   };
+  
+  const handleDeleteSelected = async () => {
+    if (selectedImages.length === 0) return;
+    try {
+      await deleteCloudinaryImages(selectedImages);
+      toast({
+        title: `${selectedImages.length} Images Deleted`,
+        description: "The selected images have been removed from Cloudinary.",
+      });
+      setImages((prev) => prev.filter((img) => !selectedImages.includes(img.id)));
+      setSelectedImages([]);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Bulk Deletion Failed",
+        description: error.message,
+      });
+    } finally {
+        setIsBulkDeleting(false);
+    }
+  };
+
 
   const usedImages = useMemo(() => images.filter((img) => img.isUsed), [
     images,
@@ -147,6 +171,20 @@ export default function ManageCloudinaryPage() {
   const unusedImages = useMemo(() => images.filter((img) => !img.isUsed), [
     images,
   ]);
+
+  const toggleSelectImage = (id: string) => {
+    setSelectedImages((prev) =>
+      prev.includes(id) ? prev.filter((imgId) => imgId !== id) : [...prev, id]
+    );
+  };
+  
+  const toggleSelectAllUnused = () => {
+    if (selectedImages.length === unusedImages.length) {
+      setSelectedImages([]);
+    } else {
+      setSelectedImages(unusedImages.map((img) => img.id));
+    }
+  };
 
   const renderUsageCard = () => {
     if (!usage)
@@ -164,7 +202,6 @@ export default function ManageCloudinaryPage() {
         </Card>
       );
       
-    // Handle different API response structures for free vs paid plans
     const usageData = usage.usage || usage;
     const creditsData = usageData.credits;
     const transformationsData = usageData.transformations;
@@ -240,8 +277,8 @@ export default function ManageCloudinaryPage() {
 
   const renderImageGrid = (
     imageArray: CloudinaryImage[],
-    title: string,
-    emptyMessage: string
+    emptyMessage: string,
+    isUnusedTab: boolean = false
   ) => {
     if (isLoading) {
       return (
@@ -278,10 +315,18 @@ export default function ManageCloudinaryPage() {
                 className="object-cover"
               />
             </div>
+             {isUnusedTab && (
+              <Checkbox
+                checked={selectedImages.includes(image.id)}
+                onCheckedChange={() => toggleSelectImage(image.id)}
+                className="absolute left-2 top-2 z-10 h-5 w-5 bg-background"
+                aria-label={`Select image ${image.id}`}
+              />
+            )}
             <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
               <Badge
                 variant={image.isUsed ? "default" : "destructive"}
-                className="absolute left-2 top-2"
+                className={`absolute right-2 top-2 ${isUnusedTab ? 'opacity-0 group-hover:opacity-100' : ''}`}
               >
                 {image.isUsed ? "Used" : "Unused"}
               </Badge>
@@ -333,7 +378,7 @@ export default function ManageCloudinaryPage() {
             {renderUsageCard()}
         </div>
 
-        <Tabs defaultValue="all" className="mt-8">
+        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mt-8">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all">All Images ({images.length})</TabsTrigger>
             <TabsTrigger value="used">Used ({usedImages.length})</TabsTrigger>
@@ -342,24 +387,68 @@ export default function ManageCloudinaryPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="all" className="mt-4">
-            {renderImageGrid(images, "All Images", "No images found.")}
+            {renderImageGrid(images, "No images found.")}
           </TabsContent>
           <TabsContent value="used" className="mt-4">
             {renderImageGrid(
               usedImages,
-              "Used Images",
               "No images are currently used in products."
             )}
           </TabsContent>
           <TabsContent value="unused" className="mt-4">
+            {unusedImages.length > 0 && (
+                <div className="mb-4 flex items-center gap-2 rounded-md border p-2">
+                    <Checkbox
+                        id="select-all"
+                        checked={selectedImages.length === unusedImages.length && unusedImages.length > 0}
+                        onCheckedChange={toggleSelectAllUnused}
+                        aria-label="Select all unused images"
+                    />
+                    <Label htmlFor="select-all" className="font-medium">Select All Unused</Label>
+                </div>
+            )}
             {renderImageGrid(
               unusedImages,
-              "Unused Images",
-              "All images are currently in use."
+              "All images are currently in use.",
+              true
             )}
           </TabsContent>
         </Tabs>
       </div>
+
+      {activeTab === 'unused' && selectedImages.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 p-4 backdrop-blur-sm border-t">
+          <div className="container mx-auto flex items-center justify-between">
+            <p className="font-semibold">{selectedImages.length} image(s) selected</p>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setSelectedImages([])}>
+                <X className="mr-2 h-4 w-4" /> Deselect All
+              </Button>
+               <AlertDialog open={isBulkDeleting} onOpenChange={setIsBulkDeleting}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selectedImages.length} images?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the selected images from Cloudinary. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteSelected}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        </div>
+      )}
+
       <AlertDialog
         open={!!deletingImage}
         onOpenChange={(open) => !open && setDeletingImage(null)}
