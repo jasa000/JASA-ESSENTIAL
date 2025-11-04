@@ -129,6 +129,7 @@ export type Banner = {
 };
 
 export type HomepageContent = {
+    welcomeImageUrl?: string;
     categoryImages: {
         stationary?: string;
         books?: string;
@@ -137,5 +138,7 @@ export type HomepageContent = {
     },
     banners: Banner[];
 };
+
+    
 
     

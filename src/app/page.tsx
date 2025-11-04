@@ -23,7 +23,7 @@ export default function Home() {
   const plugin = React.useRef(
     Autoplay({ 
       delay: 5000, 
-      stopOnInteraction: true,
+      stopOnInteraction: false,
       stopOnLastSnap: false,
     })
   );
@@ -168,14 +168,14 @@ export default function Home() {
           plugins={[plugin.current]}
           className="w-full"
           onMouseEnter={plugin.current.stop}
-          onMouseLeave={plugin.current.play}
+          onMouseLeave={plugin.current.reset}
           opts={{
             loop: true,
           }}
         >
           <CarouselContent>
             <CarouselItem>
-                <WelcomeCard />
+                <WelcomeCard imageUrl={homepageContent?.welcomeImageUrl} />
             </CarouselItem>
             {isLoading ? (
                  <CarouselItem>
@@ -234,3 +234,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

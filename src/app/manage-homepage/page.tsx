@@ -22,7 +22,7 @@ import Image from "next/image";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 
-const MAX_BANNERS = 4;
+const MAX_BANNERS = 10;
 const TITLE_MAX_LENGTH = 40;
 const CTA_MAX_LENGTH = 25;
 
@@ -52,9 +52,11 @@ export default function ManageHomepagePage() {
   const [homepageContent, setHomepageContent] = useState<HomepageContent | null>(null);
   
   // State for image previews before upload
+  const [welcomeImagePreview, setWelcomeImagePreview] = useState<string | null>(null);
   const [categoryPreviews, setCategoryPreviews] = useState<{[key: string]: string | null}>({});
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  const welcomeFileInputRef = useRef<HTMLInputElement | null>(null);
   const categoryFileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
   
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function ManageHomepagePage() {
     setIsLoading(true);
     try {
       const content = await getHomepageContent();
-      setHomepageContent(content ?? { categoryImages: {}, banners: [] });
+      setHomepageContent(content ?? { categoryImages: {}, banners: [], welcomeImageUrl: '' });
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to fetch homepage content." });
     } finally {
@@ -80,20 +82,26 @@ export default function ManageHomepagePage() {
     }
   };
   
-  const handleFileSelect = (file: File, categoryKey: string) => {
+  const handleFileSelect = (file: File, type: 'welcome' | string) => {
     if (file.size > 4 * 1024 * 1024) { // 4MB limit
         toast({ variant: 'destructive', title: 'File too large', description: 'Please select an image smaller than 4MB.'});
         return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-        setCategoryPreviews(prev => ({ ...prev, [categoryKey]: reader.result as string }));
+        if (type === 'welcome') {
+            setWelcomeImagePreview(reader.result as string);
+        } else {
+            setCategoryPreviews(prev => ({ ...prev, [type]: reader.result as string }));
+        }
     };
     reader.readAsDataURL(file);
   }
-  
-  const handleSaveCategoryImage = async (categoryKey: keyof HomepageContent['categoryImages']) => {
-    const previewUrl = categoryPreviews[categoryKey];
+
+  const handleSaveImage = async (type: 'welcome' | keyof HomepageContent['categoryImages']) => {
+    const isWelcome = type === 'welcome';
+    const previewUrl = isWelcome ? welcomeImagePreview : categoryPreviews[type];
+
     if (!previewUrl || !homepageContent) return;
 
     setIsSubmitting(true);
@@ -110,12 +118,22 @@ export default function ManageHomepagePage() {
       setUploadProgress(100);
 
       if (uploadResult.success && uploadResult.url) {
-        const newCategoryImages = { ...homepageContent.categoryImages, [categoryKey]: uploadResult.url };
-        const newHomepageContent = { ...homepageContent, categoryImages: newCategoryImages };
+        let newHomepageContent: HomepageContent;
+        if (isWelcome) {
+            newHomepageContent = { ...homepageContent, welcomeImageUrl: uploadResult.url };
+        } else {
+            const newCategoryImages = { ...homepageContent.categoryImages, [type]: uploadResult.url };
+            newHomepageContent = { ...homepageContent, categoryImages: newCategoryImages };
+        }
+        
         await updateHomepageContent(newHomepageContent);
-        setHomepageContent(newHomepageContent); // Correctly update the state
-        setCategoryPreviews(prev => ({...prev, [categoryKey]: null}));
-        toast({ title: "Success", description: "Category image updated." });
+        setHomepageContent(newHomepageContent);
+        if (isWelcome) {
+            setWelcomeImagePreview(null);
+        } else {
+            setCategoryPreviews(prev => ({...prev, [type]: null}));
+        }
+        toast({ title: "Success", description: "Image updated successfully." });
       } else {
         throw new Error(uploadResult.error || 'Upload failed');
       }
@@ -128,15 +146,21 @@ export default function ManageHomepagePage() {
     }
   }
 
-  const handleCategoryDelete = async (categoryKey: keyof HomepageContent['categoryImages']) => {
+  const handleDeleteImage = async (type: 'welcome' | keyof HomepageContent['categoryImages']) => {
       if (homepageContent) {
-          const newCategoryImages = { ...homepageContent.categoryImages, [categoryKey]: '' };
-          const newHomepageContent = { ...homepageContent, categoryImages: newCategoryImages };
           setIsSubmitting(true);
+          let newHomepageContent: HomepageContent;
+          if (type === 'welcome') {
+            newHomepageContent = { ...homepageContent, welcomeImageUrl: '' };
+          } else {
+            const newCategoryImages = { ...homepageContent.categoryImages, [type]: '' };
+            newHomepageContent = { ...homepageContent, categoryImages: newCategoryImages };
+          }
+          
           try {
             await updateHomepageContent(newHomepageContent);
-            setHomepageContent(newHomepageContent); // Correctly update the state
-            toast({ title: "Success", description: "Category image removed." });
+            setHomepageContent(newHomepageContent);
+            toast({ title: "Success", description: "Image removed." });
           } catch(e: any) {
              toast({ variant: "destructive", title: "Error", description: `Failed to delete image: ${e.message}` });
           } finally {
@@ -144,6 +168,7 @@ export default function ManageHomepagePage() {
           }
       }
   }
+
 
   const handleBannerUpdate = async (index: number, updatedBanner: Banner) => {
       if (homepageContent) {
@@ -399,12 +424,75 @@ export default function ManageHomepagePage() {
     )
   }
 
+  const renderWelcomeImageUploader = () => {
+    const currentImage = homepageContent?.welcomeImageUrl;
+    const previewImage = welcomeImagePreview;
+    const displayImage = previewImage || currentImage;
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome Card Background</CardTitle>
+          <CardDescription>Update the main background image for the welcome card. If no image is set, a gradient will be shown.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="aspect-video w-full max-w-sm mx-auto relative border rounded-md overflow-hidden flex items-center justify-center bg-muted">
+            {displayImage ? <Image src={displayImage} alt="Welcome card background" fill className="object-cover" /> : <span className="text-muted-foreground font-bold text-2xl">JASA</span>}
+          </div>
+          <Input type="file" accept="image/*" className="hidden" ref={welcomeFileInputRef} onChange={(e) => e.target.files && handleFileSelect(e.target.files[0], 'welcome')} disabled={isSubmitting}/>
+          
+          {previewImage ? (
+            <div className="mt-4 space-y-2 max-w-sm mx-auto">
+                {isSubmitting && uploadProgress > 0 && <Progress value={uploadProgress} />}
+                <div className="flex gap-2">
+                    <Button type="button" variant="secondary" className="flex-1" onClick={() => setWelcomeImagePreview(null)} disabled={isSubmitting}>
+                        <X className="mr-2 h-4 w-4"/> Cancel
+                    </Button>
+                    <Button type="button" className="flex-1" onClick={() => handleSaveImage('welcome')} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Save
+                    </Button>
+                </div>
+            </div>
+          ) : (
+            <div className="mt-4 flex gap-2 max-w-sm mx-auto">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => welcomeFileInputRef.current?.click()} disabled={isSubmitting}>
+                    <Upload className="mr-2 h-4 w-4" /> {currentImage ? 'Change Image' : 'Upload Image'}
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button type="button" variant="destructive" className="h-10 w-10 p-0" disabled={!currentImage || isSubmitting}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This will remove the background image for the welcome card.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteImage('welcome')}>
+                            Confirm Delete
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Manage Homepage</h1>
-      <p className="mt-2 text-muted-foreground">Update category images and promotional banners.</p>
+      <p className="mt-2 text-muted-foreground">Update welcome card, category images, and promotional banners.</p>
       
       <div className="mt-8 space-y-8">
+          {renderWelcomeImageUploader()}
+
           <Card>
               <CardHeader>
                   <CardTitle>Category Images</CardTitle>
@@ -432,7 +520,7 @@ export default function ManageHomepagePage() {
                                         <Button type="button" variant="secondary" className="flex-1" onClick={() => setCategoryPreviews(prev => ({...prev, [categoryKey]: null}))} disabled={isSubmitting}>
                                             <X className="mr-2 h-4 w-4"/> Cancel
                                         </Button>
-                                        <Button type="button" className="flex-1" onClick={() => handleSaveCategoryImage(categoryKey)} disabled={isSubmitting}>
+                                        <Button type="button" className="flex-1" onClick={() => handleSaveImage(categoryKey)} disabled={isSubmitting}>
                                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                                             Save
                                         </Button>
@@ -456,7 +544,7 @@ export default function ManageHomepagePage() {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleCategoryDelete(categoryKey)}>
+                                            <AlertDialogAction onClick={() => handleDeleteImage(categoryKey)}>
                                                 Confirm Delete
                                             </AlertDialogAction>
                                             </AlertDialogFooter>
