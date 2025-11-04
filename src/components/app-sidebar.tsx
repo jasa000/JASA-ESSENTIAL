@@ -229,13 +229,13 @@ export default function AppSidebar() {
             <h2 className="font-headline text-xl font-bold text-sidebar-foreground">JASA ESSENTIAL</h2>
         </div>
         
-        {user && user.shortId && (
+        {user && (
            <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton variant="outline" size="lg" className="h-auto flex-col items-start p-2" disabled>
                       <span className="font-semibold text-base truncate">{user.displayName || user.name}</span>
-                      <span className="text-xs text-muted-foreground">ID: <Badge variant="secondary" className="px-1">{user.shortId}</Badge></span>
+                      {user.shortId && <span className="text-xs text-muted-foreground">ID: <Badge variant="secondary" className="px-1">{user.shortId}</Badge></span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -379,3 +379,5 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
+
+    
