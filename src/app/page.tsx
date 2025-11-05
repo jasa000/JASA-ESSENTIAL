@@ -18,6 +18,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 
 export default function Home() {
@@ -242,12 +243,20 @@ export default function Home() {
        
        <div className="container mx-auto px-4">
          <div className="py-8">
-          <h2 className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl mb-6">OUR SERVICES</h2>
-          <div className="grid grid-cols-4 w-full gap-4">
-              {displayCategories.map((category, index) => (
-                  <CategoryLinkCard key={category.id} category={category} index={index} />
-              ))}
-          </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl">
+                        OUR SERVICES
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-4 w-full gap-4">
+                        {displayCategories.map((category, index) => (
+                            <CategoryLinkCard key={category.id} category={category} index={index} />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
          </div>
 
          {renderProductSection('stationary')}
@@ -261,5 +270,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
