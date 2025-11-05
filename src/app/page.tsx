@@ -121,53 +121,57 @@ export default function Home() {
 
     if (isLoading) {
       return (
-        <Card className="py-8">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div>
+          <div className="flex items-center justify-between pb-4">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-10 w-24" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-              {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="w-[45vw] flex-shrink-0 sm:w-48">
-                      <div className="flex flex-col space-y-3">
-                        <Skeleton className="h-[250px] w-full rounded-xl" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-5/6" />
+          </div>
+          <Card>
+            <CardContent>
+              <div className="flex gap-4 overflow-x-auto py-4 no-scrollbar">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="w-[45vw] flex-shrink-0 sm:w-48">
+                        <div className="flex flex-col space-y-3">
+                          <Skeleton className="h-[250px] w-full rounded-xl" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-5/6" />
+                          </div>
                         </div>
-                      </div>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )
     }
 
     if (!productList.length || !catInfo) return null;
 
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</CardTitle>
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</h2>
             <Button asChild variant="outline">
               <Link href={catInfo.href}>
                 <span>View All</span>
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-        </CardHeader>
-        <CardContent>
-            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
-            {productList.map((product) => (
-                <div key={product.id} className="w-[45vw] flex-shrink-0 sm:w-48">
-                <ProductCard product={product} hideRating hideBuyButton />
-                </div>
-            ))}
-            </div>
-        </CardContent>
-      </Card>
+        </div>
+        <Card>
+          <CardContent className="p-4">
+              <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
+              {productList.map((product) => (
+                  <div key={product.id} className="w-[45vw] flex-shrink-0 sm:w-48">
+                  <ProductCard product={product} hideRating hideBuyButton />
+                  </div>
+              ))}
+              </div>
+          </CardContent>
+        </Card>
+      </section>
     );
   }
 
