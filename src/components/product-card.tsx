@@ -11,12 +11,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Star, Pencil, Trash2 } from 'lucide-react';
+import { ShoppingCart, Pencil, Trash2 } from 'lucide-react';
 import { getBrands, getAuthors } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import ProductDetailView from './product-detail-view';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/context/auth-provider';
 import AuthForm from './auth-form';
 
@@ -122,58 +121,45 @@ export default function ProductCard({ product, className, showAdminControls = fa
       <h3 className="font-headline text-sm font-semibold leading-tight tracking-tight line-clamp-3" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{product.name}</h3>
     </div>
   )
-  
-  const CardContentTrigger = showAdminControls ? 'div' : DialogTrigger;
-  const cardContentProps = showAdminControls ? {} : { asChild: true };
 
   return (
     <>
-      <Dialog>
-        <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl", className)}>
-            <div className='relative'>
-              <CardContentTrigger {...cardContentProps}>
-                 <div className='cursor-pointer'>{cardImage}</div>
-              </CardContentTrigger>
-              {showAdminControls && (
-                  <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                      <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
-                          <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
-                          <Trash2 className="h-4 w-4" />
-                      </Button>
-                  </div>
-              )}
-               {!showAdminControls && (
-                <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
-                    <ShoppingCart className="h-4 w-4 text-primary" />
-                </Button>
-               )}
-            </div>
-          
-          <CardContent className="flex flex-1 flex-col p-3">
-              <CardContentTrigger {...cardContentProps}>
-                 <div className='cursor-pointer flex-grow'>{cardInfo}</div>
-              </CardContentTrigger>
-              <div className="mt-2 flex items-baseline justify-between">
-                <div className='flex items-baseline gap-2'>
-                  <p className="text-base font-semibold text-foreground">
-                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
-                  </p>
-                  {hasDiscount && (
-                      <p className="text-sm text-muted-foreground line-through">
-                          ₹{product.price.toFixed(2)}
-                      </p>
-                  )}
+      <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl", className)}>
+          <div className='relative'>
+             <div>{cardImage}</div>
+            {showAdminControls && (
+                <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                    <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                 </div>
+            )}
+             {!showAdminControls && (
+              <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
+                  <ShoppingCart className="h-4 w-4 text-primary" />
+              </Button>
+             )}
+          </div>
+        
+        <CardContent className="flex flex-1 flex-col p-3">
+            <div className='flex-grow'>{cardInfo}</div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <div className='flex items-baseline gap-2'>
+                <p className="text-base font-semibold text-foreground">
+                    ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                </p>
+                {hasDiscount && (
+                    <p className="text-sm text-muted-foreground line-through">
+                        ₹{product.price.toFixed(2)}
+                    </p>
+                )}
               </div>
-          </CardContent>
-        </Card>
-
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <ProductDetailView product={product} />
-        </DialogContent>
-      </Dialog>
+            </div>
+        </CardContent>
+      </Card>
       {AuthDialog}
     </>
   );
