@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -58,7 +59,7 @@ export default function AppSidebar() {
   };
 
   useEffect(() => {
-    if (user?.role === 'seller') {
+    if (user?.roles.includes('seller')) {
       const fetchSellerShops = async () => {
         setIsLoadingShops(true);
         try {
@@ -205,7 +206,7 @@ export default function AppSidebar() {
       )
     }
 
-    if (user?.role === 'seller' && sellerShops.length > 0) {
+    if (user?.roles.includes('seller') && sellerShops.length > 0) {
       return (
         <>
           {sellerShops.map(shop => (
@@ -337,9 +338,9 @@ export default function AppSidebar() {
             </SidebarMenu>
         </SidebarGroup>
         
-        {renderSellerAccess()}
+        {user?.roles.includes('seller') && renderSellerAccess()}
 
-        {user?.role === 'admin' && (
+        {user?.roles.includes('admin') && (
           <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>ADMIN ACCESS</SidebarGroupLabel>
               <SidebarMenu>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -80,7 +81,7 @@ export default function PostUpdatePage() {
 
   useEffect(() => {
     if (!loading) {
-      if (!user || user.role !== 'admin') {
+      if (!user || !user.roles.includes('admin')) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'You do not have permission to view this page.' });
         router.push('/');
       }
@@ -88,7 +89,7 @@ export default function PostUpdatePage() {
   }, [user, loading, router, toast]);
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (user?.roles.includes('admin')) {
       fetchPosts();
     }
   }, [user]);
@@ -151,7 +152,7 @@ export default function PostUpdatePage() {
     }
   };
   
-  if (loading || user?.role !== 'admin') {
+  if (loading || !user?.roles.includes('admin')) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }
 

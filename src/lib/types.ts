@@ -34,12 +34,15 @@ export type Category = {
     }
 }
 
+export const USER_ROLES = ['user', 'admin', 'seller', 'delivery'] as const;
+export type UserRole = typeof USER_ROLES[number];
+
 export type UserProfile = {
   uid: string;
   shortId: string;
   name: string;
   email: string;
-  role?: 'user' | 'admin' | 'seller' | 'delivery';
+  roles: UserRole[];
   mobile?: string;
   altMobiles?: { value: string }[];
   altEmails?: { value: string }[];

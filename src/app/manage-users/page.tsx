@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
-import { getAllUsers, updateUserRole } from "@/lib/users";
-import type { UserProfile } from "@/lib/types";
+import { getAllUsers, updateUserRoles } from "@/lib/users";
+import { type UserProfile, type UserRole, USER_ROLES } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,21 +37,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Pencil } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const SECRET_CODE = "JASA01012000";
 
@@ -62,13 +55,13 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newRole, setNewRole] = useState<UserProfile['role']>('user');
+  const [newRoles, setNewRoles] = useState<UserRole[]>([]);
   const [secretCode, setSecretCode] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || user.role !== "admin") {
+      if (!user || !user.roles.includes("admin")) {
         router.push("/");
       }
     }
@@ -76,20 +69,25 @@ export default function ManageUsersPage() {
   
   const fetchUsers = async () => {
     setLoading(true);
-    const allUsers = await getAllUsers();
-    setUsers(allUsers);
-    setLoading(false);
+    try {
+        const allUsers = await getAllUsers();
+        setUsers(allUsers);
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch users.' });
+    } finally {
+        setLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (user?.role === "admin") {
+    if (user?.roles.includes("admin")) {
       fetchUsers();
     }
   }, [user]);
 
   const handleOpenDialog = (user: UserProfile) => {
     setSelectedUser(user);
-    setNewRole(user.role);
+    setNewRoles(user.roles || ['user']);
     setIsDialogOpen(true);
   };
 
@@ -110,14 +108,22 @@ export default function ManageUsersPage() {
       return;
     }
     
-    if (!selectedUser || !newRole) return;
+    if (!selectedUser) return;
+    if (newRoles.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "A user must have at least one role.",
+      });
+      return;
+    }
 
     setIsUpdating(true);
     try {
-      await updateUserRole(selectedUser.uid, newRole);
+      await updateUserRoles(selectedUser.uid, newRoles);
       toast({
-        title: "Role Updated",
-        description: `${selectedUser.name}'s role has been updated to ${newRole}.`,
+        title: "Roles Updated",
+        description: `${selectedUser.name}'s roles have been updated.`,
       });
       fetchUsers(); // Re-fetch users to show the change
       handleCloseDialog();
@@ -133,8 +139,8 @@ export default function ManageUsersPage() {
   };
 
 
-  const renderUserTable = (role: UserProfile["role"]) => {
-    const filteredUsers = users.filter((u) => u.role === role);
+  const renderUserTable = (role: UserRole) => {
+    const filteredUsers = users.filter((u) => u.roles?.includes(role));
 
     if (loading) {
       return (
@@ -167,7 +173,7 @@ export default function ManageUsersPage() {
               <TableCell>{u.email}</TableCell>
               <TableCell>{u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(u)}>
+                <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(u)} disabled={u.uid === user?.uid}>
                   <Pencil className="h-4 w-4" />
                 </Button>
               </TableCell>
@@ -178,7 +184,7 @@ export default function ManageUsersPage() {
     );
   };
   
-  if (authLoading || user?.role !== 'admin') {
+  if (authLoading || !user?.roles.includes('admin')) {
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
@@ -266,50 +272,48 @@ export default function ManageUsersPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Role for {selectedUser?.name}</DialogTitle>
+            <DialogTitle>Edit Roles for {selectedUser?.name}</DialogTitle>
             <DialogDescription>
-              Select a new role and enter the secret code to confirm the change.
+              Select roles and enter the secret code to confirm the change.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role-select" className="text-right">
-                Role
-              </Label>
-              <Select
-                value={newRole}
-                onValueChange={(value: UserProfile['role']) => setNewRole(value)}
-              >
-                <SelectTrigger id="role-select" className="col-span-3">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="seller">Seller</SelectItem>
-                  <SelectItem value="delivery">Delivery</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+            <div>
+              <Label>Roles</Label>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                {USER_ROLES.map((role) => (
+                  <div key={role} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`role-${role}`}
+                      checked={newRoles.includes(role)}
+                      onCheckedChange={(checked) => {
+                        const updatedRoles = checked
+                          ? [...newRoles, role]
+                          : newRoles.filter((r) => r !== role);
+                        setNewRoles(updatedRoles);
+                      }}
+                    />
+                    <Label htmlFor={`role-${role}`} className="font-normal capitalize">{role}</Label>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="secret-code" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="secret-code">
                 Secret Code
               </Label>
               <Input
                 id="secret-code"
                 type="password"
-                className="col-span-3"
                 value={secretCode}
                 onChange={(e) => setSecretCode(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary" onClick={handleCloseDialog}>
-                Cancel
-              </Button>
-            </DialogClose>
+            <Button type="button" variant="secondary" onClick={handleCloseDialog}>
+              Cancel
+            </Button>
             <Button onClick={handleRoleChange} disabled={isUpdating}>
               {isUpdating ? 'Updating...' : 'Save Changes'}
             </Button>

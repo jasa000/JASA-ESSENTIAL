@@ -1,7 +1,8 @@
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, updateDoc, query, where, arrayUnion } from 'firebase/firestore';
-import type { UserProfile } from './types';
+import type { UserProfile, UserRole } from './types';
 
 const usersCollection = collection(db, 'users');
 
@@ -17,7 +18,7 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
 
 export const getSellers = async (): Promise<UserProfile[]> => {
   try {
-    const q = query(usersCollection, where("role", "==", "seller"));
+    const q = query(usersCollection, where("roles", "array-contains", "seller"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ ...doc.data() } as UserProfile));
   } catch (error) {
@@ -26,13 +27,13 @@ export const getSellers = async (): Promise<UserProfile[]> => {
   }
 };
 
-export const updateUserRole = async (uid: string, role: UserProfile['role']): Promise<void> => {
+export const updateUserRoles = async (uid: string, roles: UserRole[]): Promise<void> => {
   try {
     const userDoc = doc(db, 'users', uid);
-    await updateDoc(userDoc, { role });
+    await updateDoc(userDoc, { roles });
   } catch (error) {
-    console.error("Error updating user role: ", error);
-    throw new Error("Failed to update user role.");
+    console.error("Error updating user roles: ", error);
+    throw new Error("Failed to update user roles.");
   }
 };
 

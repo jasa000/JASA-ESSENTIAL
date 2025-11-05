@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -107,7 +108,7 @@ export default function ManageCloudinaryPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || user.role !== "admin") {
+      if (!user || !user.roles.includes("admin")) {
         toast({
           variant: "destructive",
           title: "Access Denied",

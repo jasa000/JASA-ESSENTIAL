@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -60,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               shortId: newShortId,
               name: firebaseUser.displayName || 'New User',
               email: firebaseUser.email || '',
-              role: 'user',
+              roles: ['user'],
               createdAt: new Date(),
             };
             try {

@@ -65,7 +65,7 @@ export default function ManageHomepagePage() {
   
   useEffect(() => {
     if (!authLoading) {
-      if (!user || user.role !== 'admin') {
+      if (!user || !user.roles.includes('admin')) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'You do not have permission to view this page.' });
         router.push('/');
       } else {

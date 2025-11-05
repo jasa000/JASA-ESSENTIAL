@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from 'react';
@@ -130,7 +131,7 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
         shortId: shortId,
         name: values.name,
         email: values.email,
-        role: 'user',
+        roles: ['user'],
         createdAt: new Date(),
       });
 
@@ -177,7 +178,7 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
           name: user.displayName,
           email: user.email,
           photoURL: user.photoURL,
-          role: 'user',
+          roles: ['user'],
           createdAt: new Date(),
         });
       } else {
