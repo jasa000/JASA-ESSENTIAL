@@ -130,9 +130,9 @@ export default function Home() {
             <CardContent>
               <div className="flex gap-4 overflow-x-auto py-4 no-scrollbar">
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="w-[45vw] flex-shrink-0 sm:w-48">
+                    <div key={i} className="w-[35vw] flex-shrink-0 sm:w-40">
                         <div className="flex flex-col space-y-3">
-                          <Skeleton className="h-[250px] w-full rounded-xl" />
+                          <Skeleton className="h-[220px] w-full rounded-xl" />
                           <div className="space-y-2">
                             <Skeleton className="h-4 w-full" />
                             <Skeleton className="h-4 w-5/6" />
@@ -164,7 +164,7 @@ export default function Home() {
           <CardContent className="p-4">
               <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
               {productList.map((product) => (
-                  <div key={product.id} className="w-[45vw] flex-shrink-0 sm:w-48">
+                  <div key={product.id} className="w-[35vw] flex-shrink-0 sm:w-40">
                   <ProductCard product={product} hideRating hideBuyButton />
                   </div>
               ))}

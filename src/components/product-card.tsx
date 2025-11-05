@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from 'next/image';
@@ -101,7 +102,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   )
 
   const cardImage = (
-    <div className="relative aspect-square w-full overflow-hidden">
+    <div className="relative aspect-[4/5] w-full overflow-hidden">
       {mainImage ? (
         <Image
           src={mainImage}
@@ -120,7 +121,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   const cardInfo = (
      <div className="flex-grow">
       {names && <p className="text-xs text-muted-foreground">{names}</p>}
-      <h3 className="font-headline text-base font-semibold leading-tight tracking-tight line-clamp-3" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{product.name}</h3>
+      <h3 className="font-headline text-sm font-semibold leading-tight tracking-tight line-clamp-3" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{product.name}</h3>
       {!hideRating && (
         <div className="mt-1 flex items-center gap-0.5">
             {Array.from({ length: 5 }, (_, i) => (
@@ -140,7 +141,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   return (
     <>
       <Dialog>
-        <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-2xl", className)}>
+        <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl", className)}>
             <div className='relative'>
               <CardContentTrigger {...cardContentProps}>
                  <div className='cursor-pointer'>{cardImage}</div>
@@ -162,13 +163,13 @@ export default function ProductCard({ product, className, showAdminControls = fa
                )}
             </div>
           
-          <CardContent className="flex flex-1 flex-col p-4">
+          <CardContent className="flex flex-1 flex-col p-3">
               <CardContentTrigger {...cardContentProps}>
                  <div className='cursor-pointer flex-grow'>{cardInfo}</div>
               </CardContentTrigger>
-              <div className="mt-4 flex items-baseline justify-between">
+              <div className="mt-2 flex items-baseline justify-between">
                 <div className='flex items-baseline gap-2'>
-                  <p className="text-lg font-semibold text-foreground">
+                  <p className="text-base font-semibold text-foreground">
                       ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
                   </p>
                   {hasDiscount && (
