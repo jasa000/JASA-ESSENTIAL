@@ -5,7 +5,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc, setDoc, deleteField } from 'firebase/firestore';
 import type { UserProfile, UserRole } from '@/lib/types';
 
 type AuthContextType = {
@@ -36,43 +36,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         const unsubscribeSnapshot = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
-            let userProfile = docSnap.data() as UserProfile & { role?: string }; // Allow old 'role' field
+            const userProfile = docSnap.data() as UserProfile & { role?: string }; // Allow old 'role' field
+            const updates: { [key: string]: any } = {};
             let needsUpdate = false;
             
             // --- Migration Logic ---
             // 1. Check for old 'role' string and migrate to 'roles' array
             if (userProfile.role && typeof userProfile.role === 'string') {
-              userProfile.roles = ['user'];
-              if (userProfile.role !== 'user') {
-                userProfile.roles.push(userProfile.role as UserRole);
+              const newRoles: UserRole[] = ['user'];
+              if (userProfile.role !== 'user' && userProfile.role) {
+                newRoles.push(userProfile.role as UserRole);
               }
-              delete userProfile.role; // Remove old field
+              updates.roles = newRoles;
+              updates.role = deleteField(); // Remove the old 'role' field
               needsUpdate = true;
+              userProfile.roles = newRoles; // Update local copy for immediate use
+              delete userProfile.role;
             }
 
             // 2. Ensure 'roles' is an array and contains 'user'
             if (!Array.isArray(userProfile.roles)) {
+              updates.roles = ['user'];
+              needsUpdate = true;
               userProfile.roles = ['user'];
-              needsUpdate = true;
             } else if (!userProfile.roles.includes('user')) {
-              userProfile.roles.push('user');
+              updates.roles = [...userProfile.roles, 'user'];
               needsUpdate = true;
+              userProfile.roles.push('user');
             }
 
             // 3. Ensure shortId exists
             if (!userProfile.shortId) {
-              userProfile.shortId = generateShortId();
+              updates.shortId = generateShortId();
               needsUpdate = true;
+              userProfile.shortId = updates.shortId;
             }
             
             // 4. If any migration happened, update the DB
             if (needsUpdate) {
               try {
-                await updateDoc(userDocRef, {
-                  roles: userProfile.roles,
-                  shortId: userProfile.shortId,
-                  role: undefined // Ensure old 'role' field is removed
-                });
+                await updateDoc(userDocRef, updates);
               } catch (e) {
                 console.error("Failed to migrate user profile:", e);
               }
@@ -127,3 +130,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
