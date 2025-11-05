@@ -161,7 +161,7 @@ export default function Home() {
         <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
             {productList.map((product) => (
-                <div key={product.id} className="w-56 flex-shrink-0">
+                <div key={product.id} className="w-[45vw] flex-shrink-0 sm:w-56">
                 <ProductCard product={product} hideRating hideBuyButton />
                 </div>
             ))}

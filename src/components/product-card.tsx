@@ -120,7 +120,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   const cardInfo = (
      <div className="flex-grow">
       {names && <p className="text-xs text-muted-foreground">{names}</p>}
-      <h3 className="font-headline text-base font-semibold leading-tight tracking-tight">{product.name}</h3>
+      <h3 className="font-headline text-base font-semibold leading-tight tracking-tight line-clamp-3" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{product.name}</h3>
       {!hideRating && (
         <div className="mt-1 flex items-center gap-0.5">
             {Array.from({ length: 5 }, (_, i) => (
