@@ -59,7 +59,7 @@ export default function AppSidebar() {
   };
 
   useEffect(() => {
-    if (user?.roles?.includes('seller')) {
+    if (user && Array.isArray(user.roles) && user.roles.includes('seller')) {
       const fetchSellerShops = async () => {
         setIsLoadingShops(true);
         try {
@@ -338,9 +338,9 @@ export default function AppSidebar() {
             </SidebarMenu>
         </SidebarGroup>
         
-        {user?.roles?.includes('seller') && renderSellerAccess()}
+        {user && Array.isArray(user.roles) && user.roles.includes('seller') && renderSellerAccess()}
 
-        {user?.roles?.includes('admin') && (
+        {user && Array.isArray(user.roles) && user.roles.includes('admin') && (
           <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>ADMIN ACCESS</SidebarGroupLabel>
               <SidebarMenu>
@@ -406,3 +406,5 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
+
+    
