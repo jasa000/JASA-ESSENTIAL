@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import {
@@ -34,6 +33,12 @@ import { sendPasswordResetEmail, deleteUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 const COOLDOWN_SECONDS = 1800; // 30 minutes
+
+const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -171,13 +176,6 @@ export default function SettingsPage() {
     );
   }
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
@@ -283,5 +281,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
