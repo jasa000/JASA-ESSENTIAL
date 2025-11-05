@@ -140,7 +140,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   return (
     <>
       <Dialog>
-        <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg", className)}>
+        <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-2xl", className)}>
             <div className='relative'>
               <CardContentTrigger {...cardContentProps}>
                  <div className='cursor-pointer'>{cardImage}</div>
