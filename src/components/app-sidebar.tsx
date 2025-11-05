@@ -59,7 +59,7 @@ export default function AppSidebar() {
   };
 
   useEffect(() => {
-    if (user?.roles && user.roles.includes('seller')) {
+    if (user?.roles?.includes('seller')) {
       const fetchSellerShops = async () => {
         setIsLoadingShops(true);
         try {
@@ -206,7 +206,7 @@ export default function AppSidebar() {
       )
     }
 
-    if (user?.roles?.includes('seller') && sellerShops.length > 0) {
+    if (sellerShops.length > 0) {
       return (
         <>
           {sellerShops.map(shop => (
