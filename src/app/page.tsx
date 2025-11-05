@@ -129,7 +129,7 @@ export default function Home() {
           <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
               {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="w-48 flex-shrink-0">
+                  <div key={i} className="w-[45vw] flex-shrink-0 sm:w-48">
                       <div className="flex flex-col space-y-3">
                         <Skeleton className="h-[250px] w-full rounded-xl" />
                         <div className="space-y-2">
@@ -245,24 +245,24 @@ export default function Home() {
         )}
       </div>
        
-       <div className="container mx-auto px-4 space-y-8">
-         <div className="py-8">
-            <Card className="bg-muted">
-                <CardHeader>
-                    <CardTitle className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl">
-                        OUR SERVICES
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-4 w-full gap-4">
-                        {displayCategories.map((category, index) => (
-                            <CategoryLinkCard key={category.id} category={category} index={index} />
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-         </div>
+       <div className="py-8">
+          <Card className="bg-muted w-full rounded-none">
+              <CardHeader>
+                  <CardTitle className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl">
+                      OUR SERVICES
+                  </CardTitle>
+              </CardHeader>
+              <CardContent className="container mx-auto px-4">
+                  <div className="grid grid-cols-4 w-full gap-4">
+                      {displayCategories.map((category, index) => (
+                          <CategoryLinkCard key={category.id} category={category} index={index} />
+                      ))}
+                  </div>
+              </CardContent>
+          </Card>
+       </div>
 
+       <div className="container mx-auto px-4 space-y-8">
          {renderProductSection('stationary')}
          {renderProductSection('books')}
          {renderProductSection('electronics')}
