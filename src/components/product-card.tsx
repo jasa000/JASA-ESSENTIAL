@@ -83,8 +83,6 @@ export default function ProductCard({ product, className, showAdminControls = fa
       description: `${product.name} has been added to your cart.`,
     });
   };
-
-  const rating = product.rating || 5;
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
@@ -122,16 +120,6 @@ export default function ProductCard({ product, className, showAdminControls = fa
      <div className="flex-grow">
       {names && <p className="text-xs text-muted-foreground">{names}</p>}
       <h3 className="font-headline text-sm font-semibold leading-tight tracking-tight line-clamp-3" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{product.name}</h3>
-      {!hideRating && (
-        <div className="mt-1 flex items-center gap-0.5">
-            {Array.from({ length: 5 }, (_, i) => (
-            <Star
-                key={i}
-                className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-muted text-muted-foreground'}`}
-            />
-            ))}
-        </div>
-      )}
     </div>
   )
   

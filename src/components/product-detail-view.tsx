@@ -83,7 +83,6 @@ export default function ProductDetailView({ product }: { product: Product }) {
     }
   }
 
-  const rating = product.rating || 5;
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
   const hasImages = product.imageNames && product.imageNames.length > 0;
   const mainImage = hasImages ? product.imageNames![mainImageIndex] : null;
@@ -160,18 +159,6 @@ export default function ProductDetailView({ product }: { product: Product }) {
                 <span className="sr-only">Add to cart</span>
             </Button>
         </DialogHeader>
-        
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: 5 }, (_, i) => (
-              <Star
-                key={i}
-                className={`h-5 w-5 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-muted text-muted-foreground'}`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-muted-foreground">({rating}.0)</span>
-        </div>
 
         <Separator className="my-4" />
         
