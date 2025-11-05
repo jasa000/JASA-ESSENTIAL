@@ -243,7 +243,7 @@ export default function Home() {
        
        <div className="container mx-auto px-4">
          <div className="py-8">
-            <Card>
+            <Card className="bg-muted">
                 <CardHeader>
                     <CardTitle className="text-center font-headline text-2xl font-bold tracking-tight sm:text-3xl">
                         OUR SERVICES
