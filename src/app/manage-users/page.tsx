@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
 import { getAllUsers, updateUserRoles } from "@/lib/users";
@@ -30,19 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil } from "lucide-react";
+import { Search, UserCog } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const SECRET_CODE = "JASA01012000";
@@ -53,8 +44,9 @@ export default function ManageUsersPage() {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchedUser, setSearchedUser] = useState<UserProfile | null>(null);
   const [newRoles, setNewRoles] = useState<UserRole[]>([]);
   const [secretCode, setSecretCode] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -85,17 +77,23 @@ export default function ManageUsersPage() {
     }
   }, [user]);
 
-  const handleOpenDialog = (user: UserProfile) => {
-    setSelectedUser(user);
-    setNewRoles(user.roles || ['user']);
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelectedUser(null);
-    setSecretCode('');
-    setIsUpdating(false);
+  const handleSearch = () => {
+    if (!searchQuery) {
+        setSearchedUser(null);
+        return;
+    }
+    const foundUser = users.find(u => u.email.toLowerCase() === searchQuery.toLowerCase());
+    if (foundUser) {
+        setSearchedUser(foundUser);
+        setNewRoles(foundUser.roles || ['user']);
+    } else {
+        setSearchedUser(null);
+        toast({
+            variant: "destructive",
+            title: "User Not Found",
+            description: "No user found with that email address.",
+        });
+    }
   };
 
   const handleRoleChange = async () => {
@@ -108,25 +106,19 @@ export default function ManageUsersPage() {
       return;
     }
     
-    if (!selectedUser) return;
-    if (newRoles.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "A user must have at least one role.",
-      });
-      return;
-    }
+    if (!searchedUser) return;
 
     setIsUpdating(true);
     try {
-      await updateUserRoles(selectedUser.uid, newRoles);
+      await updateUserRoles(searchedUser.uid, newRoles);
       toast({
         title: "Roles Updated",
-        description: `${selectedUser.name}'s roles have been updated.`,
+        description: `${searchedUser.name}'s roles have been updated.`,
       });
       fetchUsers(); // Re-fetch users to show the change
-      handleCloseDialog();
+      setSecretCode('');
+      setSearchedUser(null);
+      setSearchQuery('');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -163,7 +155,6 @@ export default function ManageUsersPage() {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Joined</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -172,11 +163,6 @@ export default function ManageUsersPage() {
               <TableCell>{u.name}</TableCell>
               <TableCell>{u.email}</TableCell>
               <TableCell>{u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(u)} disabled={u.uid === user?.uid}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -207,6 +193,75 @@ export default function ManageUsersPage() {
         <p className="mt-4 text-muted-foreground">
           Admin tools for managing user accounts.
         </p>
+
+        <Card className="mt-8">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><UserCog /> Edit User Roles</CardTitle>
+                <CardDescription>Search for a user by email to view and modify their roles.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex gap-2">
+                    <Input 
+                        type="email"
+                        placeholder="user@example.com"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <Button onClick={handleSearch}><Search className="mr-2 h-4 w-4"/> Search</Button>
+                </div>
+
+                {searchedUser && (
+                    <div className="mt-6 rounded-lg border p-6">
+                        <h3 className="text-lg font-semibold">Editing: {searchedUser.name} ({searchedUser.email})</h3>
+                        <div className="grid gap-4 py-4">
+                            <div>
+                                <Label className="font-medium">Roles</Label>
+                                <div className="grid grid-cols-2 gap-4 mt-2">
+                                {USER_ROLES.map((role) => (
+                                    <div key={role} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`role-${role}`}
+                                        checked={newRoles.includes(role)}
+                                        disabled={role === 'user' || searchedUser.uid === user.uid}
+                                        onCheckedChange={(checked) => {
+                                        const updatedRoles = checked
+                                            ? [...newRoles, role]
+                                            : newRoles.filter((r) => r !== role);
+                                        setNewRoles(updatedRoles);
+                                        }}
+                                    />
+                                    <Label htmlFor={`role-${role}`} className="font-normal capitalize">{role}</Label>
+                                    </div>
+                                ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="secret-code">
+                                    Admin Secret Code
+                                </Label>
+                                <Input
+                                    id="secret-code"
+                                    type="password"
+                                    value={secretCode}
+                                    onChange={(e) => setSecretCode(e.target.value)}
+                                    placeholder="Enter code to confirm changes"
+                                />
+                            </div>
+                        </div>
+                         <div className="flex justify-end gap-2">
+                            <Button type="button" variant="secondary" onClick={() => setSearchedUser(null)}>
+                            Cancel
+                            </Button>
+                            <Button onClick={handleRoleChange} disabled={isUpdating}>
+                            {isUpdating ? 'Updating...' : 'Save Changes'}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+
         <Tabs defaultValue="user" className="mt-8">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="user">User</TabsTrigger>
@@ -268,58 +323,6 @@ export default function ManageUsersPage() {
           </TabsContent>
         </Tabs>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Roles for {selectedUser?.name}</DialogTitle>
-            <DialogDescription>
-              Select roles and enter the secret code to confirm the change.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label>Roles</Label>
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                {USER_ROLES.map((role) => (
-                  <div key={role} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`role-${role}`}
-                      checked={newRoles.includes(role)}
-                      onCheckedChange={(checked) => {
-                        const updatedRoles = checked
-                          ? [...newRoles, role]
-                          : newRoles.filter((r) => r !== role);
-                        setNewRoles(updatedRoles);
-                      }}
-                    />
-                    <Label htmlFor={`role-${role}`} className="font-normal capitalize">{role}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="secret-code">
-                Secret Code
-              </Label>
-              <Input
-                id="secret-code"
-                type="password"
-                value={secretCode}
-                onChange={(e) => setSecretCode(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={handleCloseDialog}>
-              Cancel
-            </Button>
-            <Button onClick={handleRoleChange} disabled={isUpdating}>
-              {isUpdating ? 'Updating...' : 'Save Changes'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
