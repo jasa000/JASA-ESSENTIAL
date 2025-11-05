@@ -41,7 +41,7 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
             )}
           </CardContent>
         </Card>
-        <p className="mt-3 font-headline text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
+        <p className="mt-2 font-headline text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
             {category.name}
         </p>
       </Link>
