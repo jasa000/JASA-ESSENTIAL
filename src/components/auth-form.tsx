@@ -182,11 +182,21 @@ export default function AuthForm({ defaultTab = 'login', onSuccess }: AuthFormPr
           createdAt: new Date(),
         });
       } else {
-        // If user exists, check if they have a shortId. If not, create and update.
+        // If user exists, check if they have a shortId or roles array. If not, create and update.
         const userData = userDoc.data();
+        const updates: { [key: string]: any } = {};
         if (!userData.shortId) {
-            const shortId = generateShortId();
-            await updateDoc(userDocRef, { shortId: shortId });
+            updates.shortId = generateShortId();
+        }
+        if (!Array.isArray(userData.roles)) {
+            updates.roles = ['user'];
+            if (userData.role && typeof userData.role === 'string' && userData.role !== 'user') {
+                updates.roles.push(userData.role);
+            }
+            updates.role = undefined;
+        }
+        if (Object.keys(updates).length > 0) {
+            await updateDoc(userDocRef, updates);
         }
       }
 

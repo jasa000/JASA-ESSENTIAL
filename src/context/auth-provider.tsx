@@ -6,7 +6,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, UserRole } from '@/lib/types';
 
 type AuthContextType = {
   user: (User & UserProfile) | null;
@@ -36,29 +36,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         const unsubscribeSnapshot = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
-            const userProfile = docSnap.data() as UserProfile;
+            let userProfile = docSnap.data() as UserProfile & { role?: string }; // Allow old 'role' field
+            let needsUpdate = false;
             
-            // Check if shortId exists, if not, create and update it.
-            if (!userProfile.shortId) {
-              const newShortId = generateShortId();
-              try {
-                await updateDoc(userDocRef, { shortId: newShortId });
-                setUser({ ...firebaseUser, ...userProfile, shortId: newShortId });
-              } catch (e) {
-                console.error("Failed to update user with shortId", e);
-                setUser({ ...firebaseUser, ...userProfile });
+            // --- Migration Logic ---
+            // 1. Check for old 'role' string and migrate to 'roles' array
+            if (userProfile.role && typeof userProfile.role === 'string') {
+              userProfile.roles = ['user'];
+              if (userProfile.role !== 'user') {
+                userProfile.roles.push(userProfile.role as UserRole);
               }
-            } else {
-              setUser({ ...firebaseUser, ...userProfile });
+              delete userProfile.role; // Remove old field
+              needsUpdate = true;
             }
+
+            // 2. Ensure 'roles' is an array and contains 'user'
+            if (!Array.isArray(userProfile.roles)) {
+              userProfile.roles = ['user'];
+              needsUpdate = true;
+            } else if (!userProfile.roles.includes('user')) {
+              userProfile.roles.push('user');
+              needsUpdate = true;
+            }
+
+            // 3. Ensure shortId exists
+            if (!userProfile.shortId) {
+              userProfile.shortId = generateShortId();
+              needsUpdate = true;
+            }
+            
+            // 4. If any migration happened, update the DB
+            if (needsUpdate) {
+              try {
+                await updateDoc(userDocRef, {
+                  roles: userProfile.roles,
+                  shortId: userProfile.shortId,
+                  role: undefined // Ensure old 'role' field is removed
+                });
+              } catch (e) {
+                console.error("Failed to migrate user profile:", e);
+              }
+            }
+            
+            setUser({ ...firebaseUser, ...userProfile });
 
           } else {
             // This case handles users created via auth but without a firestore doc yet
-            // e.g. some edge cases with Google Sign-in on first try.
-            const newShortId = generateShortId();
             const newUserProfile: UserProfile = {
               uid: firebaseUser.uid,
-              shortId: newShortId,
+              shortId: generateShortId(),
               name: firebaseUser.displayName || 'New User',
               email: firebaseUser.email || '',
               roles: ['user'],
