@@ -19,7 +19,7 @@ export default function CategoryLinkCard({ category, index }: CategoryLinkCardPr
     <Link href={category.href} className="group block w-full text-center">
         <Card className={cn(
           "relative w-full overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:shadow-lg group-hover:-translate-y-1",
-          "border-transparent hover:border-primary",
+          "border-black dark:border-white hover:border-primary",
           "bg-gray-100 dark:bg-gray-900"
         )}>
            <div 
