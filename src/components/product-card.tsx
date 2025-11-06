@@ -133,23 +133,25 @@ export default function ProductCard({ product, className, showAdminControls = fa
                   {discountPercent}% OFF
                 </Badge>
               )}
-              {showAdminControls && (
-                  <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+               <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                 {showAdminControls && (
+                    <>
                       <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
                           <Pencil className="h-4 w-4" />
                       </Button>
                       <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
                           <Trash2 className="h-4 w-4" />
                       </Button>
-                  </div>
-              )}
+                    </>
+                 )}
+               </div>
               {cardImage}
             </div>
           
           <CardContent className="flex flex-1 flex-col p-3">
               <div className='flex-grow'>{cardInfo}</div>
-              <div className="mt-2 flex items-end gap-2">
-                <div className='flex flex-col flex-shrink'>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <div className='flex flex-col flex-shrink-0'>
                   {hasDiscount && (
                       <p className="text-xs text-muted-foreground line-through">
                           ₹{product.price.toFixed(2)}
