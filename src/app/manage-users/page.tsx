@@ -34,7 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserCog } from "lucide-react";
+import { Search, UserCog, Copy } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -78,7 +78,7 @@ export default function ManageUsersPage() {
     if (user?.roles.includes("admin")) {
       fetchUsers();
     }
-  }, [user, toast]);
+  }, [user]);
 
   const handleSearch = () => {
     if (!searchQuery) {
@@ -139,9 +139,18 @@ export default function ManageUsersPage() {
     }
   };
 
+  const handleCopyEmail = (email: string) => {
+    navigator.clipboard.writeText(email);
+    toast({
+      title: "Email Copied",
+      description: `${email} has been copied to your clipboard.`,
+    });
+  };
 
   const renderUserTable = (role: UserRole) => {
-    const filteredUsers = users.filter((u) => u.roles?.includes(role));
+    const filteredUsers = users
+      .filter((u) => u.roles?.includes(role))
+      .sort((a, b) => a.email.localeCompare(b.email));
 
     if (loading) {
       return (
@@ -170,7 +179,17 @@ export default function ManageUsersPage() {
           {filteredUsers.map((u) => (
             <TableRow key={u.uid}>
               <TableCell>{u.name}</TableCell>
-              <TableCell>{u.email}</TableCell>
+              <TableCell className="flex items-center gap-2">
+                {u.email}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => handleCopyEmail(u.email)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TableCell>
               <TableCell>{u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
             </TableRow>
           ))}
