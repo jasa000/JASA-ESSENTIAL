@@ -145,17 +145,12 @@ export default function ProductCard({ product, className, showAdminControls = fa
                       </Button>
                   </div>
               )}
-              {!showAdminControls && !hideBuyButton && (
-                <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
-                    <ShoppingCart className="h-4 w-4 text-primary" />
-                </Button>
-              )}
               {cardImage}
             </div>
           
           <CardContent className="flex flex-1 flex-col p-3">
               <div className='flex-grow'>{cardInfo}</div>
-              <div className="mt-2 flex items-baseline justify-between">
+              <div className="mt-2 flex items-center justify-between">
                 <div className='flex items-baseline gap-2'>
                   <p className="text-base font-semibold text-foreground">
                       ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
@@ -166,6 +161,11 @@ export default function ProductCard({ product, className, showAdminControls = fa
                       </p>
                   )}
                 </div>
+                 {!showAdminControls && !hideBuyButton && (
+                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={handleAddToCart}>
+                        <ShoppingCart className="h-4 w-4 text-primary" />
+                    </Button>
+                 )}
               </div>
           </CardContent>
         </Card>
