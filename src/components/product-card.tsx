@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/context/auth-provider';
 import AuthForm from './auth-form';
 import Link from 'next/link';
+import { Badge } from './ui/badge';
 
 type ProductCardProps = {
   product: Product;
@@ -85,6 +86,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   };
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+  const discountPercent = hasDiscount ? Math.round(((product.price - product.discountPrice!) / product.price) * 100) : 0;
 
   const mainImage = product.imageNames && product.imageNames.length > 0 && typeof product.imageNames[0] === 'string' && product.imageNames[0].startsWith('http') ? product.imageNames[0] : null;
 
@@ -128,6 +130,11 @@ export default function ProductCard({ product, className, showAdminControls = fa
       <Link href={`/product/${product.id}`} className="h-full">
         <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl", className)}>
             <div className='relative'>
+              {hasDiscount && (
+                <Badge variant="destructive" className="absolute top-2 left-2 z-10">
+                  {discountPercent}% OFF
+                </Badge>
+              )}
               <div>{cardImage}</div>
               {showAdminControls && (
                   <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
@@ -139,7 +146,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
                       </Button>
                   </div>
               )}
-              {!showAdminControls && (
+              {!showAdminControls && !hideBuyButton && (
                 <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
                     <ShoppingCart className="h-4 w-4 text-primary" />
                 </Button>
