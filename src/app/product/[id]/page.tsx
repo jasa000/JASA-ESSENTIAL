@@ -15,6 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import ProductCard from "@/components/product-card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { cn } from "@/lib/utils";
 
 const StarRating = ({ rating, onRate, disabled }: { rating: number, onRate: (r: number) => void, disabled: boolean }) => {
     return (
@@ -43,6 +51,9 @@ export default function ProductDetailPage() {
   const [productsByCategory, setProductsByCategory] = useState<{ [key in Product['category']]?: Product[] }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
+
+  const [emblaApi, setEmblaApi] = useState<any>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     if (typeof id !== 'string') return;
@@ -74,6 +85,21 @@ export default function ProductDetailPage() {
 
     fetchData();
   }, [id, toast]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    const onSelect = () => {
+      setCurrentSlide(emblaApi.selectedScrollSnap());
+    };
+
+    emblaApi.on("select", onSelect);
+    onSelect();
+
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
 
   const handleRate = (rating: number) => {
     setUserRating(rating);
@@ -144,7 +170,7 @@ export default function ProductDetailPage() {
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
   const discountPercent = hasDiscount ? Math.round(((product.price - product.discountPrice!) / product.price) * 100) : 0;
-  const mainImage = product.imageNames && product.imageNames.length > 0 ? product.imageNames[0] : null;
+  const images = product.imageNames && product.imageNames.length > 0 ? product.imageNames : [];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -154,14 +180,51 @@ export default function ProductDetailPage() {
       </Button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-        <div className="relative aspect-square w-full overflow-hidden rounded-lg border">
-          {mainImage ? (
-            <Image src={mainImage} alt={product.name} fill className="object-cover" />
-          ) : (
-             <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground font-bold text-3xl">
-              JASA
-            </div>
-          )}
+        <div className="w-full">
+            <Carousel setApi={setEmblaApi} className="w-full">
+              <CarouselContent>
+                {images.length > 0 ? (
+                  images.map((imgUrl, index) => (
+                    <CarouselItem key={index}>
+                      <Card className="overflow-hidden">
+                        <div className="relative aspect-square w-full">
+                          <Image src={imgUrl} alt={`${product.name} image ${index + 1}`} fill className="object-cover" />
+                        </div>
+                      </Card>
+                    </CarouselItem>
+                  ))
+                ) : (
+                  <CarouselItem>
+                    <Card>
+                      <div className="flex aspect-square h-full w-full items-center justify-center bg-muted text-muted-foreground font-bold text-3xl">
+                        JASA
+                      </div>
+                    </Card>
+                  </CarouselItem>
+                )}
+              </CarouselContent>
+              {images.length > 1 && (
+                <>
+                  <CarouselPrevious className="hidden md:flex" />
+                  <CarouselNext className="hidden md:flex" />
+                </>
+              )}
+            </Carousel>
+             {images.length > 1 && (
+              <div className="mt-4 flex justify-center gap-2">
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => emblaApi?.scrollTo(index)}
+                    className={cn(
+                      "h-2 w-2 rounded-full transition-all duration-300",
+                      currentSlide === index ? "w-6 bg-primary" : "bg-muted-foreground/50"
+                    )}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
         </div>
         <div className="flex flex-col space-y-6">
           <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">{product.name}</h1>
@@ -205,3 +268,5 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
+    
