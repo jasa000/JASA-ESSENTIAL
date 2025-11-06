@@ -26,11 +26,9 @@ type ProductCardProps = {
   showAdminControls?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
-  hideRating?: boolean;
-  hideBuyButton?: boolean;
 };
 
-export default function ProductCard({ product, className, showAdminControls = false, onEdit, onDelete, hideRating = false, hideBuyButton = false }: ProductCardProps) {
+export default function ProductCard({ product, className, showAdminControls = false, onEdit, onDelete }: ProductCardProps) {
   const { user } = useAuth();
   const { addItem } = useCart();
   const { toast } = useToast();
@@ -150,20 +148,21 @@ export default function ProductCard({ product, className, showAdminControls = fa
           
           <CardContent className="flex flex-1 flex-col p-3">
               <div className='flex-grow'>{cardInfo}</div>
-              <div className="mt-2 flex items-center justify-between">
-                <div className='flex items-baseline gap-2'>
-                  <p className="text-base font-semibold text-foreground">
-                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
-                  </p>
+              <div className="mt-2 flex items-end gap-2">
+                <div className='flex flex-col flex-shrink'>
                   {hasDiscount && (
-                      <p className="text-sm text-muted-foreground line-through">
+                      <p className="text-xs text-muted-foreground line-through">
                           ₹{product.price.toFixed(2)}
                       </p>
                   )}
+                  <p className="text-base font-semibold text-foreground">
+                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                  </p>
                 </div>
-                 {!showAdminControls && !hideBuyButton && (
-                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={handleAddToCart}>
-                        <ShoppingCart className="h-4 w-4 text-primary" />
+                 {!showAdminControls && (
+                    <Button size="sm" variant="outline" className="rounded-md h-8 text-xs flex-grow whitespace-nowrap" onClick={handleAddToCart}>
+                        <ShoppingCart className="h-4 w-4 mr-1" />
+                        <span>ADD</span>
                     </Button>
                  )}
               </div>

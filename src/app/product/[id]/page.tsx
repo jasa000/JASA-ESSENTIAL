@@ -131,7 +131,7 @@ export default function ProductDetailPage() {
               <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
               {productList.slice(0, 10).map((p) => (
                   <div key={p.id} className="w-[35vw] flex-shrink-0 sm:w-40">
-                    <ProductCard product={p} hideRating hideBuyButton />
+                    <ProductCard product={p} />
                   </div>
               ))}
               </div>
@@ -270,4 +270,5 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
 
