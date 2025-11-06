@@ -135,7 +135,6 @@ export default function ProductCard({ product, className, showAdminControls = fa
                   {discountPercent}% OFF
                 </Badge>
               )}
-              <div>{cardImage}</div>
               {showAdminControls && (
                   <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
                       <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
@@ -151,6 +150,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
                     <ShoppingCart className="h-4 w-4 text-primary" />
                 </Button>
               )}
+              {cardImage}
             </div>
           
           <CardContent className="flex flex-1 flex-col p-3">
