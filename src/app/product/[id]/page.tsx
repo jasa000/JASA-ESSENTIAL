@@ -173,98 +173,101 @@ export default function ProductDetailPage() {
   const images = product.imageNames && product.imageNames.length > 0 ? product.imageNames : [];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Button variant="outline" onClick={() => router.back()} className="mb-8">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Shop
-      </Button>
+    <div className="w-screen overflow-x-hidden">
+      <div className="container mx-auto px-4 py-8">
+        <Button variant="outline" onClick={() => router.back()} className="mb-8">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Shop
+        </Button>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-        <div className="w-full">
-            <Carousel setApi={setEmblaApi} className="w-full">
-              <CarouselContent>
-                {images.length > 0 ? (
-                  images.map((imgUrl, index) => (
-                    <CarouselItem key={index}>
-                      <Card className="overflow-hidden">
-                        <div className="relative aspect-square w-full">
-                          <Image src={imgUrl} alt={`${product.name} image ${index + 1}`} fill className="object-cover" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+          <div className="w-full">
+              <Carousel setApi={setEmblaApi} className="w-full">
+                <CarouselContent>
+                  {images.length > 0 ? (
+                    images.map((imgUrl, index) => (
+                      <CarouselItem key={index}>
+                        <Card className="overflow-hidden">
+                          <div className="relative aspect-square w-full">
+                            <Image src={imgUrl} alt={`${product.name} image ${index + 1}`} fill className="object-cover" />
+                          </div>
+                        </Card>
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    <CarouselItem>
+                      <Card>
+                        <div className="flex aspect-square h-full w-full items-center justify-center bg-muted text-muted-foreground font-bold text-3xl">
+                          JASA
                         </div>
                       </Card>
                     </CarouselItem>
-                  ))
-                ) : (
-                  <CarouselItem>
-                    <Card>
-                      <div className="flex aspect-square h-full w-full items-center justify-center bg-muted text-muted-foreground font-bold text-3xl">
-                        JASA
-                      </div>
-                    </Card>
-                  </CarouselItem>
+                  )}
+                </CarouselContent>
+                {images.length > 1 && (
+                  <>
+                    <CarouselPrevious className="hidden md:flex" />
+                    <CarouselNext className="hidden md:flex" />
+                  </>
                 )}
-              </CarouselContent>
+              </Carousel>
               {images.length > 1 && (
+                <div className="mt-4 flex justify-center gap-2">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => emblaApi?.scrollTo(index)}
+                      className={cn(
+                        "h-2 w-2 rounded-full transition-all duration-300",
+                        currentSlide === index ? "w-6 bg-primary" : "bg-muted-foreground/50"
+                      )}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+          </div>
+          <div className="flex flex-col space-y-6">
+            <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">{product.name}</h1>
+            <div className="flex items-center gap-4">
+              <p className="text-2xl font-bold text-primary">
+                ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+              </p>
+              {hasDiscount && (
                 <>
-                  <CarouselPrevious className="hidden md:flex" />
-                  <CarouselNext className="hidden md:flex" />
+                  <p className="text-xl text-muted-foreground line-through">
+                    ₹{product.price.toFixed(2)}
+                  </p>
+                  <Badge variant="destructive">{discountPercent}% OFF</Badge>
                 </>
               )}
-            </Carousel>
-             {images.length > 1 && (
-              <div className="mt-4 flex justify-center gap-2">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => emblaApi?.scrollTo(index)}
-                    className={cn(
-                      "h-2 w-2 rounded-full transition-all duration-300",
-                      currentSlide === index ? "w-6 bg-primary" : "bg-muted-foreground/50"
-                    )}
-                    aria-label={`Go to slide ${index + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-        </div>
-        <div className="flex flex-col space-y-6">
-          <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">{product.name}</h1>
-          <div className="flex items-center gap-4">
-            <p className="text-2xl font-bold text-primary">
-              ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
-            </p>
-            {hasDiscount && (
-              <>
-                <p className="text-xl text-muted-foreground line-through">
-                  ₹{product.price.toFixed(2)}
-                </p>
-                <Badge variant="destructive">{discountPercent}% OFF</Badge>
-              </>
-            )}
-          </div>
+            </div>
 
-          <div>
-            <h3 className="font-semibold mb-2">Rate this item</h3>
-            <StarRating rating={userRating} onRate={handleRate} disabled={!user || userRating > 0} />
-            {!user && <p className="text-xs text-muted-foreground mt-1">Please log in to rate.</p>}
-          </div>
+            <div>
+              <h3 className="font-semibold mb-2">Rate this item</h3>
+              <StarRating rating={userRating} onRate={handleRate} disabled={!user || userRating > 0} />
+              {!user && <p className="text-xs text-muted-foreground mt-1">Please log in to rate.</p>}
+            </div>
 
-          <p className="text-muted-foreground leading-relaxed">{product.description}</p>
-          
-          <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={!user}>
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            {user ? 'Add to Cart' : 'Login to Add'}
-          </Button>
-        </div>
-      </div>
-      
-      <div className="mt-16">
-          <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl text-center mb-8">OUR OTHER PRODUCTS</h2>
-          <div className="space-y-12">
-            {renderProductSection('stationary', 'Featured Stationary')}
-            {renderProductSection('books', 'Latest Books')}
-            {renderProductSection('electronics', 'Top Electronic Kits')}
+            <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+            
+            <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={!user}>
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              {user ? 'Add to Cart' : 'Login to Add'}
+            </Button>
           </div>
+        </div>
+        
+        <div className="mt-16">
+            <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl text-center mb-8">OUR OTHER PRODUCTS</h2>
+            <div className="space-y-12">
+              {renderProductSection('stationary', 'Featured Stationary')}
+              {renderProductSection('books', 'Latest Books')}
+              {renderProductSection('electronics', 'Top Electronic Kits')}
+            </div>
+        </div>
       </div>
     </div>
   );
 }
+
