@@ -223,7 +223,7 @@ export default function ManageUsersPage() {
                                     <Checkbox
                                         id={`role-${role}`}
                                         checked={newRoles.includes(role)}
-                                        disabled={role === 'user' || searchedUser.uid === user.uid}
+                                        disabled={role === 'user'}
                                         onCheckedChange={(checked) => {
                                         const updatedRoles = checked
                                             ? [...newRoles, role]
