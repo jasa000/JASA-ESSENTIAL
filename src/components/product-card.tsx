@@ -160,7 +160,10 @@ export default function ProductCard({ product, className, showAdminControls = fa
                   </p>
                 </div>
                  {!showAdminControls && (
-                    <Button size="sm" variant="outline" className="rounded-md h-8 text-xs flex-grow whitespace-nowrap" onClick={handleAddToCart}>
+                    <Button 
+                      size="sm"
+                      className="rounded-md h-8 text-xs flex-grow whitespace-nowrap bg-blue-600 text-white hover:bg-gray-700" 
+                      onClick={handleAddToCart}>
                         <ShoppingCart className="h-4 w-4 mr-1" />
                         <span>ADD</span>
                     </Button>
