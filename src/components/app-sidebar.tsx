@@ -48,6 +48,8 @@ export default function AppSidebar() {
   const { theme, setTheme } = useTheme();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authDialogDefaultTab, setAuthDialogDefaultTab] = useState<'login' | 'signup'>('login');
+  const { setOpenMobile } = useSidebar();
+
 
   const handleMenuItemClick = () => {
     setOpenMobile(false);
