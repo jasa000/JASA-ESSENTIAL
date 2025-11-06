@@ -1,5 +1,4 @@
 
-
 export type Product = {
   id: string;
   name: string;
@@ -43,6 +42,7 @@ export type UserProfile = {
   name: string;
   email: string;
   roles: UserRole[];
+  canManageProducts?: boolean; // New permission for employees
   mobile?: string;
   altMobiles?: { value: string }[];
   altEmails?: { value: string }[];

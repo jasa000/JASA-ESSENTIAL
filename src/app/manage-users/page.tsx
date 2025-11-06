@@ -5,7 +5,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
-import { getAllUsers, updateUserRoles } from "@/lib/users";
+import { getAllUsers, updateUserProfile } from "@/lib/users";
 import { type UserProfile, type UserRole, USER_ROLES } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Search, UserCog } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const SECRET_CODE = "JASA01012000";
 
@@ -49,6 +50,7 @@ export default function ManageUsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchedUser, setSearchedUser] = useState<UserProfile | null>(null);
   const [newRoles, setNewRoles] = useState<UserRole[]>([]);
+  const [canManageProducts, setCanManageProducts] = useState(false);
   const [secretCode, setSecretCode] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -76,7 +78,7 @@ export default function ManageUsersPage() {
     if (user?.roles.includes("admin")) {
       fetchUsers();
     }
-  }, [user]);
+  }, [user, toast]);
 
   const handleSearch = () => {
     if (!searchQuery) {
@@ -87,6 +89,7 @@ export default function ManageUsersPage() {
     if (foundUser) {
         setSearchedUser(foundUser);
         setNewRoles(foundUser.roles || ['user']);
+        setCanManageProducts(foundUser.canManageProducts || false);
     } else {
         setSearchedUser(null);
         toast({
@@ -111,10 +114,15 @@ export default function ManageUsersPage() {
 
     setIsUpdating(true);
     try {
-      await updateUserRoles(searchedUser.uid, newRoles);
+      const updatedProfile: Partial<UserProfile> = {
+        roles: newRoles,
+        canManageProducts: newRoles.includes('employee') ? canManageProducts : false,
+      };
+
+      await updateUserProfile(searchedUser.uid, updatedProfile);
       toast({
-        title: "Roles Updated",
-        description: `${searchedUser.name}'s roles have been updated.`,
+        title: "User Updated",
+        description: `${searchedUser.name}'s profile has been updated.`,
       });
       fetchUsers(); // Re-fetch users to show the change
       setSecretCode('');
@@ -237,6 +245,27 @@ export default function ManageUsersPage() {
                                 ))}
                                 </div>
                             </div>
+
+                            {newRoles.includes('employee') && (
+                              <div>
+                                <Label className="font-medium">Manage Products Access</Label>
+                                <RadioGroup
+                                  value={canManageProducts ? "yes" : "no"}
+                                  onValueChange={(value) => setCanManageProducts(value === "yes")}
+                                  className="mt-2 flex gap-4"
+                                >
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="yes" id="manage-yes" />
+                                    <Label htmlFor="manage-yes">Yes</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="no" id="manage-no" />
+                                    <Label htmlFor="manage-no">No</Label>
+                                  </div>
+                                </RadioGroup>
+                              </div>
+                            )}
+
                             <div className="space-y-2">
                                 <Label htmlFor="secret-code">
                                     Admin Secret Code

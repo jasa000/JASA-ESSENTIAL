@@ -41,11 +41,12 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
   try {
     const userDoc = doc(db, 'users', uid);
     
-    // Firestore's arrayUnion is better for adding items to an array
-    // but it doesn't work well with an array of objects without a unique ID.
-    // For simplicity, we'll just overwrite the array. If you need to merge,
-    // you would fetch the doc, merge arrays in code, and then update.
-    // However, since we are passing the whole array from the client, a simple update is fine.
+    // Ensure canManageProducts is explicitly set to false if the user is not an employee
+    // or if it's not provided for an employee.
+    if (data.roles && !data.roles.includes('employee')) {
+        data.canManageProducts = false;
+    }
+
     await updateDoc(userDoc, data);
 
   } catch (error) {

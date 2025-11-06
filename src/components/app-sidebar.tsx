@@ -29,7 +29,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog, UserRoundCog } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -60,9 +60,8 @@ export default function AppSidebar() {
         setIsLoadingShops(true);
         try {
           const allShops = await getShops();
-          // For now, we assume both sellers and employees are listed in ownerIds
-          const ownedShops = allShops.filter(shop => shop.ownerIds.includes(user.uid));
-          setUserShops(ownedShops);
+          const assignedShops = allShops.filter(shop => shop.ownerIds.includes(user.uid));
+          setUserShops(assignedShops);
         } catch (error) {
           toast({ variant: "destructive", title: "Error", description: "Could not load your shops." });
         } finally {
@@ -269,6 +268,7 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
+
         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
             <SidebarGroupLabel>USER ACCESS</SidebarGroupLabel>
             <SidebarMenu>
@@ -338,7 +338,7 @@ export default function AppSidebar() {
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-users')}>
                           <Link href="/manage-users">
-                              <ShieldCheck />
+                              <UserCog />
                               <span>Manage Users</span>
                           </Link>
                       </SidebarMenuButton>
@@ -398,13 +398,34 @@ export default function AppSidebar() {
         {user && Array.isArray(user.roles) && user.roles.includes('seller') && (
             <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
-              {renderUserShops('seller')}
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/seller-dashboard')}>
+                    <Link href="/seller-dashboard">
+                      <FolderKanban />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
             </SidebarGroup>
         )}
 
         {user && Array.isArray(user.roles) && user.roles.includes('employee') && (
             <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>EMPLOYEE ACCESS</SidebarGroupLabel>
+              <SidebarMenu>
+                {user.canManageProducts && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-products')}>
+                      <Link href="/manage-products">
+                        <Package />
+                        <span>Manage Products</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
               {renderUserShops('employee')}
             </SidebarGroup>
         )}
