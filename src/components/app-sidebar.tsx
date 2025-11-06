@@ -29,11 +29,10 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
-import { getShops } from "@/lib/shops"
 import type { Shop } from "@/lib/types"
 import Image from "next/image";
 import AuthForm from "./auth-form";
@@ -210,7 +209,7 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
-         <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
+        <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
             <SidebarGroupLabel>USER ACCESS</SidebarGroupLabel>
             <SidebarMenu>
                  <SidebarMenuItem>
@@ -272,22 +271,6 @@ export default function AppSidebar() {
             </SidebarMenu>
         </SidebarGroup>
         
-        {user && Array.isArray(user.roles) && user.roles.includes('seller') && (
-            <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
-              <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/seller-dashboard')}>
-                    <Link href="/seller-dashboard">
-                      <LayoutDashboard />
-                      <span>Seller Dashboard</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-        )}
-
         {user && Array.isArray(user.roles) && user.roles.includes('admin') && (
           <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>ADMIN ACCESS</SidebarGroupLabel>
@@ -350,6 +333,38 @@ export default function AppSidebar() {
                   </SidebarMenuItem>
               </SidebarMenu>
           </SidebarGroup>
+        )}
+        
+        {user && Array.isArray(user.roles) && user.roles.includes('seller') && (
+            <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
+              <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/seller-dashboard')}>
+                    <Link href="/seller-dashboard">
+                      <LayoutDashboard />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+        )}
+
+        {user && Array.isArray(user.roles) && user.roles.includes('employee') && (
+            <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
+              <SidebarGroupLabel>EMPLOYEE ACCESS</SidebarGroupLabel>
+              <SidebarMenu>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/employee/tasks')}>
+                       <Link href="#">
+                           <UserCog />
+                           <span>Employee Tasks</span>
+                       </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
         )}
     </SidebarContent>
   )
