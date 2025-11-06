@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -266,7 +267,7 @@ export default function ManageUsersPage() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="user">User</TabsTrigger>
             <TabsTrigger value="seller">Seller</TabsTrigger>
-            <TabsTrigger value="delivery">Delivery</TabsTrigger>
+            <TabsTrigger value="employee">Employee</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
           </TabsList>
           <TabsContent value="user">
@@ -295,16 +296,16 @@ export default function ManageUsersPage() {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="delivery">
+          <TabsContent value="employee">
             <Card>
               <CardHeader>
-                <CardTitle>Delivery Personnel</CardTitle>
+                <CardTitle>Employees</CardTitle>
                 <CardDescription>
-                  Manage all registered users with the 'delivery' role.
+                  Manage all registered users with the 'employee' role.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {renderUserTable("delivery")}
+                {renderUserTable("employee")}
               </CardContent>
             </Card>
           </TabsContent>

@@ -34,7 +34,7 @@ export type Category = {
     }
 }
 
-export const USER_ROLES = ['user', 'admin', 'seller', 'delivery'] as const;
+export const USER_ROLES = ['user', 'admin', 'seller', 'employee'] as const;
 export type UserRole = typeof USER_ROLES[number];
 
 export type UserProfile = {
