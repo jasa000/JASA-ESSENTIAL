@@ -128,7 +128,7 @@ export default function ProductDetailPage() {
         <h3 className="font-headline text-xl font-bold tracking-tight sm:text-2xl mb-4">{title}</h3>
         <Card>
           <CardContent className="p-4">
-              <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
+              <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
               {productList.slice(0, 10).map((p) => (
                   <div key={p.id} className="w-[35vw] flex-shrink-0 sm:w-40">
                     <ProductCard product={p} hideRating hideBuyButton />
@@ -268,5 +268,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-    
