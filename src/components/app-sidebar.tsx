@@ -38,6 +38,7 @@ import Image from "next/image";
 import AuthForm from "./auth-form";
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
+import { getShops } from "@/lib/shops";
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
@@ -48,6 +49,29 @@ export default function AppSidebar() {
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authDialogDefaultTab, setAuthDialogDefaultTab] = useState<'login' | 'signup'>('login');
   const { setOpenMobile } = useSidebar();
+  
+  const [userShops, setUserShops] = useState<Shop[]>([]);
+  const [isLoadingShops, setIsLoadingShops] = useState(false);
+
+
+  useEffect(() => {
+    if (user && (user.roles.includes('seller') || user.roles.includes('employee'))) {
+      const fetchUserShops = async () => {
+        setIsLoadingShops(true);
+        try {
+          const allShops = await getShops();
+          // For now, we assume both sellers and employees are listed in ownerIds
+          const ownedShops = allShops.filter(shop => shop.ownerIds.includes(user.uid));
+          setUserShops(ownedShops);
+        } catch (error) {
+          toast({ variant: "destructive", title: "Error", description: "Could not load your shops." });
+        } finally {
+          setIsLoadingShops(false);
+        }
+      };
+      fetchUserShops();
+    }
+  }, [user, toast]);
 
 
   const handleMenuItemClick = () => {
@@ -85,6 +109,42 @@ export default function AppSidebar() {
       });
     }
   };
+  
+  const renderUserShops = (role: 'seller' | 'employee') => {
+    if (isLoadingShops) {
+      return (
+        <SidebarMenu>
+          <SidebarMenuItem><Skeleton className="h-8 w-full" /></SidebarMenuItem>
+          <SidebarMenuItem><Skeleton className="h-8 w-full" /></SidebarMenuItem>
+        </SidebarMenu>
+      );
+    }
+
+    if (userShops.length === 0) {
+      return (
+        <p className="px-2 text-xs text-sidebar-foreground/70">You are not assigned to any shops.</p>
+      );
+    }
+    
+    return (
+       <SidebarMenu>
+        {userShops.map(shop => (
+          <SidebarMenuItem key={shop.id}>
+             <SidebarMenuButton
+                asChild
+                onClick={handleMenuItemClick}
+                isActive={pathname === `/seller/orders/${shop.id}`}
+             >
+                <Link href={`/seller/orders/${shop.id}`}>
+                    <Store />
+                    <span>{shop.name}</span>
+                </Link>
+             </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+       </SidebarMenu>
+    );
+  }
 
   const renderUserActions = () => {
     if (loading) {
@@ -338,32 +398,14 @@ export default function AppSidebar() {
         {user && Array.isArray(user.roles) && user.roles.includes('seller') && (
             <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/seller-dashboard')}>
-                    <Link href="/seller-dashboard">
-                      <LayoutDashboard />
-                      <span>Seller Dashboard</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
+              {renderUserShops('seller')}
             </SidebarGroup>
         )}
 
         {user && Array.isArray(user.roles) && user.roles.includes('employee') && (
             <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>EMPLOYEE ACCESS</SidebarGroupLabel>
-              <SidebarMenu>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/employee/tasks')}>
-                       <Link href="#">
-                           <UserCog />
-                           <span>Employee Tasks</span>
-                       </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
+              {renderUserShops('employee')}
             </SidebarGroup>
         )}
     </SidebarContent>
