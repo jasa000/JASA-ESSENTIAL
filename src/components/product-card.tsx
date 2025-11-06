@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from 'next/image';
@@ -18,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/context/auth-provider';
 import AuthForm from './auth-form';
+import Link from 'next/link';
 
 type ProductCardProps = {
   product: Product;
@@ -71,6 +71,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
 
 
   const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation(); 
     if (!user) {
         setIsAuthDialogOpen(true);
@@ -124,42 +125,44 @@ export default function ProductCard({ product, className, showAdminControls = fa
 
   return (
     <>
-      <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl", className)}>
-          <div className='relative'>
-             <div>{cardImage}</div>
-            {showAdminControls && (
-                <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                    <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            )}
-             {!showAdminControls && (
-              <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
-                  <ShoppingCart className="h-4 w-4 text-primary" />
-              </Button>
-             )}
-          </div>
-        
-        <CardContent className="flex flex-1 flex-col p-3">
-            <div className='flex-grow'>{cardInfo}</div>
-            <div className="mt-2 flex items-baseline justify-between">
-              <div className='flex items-baseline gap-2'>
-                <p className="text-base font-semibold text-foreground">
-                    ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
-                </p>
-                {hasDiscount && (
-                    <p className="text-sm text-muted-foreground line-through">
-                        ₹{product.price.toFixed(2)}
-                    </p>
-                )}
-              </div>
+      <Link href={`/product/${product.id}`} className="h-full">
+        <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl", className)}>
+            <div className='relative'>
+              <div>{cardImage}</div>
+              {showAdminControls && (
+                  <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                      <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
+                          <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
+                          <Trash2 className="h-4 w-4" />
+                      </Button>
+                  </div>
+              )}
+              {!showAdminControls && (
+                <Button size="icon" variant="ghost" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background z-10" onClick={handleAddToCart}>
+                    <ShoppingCart className="h-4 w-4 text-primary" />
+                </Button>
+              )}
             </div>
-        </CardContent>
-      </Card>
+          
+          <CardContent className="flex flex-1 flex-col p-3">
+              <div className='flex-grow'>{cardInfo}</div>
+              <div className="mt-2 flex items-baseline justify-between">
+                <div className='flex items-baseline gap-2'>
+                  <p className="text-base font-semibold text-foreground">
+                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                  </p>
+                  {hasDiscount && (
+                      <p className="text-sm text-muted-foreground line-through">
+                          ₹{product.price.toFixed(2)}
+                      </p>
+                  )}
+                </div>
+              </div>
+          </CardContent>
+        </Card>
+      </Link>
       {AuthDialog}
     </>
   );
