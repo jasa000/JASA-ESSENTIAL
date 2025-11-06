@@ -34,7 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserCog, Copy } from "lucide-react";
+import { Search, UserCog, Copy, CheckCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -173,6 +173,7 @@ export default function ManageUsersPage() {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Joined</TableHead>
+            {role === 'employee' && <TableHead>Product Access</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -191,6 +192,17 @@ export default function ManageUsersPage() {
                 </Button>
               </TableCell>
               <TableCell>{u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
+              {role === 'employee' && (
+                <TableCell>
+                  {u.canManageProducts && (
+                     <div
+                        className="h-4 w-4 rounded-full bg-green-500"
+                        style={{ animation: 'blink-green 1.5s infinite' }}
+                        title="This user can manage products"
+                    />
+                  )}
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
