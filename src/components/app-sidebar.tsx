@@ -37,10 +37,8 @@ import { getShops } from "@/lib/shops"
 import type { Shop } from "@/lib/types"
 import Image from "next/image";
 import AuthForm from "./auth-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
+import { Badge } from "./ui/badge"
 
 export default function AppSidebar() {
   const { user, loading } = useAuth()
@@ -48,33 +46,12 @@ export default function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-  const [sellerShops, setSellerShops] = useState<Shop[]>([]);
-  const [isLoadingShops, setIsLoadingShops] = useState(false);
-  const { setOpenMobile } = useSidebar();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authDialogDefaultTab, setAuthDialogDefaultTab] = useState<'login' | 'signup'>('login');
 
   const handleMenuItemClick = () => {
     setOpenMobile(false);
   };
-
-  useEffect(() => {
-    if (user && Array.isArray(user.roles) && user.roles.includes('seller')) {
-      const fetchSellerShops = async () => {
-        setIsLoadingShops(true);
-        try {
-          const allShops = await getShops();
-          const ownedShops = allShops.filter(shop => shop.ownerIds.includes(user.uid));
-          setSellerShops(ownedShops);
-        } catch (error) {
-          toast({ variant: "destructive", title: "Error", description: "Could not load your shops." });
-        } finally {
-          setIsLoadingShops(false);
-        }
-      };
-      fetchSellerShops();
-    }
-  }, [user, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -107,15 +84,6 @@ export default function AppSidebar() {
       });
     }
   };
-
-  const getInitials = (name?: string | null) => {
-    if (!name) return "";
-    const names = name.split(' ');
-    if (names.length > 1) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  }
 
   const renderUserActions = () => {
     if (loading) {
@@ -195,42 +163,6 @@ export default function AppSidebar() {
       </Dialog>
     )
   }
-  
-  const renderSellerAccess = () => {
-    if (loading || isLoadingShops) {
-      return (
-        <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
-          <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
-          <Skeleton className="h-10 w-full" />
-        </SidebarGroup>
-      )
-    }
-
-    if (sellerShops.length > 0) {
-      return (
-        <>
-          {sellerShops.map(shop => (
-            <SidebarGroup key={shop.id} className="bg-gray-100 dark:bg-gray-900 rounded-lg">
-                <SidebarGroupLabel>{shop.name}</SidebarGroupLabel>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith(`/seller/orders/${shop.id}`)}>
-                            <Link href={`/seller/orders/${shop.id}`}>
-                                <FolderKanban />
-                                <span>Manage Orders</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarGroup>
-          ))}
-        </>
-      );
-    }
-
-    return null;
-  };
-
 
   return (
     <SidebarContent className="p-2">
@@ -338,7 +270,21 @@ export default function AppSidebar() {
             </SidebarMenu>
         </SidebarGroup>
         
-        {user && Array.isArray(user.roles) && user.roles.includes('seller') && renderSellerAccess()}
+        {user && Array.isArray(user.roles) && user.roles.includes('seller') && (
+            <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
+              <SidebarGroupLabel>SELLER ACCESS</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/seller-dashboard')}>
+                    <Link href="/seller-dashboard">
+                      <LayoutDashboard />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+        )}
 
         {user && Array.isArray(user.roles) && user.roles.includes('admin') && (
           <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
@@ -406,5 +352,3 @@ export default function AppSidebar() {
     </SidebarContent>
   )
 }
-
-    
