@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/context/auth-provider';
 import AuthForm from './auth-form';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 type ProductCardProps = {
   product: Product;
@@ -83,6 +84,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
   };
   
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+  const discountPercent = hasDiscount ? Math.round(((product.price - product.discountPrice!) / product.price) * 100) : 0;
 
   const mainImage = product.imageNames && product.imageNames.length > 0 && typeof product.imageNames[0] === 'string' && product.imageNames[0].startsWith('http') ? product.imageNames[0] : null;
 
@@ -99,6 +101,23 @@ export default function ProductCard({ product, className, showAdminControls = fa
 
   const cardImage = (
     <div className="relative aspect-[4/5] w-full overflow-hidden">
+       {hasDiscount && (
+        <Badge variant="destructive" className="absolute top-2 left-2 z-10">
+          {discountPercent}% OFF
+        </Badge>
+      )}
+       <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+            {showAdminControls && (
+                <>
+                    <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </>
+            )}
+        </div>
       {mainImage ? (
         <Image
           src={mainImage}
@@ -126,16 +145,6 @@ export default function ProductCard({ product, className, showAdminControls = fa
       <Link href={`/product/${product.id}`} className="h-full">
         <Card className={cn("group flex h-full w-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl", className)}>
             <div className='relative'>
-              {showAdminControls && (
-                <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-                  <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
-                      <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-md" onClick={onDelete}>
-                      <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
               {cardImage}
             </div>
           
@@ -145,17 +154,17 @@ export default function ProductCard({ product, className, showAdminControls = fa
                 <div className='flex-grow'>
                   {hasDiscount && (
                       <p className="text-sm text-muted-foreground line-through">
-                          ${product.price.toFixed(2)}
+                          Rs {product.price.toFixed(2)}
                       </p>
                   )}
                   <p className="text-lg font-semibold text-foreground">
-                      ${hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                      Rs {hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
                   </p>
                 </div>
                  {!showAdminControls && (
                     <Button 
                       size="sm"
-                      className="h-auto rounded-md bg-black/60 p-1.5 text-white hover:bg-black/80"
+                      className="h-auto rounded-md bg-blue-600 p-1.5 text-white hover:bg-slate-700"
                       onClick={handleAddToCart}>
                         <div className="flex flex-col items-center">
                             <ShoppingCart className="h-5 w-5" />
