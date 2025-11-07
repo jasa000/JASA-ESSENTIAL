@@ -418,5 +418,3 @@ export default function CheckoutForm({ category }: CheckoutFormProps) {
     </div>
   );
 }
-
-    
