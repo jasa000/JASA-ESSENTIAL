@@ -231,12 +231,12 @@ export default function ProductDetailPage() {
             <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">{product.name}</h1>
             <div className="flex items-center gap-4">
               <p className="text-2xl font-bold text-primary">
-                ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                Rs {hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
               </p>
               {hasDiscount && (
                 <>
                   <p className="text-xl text-muted-foreground line-through">
-                    ₹{product.price.toFixed(2)}
+                    Rs {product.price.toFixed(2)}
                   </p>
                   <Badge variant="destructive">{discountPercent}% OFF</Badge>
                 </>
@@ -270,6 +270,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-
-

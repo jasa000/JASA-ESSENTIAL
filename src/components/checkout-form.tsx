@@ -387,22 +387,22 @@ export default function CheckoutForm({ category }: CheckoutFormProps) {
                       <p className="font-medium">{product.name}</p>
                       <p className="text-sm text-muted-foreground">Quantity: {quantity}</p>
                     </div>
-                    <p>₹{((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
+                    <p>Rs {((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
                   </div>
                 ))}
                 <Separator />
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>₹{subtotal.toFixed(2)}</span>
+                  <span>Rs {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>₹{shipping.toFixed(2)}</span>
+                  <span>Rs {shipping.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold">
                   <span>Total</span>
-                  <span>₹{total.toFixed(2)}</span>
+                  <span>Rs {total.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>

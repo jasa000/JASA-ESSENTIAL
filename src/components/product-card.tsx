@@ -154,11 +154,11 @@ export default function ProductCard({ product, className, showAdminControls = fa
                 <div className='flex flex-col flex-shrink-0'>
                   {hasDiscount && (
                       <p className="text-xs text-muted-foreground line-through">
-                          ₹{product.price.toFixed(2)}
+                          Rs {product.price.toFixed(2)}
                       </p>
                   )}
                   <p className="text-base font-semibold text-foreground">
-                      ₹{hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                      Rs {hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
                   </p>
                 </div>
                  {!showAdminControls && (

@@ -56,14 +56,14 @@ const OrderCard = ({ order }: { order: Order }) => {
             {order.items.map((item) => (
                 <div key={item.name} className="flex justify-between text-sm">
                     <p>{item.name} <span className="text-muted-foreground">x{item.quantity}</span></p>
-                    <p>₹{(item.price * item.quantity).toFixed(2)}</p>
+                    <p>Rs {(item.price * item.quantity).toFixed(2)}</p>
                 </div>
             ))}
         </div>
         <Separator className="my-4" />
         <div className="flex justify-between font-bold">
             <p>Total</p>
-            <p>₹{order.total.toFixed(2)}</p>
+            <p>Rs {order.total.toFixed(2)}</p>
         </div>
       </CardContent>
       <CardFooter className="bg-muted/50 p-4">
