@@ -51,6 +51,7 @@ export default function ProductDetailPage() {
   const [productsByCategory, setProductsByCategory] = useState<{ [key in Product['category']]?: Product[] }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const [emblaApi, setEmblaApi] = useState<any>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -249,7 +250,21 @@ export default function ProductDetailPage() {
               {!user && <p className="text-xs text-muted-foreground mt-1">Please log in to rate.</p>}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+            <div>
+              <p className={cn(
+                  "text-muted-foreground leading-relaxed",
+                  !isDescriptionExpanded && "line-clamp-3"
+              )}>
+                {product.description}
+              </p>
+              <Button
+                variant="link"
+                className="p-0 h-auto text-primary"
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              >
+                {isDescriptionExpanded ? "View Less" : "View More"}
+              </Button>
+            </div>
             
             <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={!user}>
               <ShoppingCart className="mr-2 h-5 w-5" />
