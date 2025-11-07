@@ -108,7 +108,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
       )}
        <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
             {!showAdminControls && (
-                <Badge variant="default" className="bg-blue-600 text-white">JASA</Badge>
+                <span className="text-blue-600 font-bold text-sm">JASA</span>
             )}
             {showAdminControls && (
                 <>
