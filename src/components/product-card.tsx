@@ -107,6 +107,9 @@ export default function ProductCard({ product, className, showAdminControls = fa
         </Badge>
       )}
        <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+            {!showAdminControls && (
+                <Badge variant="default" className="bg-blue-600 text-white">JASA</Badge>
+            )}
             {showAdminControls && (
                 <>
                     <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
@@ -150,8 +153,8 @@ export default function ProductCard({ product, className, showAdminControls = fa
           
           <CardContent className="flex flex-1 flex-col p-3">
               <div className='flex-grow'>{cardInfo}</div>
-              <div className="mt-2 flex items-end justify-between gap-2">
-                <div className='flex-grow'>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <div>
                   {hasDiscount && (
                       <p className="text-sm text-muted-foreground line-through">
                           Rs {product.price.toFixed(2)}
