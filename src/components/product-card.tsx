@@ -135,7 +135,7 @@ export default function ProductCard({ product, className, showAdminControls = fa
               )}
                <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
                  {!showAdminControls && (
-                    <div className="bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    <div className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                         JASA
                     </div>
                  )}
