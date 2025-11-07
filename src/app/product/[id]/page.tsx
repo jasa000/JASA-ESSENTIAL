@@ -189,7 +189,7 @@ export default function ProductDetailPage() {
                       <CarouselItem key={index}>
                         <Card className="overflow-hidden">
                           <div className="relative aspect-square w-full">
-                            <Image src={imgUrl} alt={`${product.name} image ${index + 1}`} fill className="object-cover" />
+                            <Image src={imgUrl} alt={`${product.name} image ${index + 1}`} fill className="object-contain" />
                           </div>
                         </Card>
                       </CarouselItem>
