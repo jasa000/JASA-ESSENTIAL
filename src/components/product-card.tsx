@@ -134,6 +134,11 @@ export default function ProductCard({ product, className, showAdminControls = fa
                 </Badge>
               )}
                <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                 {!showAdminControls && (
+                    <div className="bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        JASA
+                    </div>
+                 )}
                  {showAdminControls && (
                     <>
                       <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-md" onClick={onEdit}>
