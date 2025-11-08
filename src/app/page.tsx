@@ -269,6 +269,15 @@ export default function Home() {
 
        <div className="container mx-auto px-4 space-y-8">
          <div className="py-8">
+            <div className="mb-4 flex items-center justify-between">
+                <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">Xerox & Printing</h2>
+                <Button asChild variant="outline">
+                <Link href="/xerox">
+                    <span>View All</span>
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+                </Button>
+            </div>
             <XeroxTicker />
          </div>
 

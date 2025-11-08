@@ -33,7 +33,7 @@ export default function XeroxTicker() {
   }, []);
 
   if (isLoading) {
-    return <Skeleton className="h-24 w-full" />;
+    return <Skeleton className="h-16 w-full" />;
   }
 
   if (services.length === 0) {
@@ -42,53 +42,44 @@ export default function XeroxTicker() {
 
   return (
     <Card className="w-full overflow-hidden">
-        <CardHeader>
-            <CardTitle className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">Xerox & Printing Services</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
-          <Link href="/xerox" className="group">
-            <div className="flex h-16 items-center justify-between px-6">
-              <div className="flex-grow overflow-hidden">
-                <Carousel
-                  plugins={[plugin.current]}
-                  opts={{
-                    axis: "y",
-                    loop: true,
-                    align: "start",
-                  }}
-                  className="w-full"
-                >
-                  <CarouselContent className="-mt-4 h-16">
-                    {services.map((service) => {
-                       const hasDiscount = service.discountPrice != null && service.discountPrice < service.price;
-                       const discountPercent = hasDiscount ? Math.round(((service.price - service.discountPrice!) / service.price) * 100) : 0;
-                      return (
-                        <CarouselItem key={service.id} className="pt-4 basis-full">
-                          <div className="flex items-center gap-4 text-sm md:text-base">
-                            <span className="font-medium truncate">{service.name}</span>
-                            {hasDiscount ? (
-                                <div className="flex items-baseline gap-2">
-                                    <span className="font-bold text-primary">Rs {service.discountPrice?.toFixed(2)}</span>
-                                    <span className="text-xs text-muted-foreground line-through">Rs {service.price.toFixed(2)}</span>
-                                    <Badge variant="destructive">{discountPercent}% OFF</Badge>
-                                </div>
-                            ) : (
-                               <span className="font-bold text-primary">Rs {service.price.toFixed(2)}</span>
-                            )}
-                            {service.unit && <span className="text-muted-foreground hidden sm:inline">/ {service.unit}</span>}
-                          </div>
-                        </CarouselItem>
-                      );
-                    })}
-                  </CarouselContent>
-                </Carousel>
-              </div>
-              <div className="flex items-center gap-2 pl-4 text-sm font-semibold text-primary transition-transform group-hover:translate-x-1">
-                <span>View All</span>
-                <ArrowRight className="h-4 w-4" />
-              </div>
+          <div className="flex h-16 items-center justify-between px-6">
+            <div className="flex-grow overflow-hidden">
+              <Carousel
+                plugins={[plugin.current]}
+                opts={{
+                  axis: "y",
+                  loop: true,
+                  align: "start",
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="-mt-4 h-16">
+                  {services.map((service) => {
+                      const hasDiscount = service.discountPrice != null && service.discountPrice < service.price;
+                      const discountPercent = hasDiscount ? Math.round(((service.price - service.discountPrice!) / service.price) * 100) : 0;
+                    return (
+                      <CarouselItem key={service.id} className="pt-4 basis-full">
+                        <div className="flex items-center gap-4 text-sm md:text-base">
+                          <span className="font-medium truncate">{service.name}</span>
+                          {hasDiscount ? (
+                              <div className="flex items-baseline gap-2">
+                                  <span className="font-bold text-primary">Rs {service.discountPrice?.toFixed(2)}</span>
+                                  <span className="text-xs text-muted-foreground line-through">Rs {service.price.toFixed(2)}</span>
+                                  <Badge variant="destructive">{discountPercent}% OFF</Badge>
+                              </div>
+                          ) : (
+                              <span className="font-bold text-primary">Rs {service.price.toFixed(2)}</span>
+                          )}
+                          {service.unit && <span className="text-muted-foreground hidden sm:inline">/ {service.unit}</span>}
+                        </div>
+                      </CarouselItem>
+                    );
+                  })}
+                </CarouselContent>
+              </Carousel>
             </div>
-          </Link>
+          </div>
         </CardContent>
     </Card>
   );
