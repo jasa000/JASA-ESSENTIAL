@@ -9,8 +9,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +49,7 @@ export default function XeroxPage() {
 
       <Card className="mt-8">
         <CardHeader className="text-center">
-          <CardTitle>Our Price List</CardTitle>
+          <CardTitle>Price List</CardTitle>
         </CardHeader>
         <CardContent>
           {error ? (
