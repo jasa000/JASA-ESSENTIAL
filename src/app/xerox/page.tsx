@@ -109,6 +109,7 @@ export default function XeroxPage() {
                                     Rs {service.price.toFixed(2)}
                                  </span>
                                )}
+                               {service.unit && <span className="text-sm text-muted-foreground">{service.unit}</span>}
                             </div>
                           </TableCell>
                         </TableRow>

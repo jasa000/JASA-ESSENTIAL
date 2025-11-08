@@ -150,5 +150,6 @@ export type XeroxService = {
   price: number;
   order: number;
   discountPrice?: number | null;
+  unit?: string;
   createdAt: any;
 };

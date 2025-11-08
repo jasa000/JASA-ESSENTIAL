@@ -290,6 +290,7 @@ export const addXeroxService = async (serviceData: Omit<XeroxService, 'id' | 'cr
   const newServiceData = {
     ...serviceData,
     discountPrice: serviceData.discountPrice || null,
+    unit: serviceData.unit || "",
     createdAt: serverTimestamp(),
   };
 
@@ -306,6 +307,7 @@ export const updateXeroxService = async (id: string, serviceData: Partial<Omit<X
     const updatedServiceData = {
         ...serviceData,
         discountPrice: serviceData.discountPrice || null,
+        unit: serviceData.unit || "",
     };
     try {
         const serviceDoc = doc(db, 'xeroxServices', id);

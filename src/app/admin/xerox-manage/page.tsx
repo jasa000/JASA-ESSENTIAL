@@ -69,6 +69,7 @@ const xeroxServiceSchema = z.object({
   name: z.string().min(3, "Service name must be at least 3 characters."),
   price: z.coerce.number().positive("Price must be a positive number."),
   discountPrice: z.coerce.number().optional().nullable(),
+  unit: z.string().optional(),
 });
 
 export default function ManageXeroxPage() {
@@ -92,6 +93,7 @@ export default function ManageXeroxPage() {
       name: "",
       price: 0,
       discountPrice: null,
+      unit: "",
     },
   });
 
@@ -116,12 +118,14 @@ export default function ManageXeroxPage() {
             name: editingService.name,
             price: editingService.price,
             discountPrice: editingService.discountPrice,
+            unit: editingService.unit || "",
         });
     } else {
         form.reset({
             name: "",
             price: 0,
             discountPrice: null,
+            unit: "",
         })
     }
   }, [isFormOpen, editingService, form]);
@@ -252,6 +256,19 @@ export default function ManageXeroxPage() {
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="unit"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Unit (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., per page, per copy" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <DialogFooter>
           <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
           <Button type="submit" disabled={form.formState.isSubmitting}>
@@ -300,6 +317,7 @@ export default function ManageXeroxPage() {
                 <TableRow>
                   <TableHead className="w-16">Order</TableHead>
                   <TableHead>Service Name</TableHead>
+                  <TableHead>Unit</TableHead>
                   <TableHead>Original Price</TableHead>
                   <TableHead>Discount Price</TableHead>
                   <TableHead>Discount</TableHead>
@@ -312,6 +330,7 @@ export default function ManageXeroxPage() {
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-8 w-12" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
@@ -320,7 +339,7 @@ export default function ManageXeroxPage() {
                   ))
                 ) : services.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
+                    <TableCell colSpan={7} className="text-center">
                       No services configured yet.
                     </TableCell>
                   </TableRow>
@@ -341,6 +360,7 @@ export default function ManageXeroxPage() {
                                 </div>
                             </TableCell>
                             <TableCell className="font-medium">{service.name}</TableCell>
+                            <TableCell>{service.unit || 'N/A'}</TableCell>
                             <TableCell>Rs {service.price.toFixed(2)}</TableCell>
                             <TableCell>
                             {service.discountPrice != null ? `Rs ${service.discountPrice.toFixed(2)}` : "N/A"}
