@@ -1,7 +1,7 @@
 
 import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService } from './types';
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 
 export const categories: Category[] = [
     {
@@ -277,7 +277,7 @@ export const deleteProductType = async (id: string): Promise<void> => {
 // Xerox Services Functions
 export const getXeroxServices = async (): Promise<XeroxService[]> => {
     try {
-        const q = query(xeroxServicesCollection, orderBy('createdAt', 'desc'));
+        const q = query(xeroxServicesCollection, orderBy('order', 'asc'));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as XeroxService));
     } catch (error) {
@@ -325,3 +325,17 @@ export const deleteXeroxService = async (id: string) => {
         throw new Error("Failed to delete Xerox service from database.");
     }
 };
+
+export const updateXeroxServiceOrder = async (updates: {id: string, order: number}[]) => {
+    const batch = writeBatch(db);
+    updates.forEach(update => {
+        const docRef = doc(db, 'xeroxServices', update.id);
+        batch.update(docRef, { order: update.order });
+    });
+    try {
+        await batch.commit();
+    } catch (error) {
+        console.error("Error updating xerox service order: ", error);
+        throw new Error("Failed to update service order.");
+    }
+}

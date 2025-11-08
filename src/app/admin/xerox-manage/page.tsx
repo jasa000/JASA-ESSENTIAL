@@ -12,6 +12,7 @@ import {
   deleteXeroxService,
   getXeroxServices,
   updateXeroxService,
+  updateXeroxServiceOrder,
 } from "@/lib/data";
 import type { XeroxService } from "@/lib/types";
 
@@ -61,7 +62,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, ArrowUp, ArrowDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const xeroxServiceSchema = z.object({
@@ -76,6 +77,7 @@ export default function ManageXeroxPage() {
   const { toast } = useToast();
   const [services, setServices] = useState<XeroxService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isReordering, setIsReordering] = useState(false);
   const [editingService, setEditingService] = useState<XeroxService | null>(
     null
   );
@@ -147,7 +149,8 @@ export default function ManageXeroxPage() {
             await updateXeroxService(editingService.id, values);
             toast({ title: "Service Updated", description: `${values.name} has been updated.` });
         } else {
-            await addXeroxService(values);
+            const newOrder = services.length > 0 ? Math.max(...services.map(s => s.order)) + 1 : 1;
+            await addXeroxService({ ...values, order: newOrder });
             toast({ title: "Service Added", description: `${values.name} has been added.` });
         }
         fetchServices();
@@ -167,6 +170,36 @@ export default function ManageXeroxPage() {
       setDeletingService(null);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  };
+
+  const handleReorder = async (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= services.length) return;
+
+    setIsReordering(true);
+    const newServices = [...services];
+    const itemToMove = newServices[index];
+    const otherItem = newServices[newIndex];
+
+    // Swap order property
+    [itemToMove.order, otherItem.order] = [otherItem.order, itemToMove.order];
+    
+    // Update local state for immediate feedback
+    setServices(newServices.sort((a, b) => a.order - b.order));
+
+    try {
+        await updateXeroxServiceOrder([
+            { id: itemToMove.id, order: itemToMove.order },
+            { id: otherItem.id, order: otherItem.order }
+        ]);
+        toast({ title: "Reordered", description: "Service order has been updated." });
+    } catch (error: any) {
+        // Revert local state on error
+        setServices(services);
+        toast({ variant: "destructive", title: "Error", description: "Failed to reorder services." });
+    } finally {
+        setIsReordering(false);
     }
   };
   
@@ -265,6 +298,7 @@ export default function ManageXeroxPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-16">Order</TableHead>
                   <TableHead>Service Name</TableHead>
                   <TableHead>Original Price</TableHead>
                   <TableHead>Discount Price</TableHead>
@@ -276,6 +310,7 @@ export default function ManageXeroxPage() {
                 {isLoading ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell><Skeleton className="h-8 w-12" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-32" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-24" /></TableCell>
@@ -285,16 +320,26 @@ export default function ManageXeroxPage() {
                   ))
                 ) : services.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">
+                    <TableCell colSpan={6} className="text-center">
                       No services configured yet.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  services.map((service) => {
+                  services.map((service, index) => {
                     const hasDiscount = service.discountPrice != null && service.discountPrice < service.price;
                     const discountPercent = hasDiscount ? Math.round(((service.price - service.discountPrice!) / service.price) * 100) : 0;
                     return (
                         <TableRow key={service.id}>
+                            <TableCell>
+                                <div className="flex flex-col gap-1">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={index === 0 || isReordering} onClick={() => handleReorder(index, 'up')}>
+                                        <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={index === services.length - 1 || isReordering} onClick={() => handleReorder(index, 'down')}>
+                                        <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </TableCell>
                             <TableCell className="font-medium">{service.name}</TableCell>
                             <TableCell>Rs {service.price.toFixed(2)}</TableCell>
                             <TableCell>

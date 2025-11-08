@@ -148,6 +148,7 @@ export type XeroxService = {
   id: string;
   name: string;
   price: number;
+  order: number;
   discountPrice?: number | null;
   createdAt: any;
 };
