@@ -50,7 +50,7 @@ export default function XeroxPage() {
       </div>
 
       <Card className="mt-8">
-        <CardHeader>
+        <CardHeader className="text-center">
           <CardTitle>Our Price List</CardTitle>
         </CardHeader>
         <CardContent>
@@ -58,12 +58,6 @@ export default function XeroxPage() {
             <p className="text-center text-destructive">{error}</p>
           ) : (
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                </TableRow>
-              </TableHeader>
               <TableBody>
                 {isLoading
                   ? Array.from({ length: 4 }).map((_, i) => (
