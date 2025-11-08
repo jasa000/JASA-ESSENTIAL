@@ -1,5 +1,5 @@
 
-import type { Product, Category, Brand, Author, ProductType, HomepageContent } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc } from 'firebase/firestore';
 
@@ -39,6 +39,7 @@ const brandsCollection = collection(db, 'brands');
 const authorsCollection = collection(db, 'authors');
 const productTypesCollection = collection(db, 'productTypes');
 const homepageContentCollection = collection(db, 'homepageContent');
+const xeroxServicesCollection = collection(db, 'xeroxServices');
 
 
 export const getHomepageContent = async (): Promise<HomepageContent | null> => {
@@ -272,4 +273,55 @@ export const deleteProductType = async (id: string): Promise<void> => {
     const productTypeDoc = doc(db, 'productTypes', id);
     await deleteDoc(productTypeDoc);
 };
-    
+
+// Xerox Services Functions
+export const getXeroxServices = async (): Promise<XeroxService[]> => {
+    try {
+        const q = query(xeroxServicesCollection, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as XeroxService));
+    } catch (error) {
+        console.error("Error getting Xerox services: ", error);
+        throw new Error("Failed to fetch Xerox services.");
+    }
+};
+
+export const addXeroxService = async (serviceData: Omit<XeroxService, 'id' | 'createdAt'>) => {
+  const newServiceData = {
+    ...serviceData,
+    discountPrice: serviceData.discountPrice || null,
+    createdAt: serverTimestamp(),
+  };
+
+  try {
+    const docRef = await addDoc(xeroxServicesCollection, newServiceData);
+    return { ...newServiceData, id: docRef.id } as XeroxService;
+  } catch (error) {
+    console.error("Error adding Xerox service: ", error);
+    throw new Error("Failed to add Xerox service to database.");
+  }
+};
+
+export const updateXeroxService = async (id: string, serviceData: Partial<Omit<XeroxService, 'id' | 'createdAt'>>) => {
+    const updatedServiceData = {
+        ...serviceData,
+        discountPrice: serviceData.discountPrice || null,
+    };
+    try {
+        const serviceDoc = doc(db, 'xeroxServices', id);
+        await updateDoc(serviceDoc, updatedServiceData);
+    } catch (error) {
+        console.error("Error updating Xerox service: ", error);
+        throw new Error("Failed to update Xerox service in database.");
+    }
+};
+
+export const deleteXeroxService = async (id: string) => {
+    try {
+        const serviceDoc = doc(db, 'xeroxServices', id);
+        await deleteDoc(serviceDoc);
+    } catch (error) {
+        console.error("Error deleting Xerox service: ", error);
+        throw new Error("Failed to delete Xerox service from database.");
+    }
+};

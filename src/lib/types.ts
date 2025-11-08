@@ -144,6 +144,10 @@ export type HomepageContent = {
     banners: Banner[];
 };
 
-    
-
-    
+export type XeroxService = {
+  id: string;
+  name: string;
+  price: number;
+  discountPrice?: number | null;
+  createdAt: any;
+};

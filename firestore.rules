@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -55,6 +56,10 @@ service cloud.firestore {
     match /shops/{shopId} {
         allow read: if true;
         allow write: if isAdmin();
+    }
+     match /xeroxServices/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
