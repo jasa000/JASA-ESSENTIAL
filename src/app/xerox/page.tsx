@@ -92,7 +92,7 @@ export default function XeroxPage() {
                             {service.name}
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-4">
                                {hasDiscount ? (
                                 <div className="flex items-center gap-2">
                                     <div className="flex flex-col items-end">
@@ -103,14 +103,16 @@ export default function XeroxPage() {
                                             Rs {service.discountPrice?.toFixed(2)}
                                         </span>
                                     </div>
-                                    <Badge variant="destructive" className="h-fit">{discountPercent}% OFF</Badge>
                                 </div>
                                ) : (
                                  <span className="text-lg font-bold">
                                     Rs {service.price.toFixed(2)}
                                  </span>
                                )}
-                               {service.unit && <span className="text-sm text-muted-foreground">{service.unit}</span>}
+                               <div className="flex flex-col items-center gap-1">
+                                {hasDiscount && <Badge variant="destructive" className="h-fit">{discountPercent}% OFF</Badge>}
+                                {service.unit && <span className="text-sm text-muted-foreground">{service.unit}</span>}
+                               </div>
                             </div>
                           </TableCell>
                         </TableRow>
