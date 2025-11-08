@@ -19,6 +19,7 @@ import { ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import XeroxTicker from "@/components/xerox-ticker";
 
 
 export default function Home() {
@@ -268,6 +269,11 @@ export default function Home() {
 
        <div className="container mx-auto px-4 space-y-8">
          {renderProductSection('stationary')}
+
+         <div className="py-8">
+            <XeroxTicker />
+         </div>
+
          {renderProductSection('books')}
          {renderProductSection('electronics')}
 
