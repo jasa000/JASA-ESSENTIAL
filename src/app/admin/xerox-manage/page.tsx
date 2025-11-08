@@ -311,7 +311,7 @@ export default function ManageXeroxPage() {
           <CardHeader>
             <CardTitle>Xerox Price List</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -359,13 +359,13 @@ export default function ManageXeroxPage() {
                                     </Button>
                                 </div>
                             </TableCell>
-                            <TableCell className="font-medium">{service.name}</TableCell>
-                            <TableCell>{service.unit || 'N/A'}</TableCell>
-                            <TableCell>Rs {service.price.toFixed(2)}</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{service.name}</TableCell>
+                            <TableCell className="whitespace-nowrap">{service.unit || 'N/A'}</TableCell>
+                            <TableCell className="whitespace-nowrap">Rs {service.price.toFixed(2)}</TableCell>
+                            <TableCell className="whitespace-nowrap">
                             {service.discountPrice != null ? `Rs ${service.discountPrice.toFixed(2)}` : "N/A"}
                             </TableCell>
-                            <TableCell>{hasDiscount ? `${discountPercent}%` : "N/A"}</TableCell>
+                            <TableCell className="whitespace-nowrap">{hasDiscount ? `${discountPercent}%` : "N/A"}</TableCell>
                             <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                                 <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(service)}>
