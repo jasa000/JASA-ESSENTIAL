@@ -5,17 +5,19 @@ import { useState, useEffect, useRef } from "react";
 import Autoplay from "embla-carousel-autoplay";
 import { getXeroxServices } from "@/lib/data";
 import type { XeroxService } from "@/lib/types";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function XeroxTicker() {
   const [services, setServices] = useState<XeroxService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const plugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: false }));
+  const plugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: false }));
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -33,7 +35,20 @@ export default function XeroxTicker() {
   }, []);
 
   if (isLoading) {
-    return <Skeleton className="h-16 w-full" />;
+    return (
+        <div>
+            <div className="mb-4 flex items-center justify-between">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-10 w-24" />
+            </div>
+            <div className="flex gap-4">
+                <Skeleton className="h-40 w-full basis-1/2 md:basis-1/3 lg:basis-1/4" />
+                <Skeleton className="h-40 w-full basis-1/2 md:basis-1/3 lg:basis-1/4" />
+                <Skeleton className="h-40 w-full hidden md:block md:basis-1/3 lg:basis-1/4" />
+                <Skeleton className="h-40 w-full hidden lg:block lg:basis-1/4" />
+            </div>
+        </div>
+    );
   }
 
   if (services.length === 0) {
@@ -41,46 +56,65 @@ export default function XeroxTicker() {
   }
 
   return (
-    <Card className="w-full overflow-hidden">
-        <CardContent className="p-0">
-          <div className="flex h-16 items-center justify-between px-6">
-            <div className="flex-grow overflow-hidden">
-              <Carousel
-                plugins={[plugin.current]}
-                opts={{
-                  axis: "y",
-                  loop: true,
-                  align: "start",
-                }}
-                className="w-full"
-              >
-                <CarouselContent className="-mt-4 h-16">
-                  {services.map((service) => {
-                      const hasDiscount = service.discountPrice != null && service.discountPrice < service.price;
-                      const discountPercent = hasDiscount ? Math.round(((service.price - service.discountPrice!) / service.price) * 100) : 0;
-                    return (
-                      <CarouselItem key={service.id} className="pt-4 basis-full">
-                        <div className="flex items-center gap-4 text-sm md:text-base">
-                          <span className="font-medium truncate">{service.name}</span>
-                          {hasDiscount ? (
-                              <div className="flex items-baseline gap-2">
-                                  <span className="font-bold text-primary">Rs {service.discountPrice?.toFixed(2)}</span>
-                                  <span className="text-xs text-muted-foreground line-through">Rs {service.price.toFixed(2)}</span>
-                                  <Badge variant="destructive">{discountPercent}% OFF</Badge>
-                              </div>
-                          ) : (
-                              <span className="font-bold text-primary">Rs {service.price.toFixed(2)}</span>
-                          )}
-                          {service.unit && <span className="text-muted-foreground hidden sm:inline">/ {service.unit}</span>}
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">Xerox & Printing</h2>
+        <Button asChild variant="outline">
+          <Link href="/xerox">
+            <span>View All</span>
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+
+      <Carousel
+        plugins={[plugin.current]}
+        opts={{
+          loop: true,
+          align: "start",
+        }}
+        className="w-full"
+        onMouseEnter={plugin.current.stop}
+        onMouseLeave={plugin.current.reset}
+      >
+        <CarouselContent className="-ml-4">
+          {services.map((service) => {
+            const hasDiscount = service.discountPrice != null && service.discountPrice < service.price;
+            const discountPercent = hasDiscount ? Math.round(((service.price - service.discountPrice!) / service.price) * 100) : 0;
+            return (
+              <CarouselItem key={service.id} className="pl-4 basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                <Card className="h-full bg-gray-200 dark:bg-white text-black">
+                  <CardContent className="flex h-full flex-col justify-between p-4">
+                    <div>
+                      <p className="font-bold text-primary truncate">{service.name}</p>
+                      {service.unit && <p className="text-xs text-gray-600 dark:text-gray-700">{service.unit}</p>}
+                    </div>
+                    <div className="mt-4 text-right">
+                       {hasDiscount && (
+                            <Badge variant="destructive" className="mb-1">{discountPercent}% OFF</Badge>
+                       )}
+                       {hasDiscount ? (
+                        <div>
+                          <p className="text-sm text-gray-500 line-through">
+                            Rs {service.price.toFixed(2)}
+                          </p>
+                          <p className="text-2xl font-bold">
+                            Rs {service.discountPrice?.toFixed(2)}
+                          </p>
                         </div>
-                      </CarouselItem>
-                    );
-                  })}
-                </CarouselContent>
-              </Carousel>
-            </div>
-          </div>
-        </CardContent>
-    </Card>
+                      ) : (
+                        <p className="text-xl font-bold">
+                          Rs {service.price.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            );
+          })}
+        </CarouselContent>
+      </Carousel>
+    </div>
   );
 }
