@@ -83,33 +83,35 @@ export default function XeroxTicker() {
             const discountPercent = hasDiscount ? Math.round(((service.price - service.discountPrice!) / service.price) * 100) : 0;
             return (
               <CarouselItem key={service.id} className="pl-4 basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                <Card className="h-full bg-gray-200 dark:bg-white text-black">
-                  <CardContent className="flex h-full flex-col justify-between p-4">
-                    <div>
-                      <p className="font-bold text-primary truncate">{service.name}</p>
-                      {service.unit && <p className="text-xs text-gray-600 dark:text-gray-700">{service.unit}</p>}
-                    </div>
-                    <div className="mt-4 text-right">
-                       {hasDiscount && (
-                            <Badge variant="destructive" className="mb-1">{discountPercent}% OFF</Badge>
-                       )}
-                       {hasDiscount ? (
-                        <div>
-                          <p className="text-sm text-gray-500 line-through">
+                <Link href="/xerox" className="block h-full">
+                  <Card className="h-full bg-gray-200 dark:bg-white text-black transition-transform duration-300 hover:scale-105">
+                    <CardContent className="flex h-full flex-col justify-between p-4">
+                      <div>
+                        <p className="font-bold text-primary truncate">{service.name}</p>
+                        {service.unit && <p className="text-xs text-gray-600 dark:text-gray-700">{service.unit}</p>}
+                      </div>
+                      <div className="mt-4 text-right">
+                        {hasDiscount && (
+                              <Badge variant="destructive" className="mb-1">{discountPercent}% OFF</Badge>
+                        )}
+                        {hasDiscount ? (
+                          <div>
+                            <p className="text-sm text-gray-500 line-through">
+                              Rs {service.price.toFixed(2)}
+                            </p>
+                            <p className="text-2xl font-bold">
+                              Rs {service.discountPrice?.toFixed(2)}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xl font-bold">
                             Rs {service.price.toFixed(2)}
                           </p>
-                          <p className="text-2xl font-bold">
-                            Rs {service.discountPrice?.toFixed(2)}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-xl font-bold">
-                          Rs {service.price.toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               </CarouselItem>
             );
           })}
