@@ -2,7 +2,6 @@
 'use server';
 import { v2 as cloudinary } from 'cloudinary';
 import { getProducts, getHomepageContent } from './data';
-import 'dotenv/config';
 
 // Configuration must be at the top, before any other cloudinary calls
 cloudinary.config({ 

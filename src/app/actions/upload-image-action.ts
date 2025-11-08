@@ -2,7 +2,6 @@
 'use server';
 
 import { v2 as cloudinary } from 'cloudinary';
-import 'dotenv/config';
 
 // Configure Cloudinary within the server action
 cloudinary.config({ 
