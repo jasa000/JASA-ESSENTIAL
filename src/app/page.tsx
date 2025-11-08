@@ -268,12 +268,11 @@ export default function Home() {
        </div>
 
        <div className="container mx-auto px-4 space-y-8">
-         {renderProductSection('stationary')}
-
          <div className="py-8">
             <XeroxTicker />
          </div>
 
+         {renderProductSection('stationary')}
          {renderProductSection('books')}
          {renderProductSection('electronics')}
 
