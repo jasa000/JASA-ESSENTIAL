@@ -61,7 +61,7 @@ export default function XeroxPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Service</TableHead>
-                  <TableHead className="text-right">Price per Unit</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
