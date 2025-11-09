@@ -379,7 +379,7 @@ export default function AppSidebar() {
                       <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/admin/xerox-manage')}>
                           <Link href="/admin/xerox-manage">
                               <Copy />
-                              <span>Manage Xerox</span>
+                              <span>Manage Xerox List</span>
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
