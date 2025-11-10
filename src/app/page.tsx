@@ -180,7 +180,7 @@ export default function Home() {
 
   return (
     <div className="w-screen overflow-x-hidden">
-       <div className="container mx-auto px-4 py-8">
+       <div className="container mx-auto px-4 py-4">
         <div className="relative w-full">
             <Input
               type="text"
@@ -195,7 +195,7 @@ export default function Home() {
             </span>
         </div>
       </div>
-      <div className="py-8">
+      <div className="pb-8">
          <Carousel
           setApi={setEmblaApi}
           plugins={[plugin.current]}
