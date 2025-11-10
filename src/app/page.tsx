@@ -178,7 +178,7 @@ export default function Home() {
 
   return (
     <div className="w-screen overflow-x-hidden">
-       <div className="w-full py-8 relative">
+       <div className="w-full py-8">
          <Carousel
           setApi={setEmblaApi}
           plugins={[plugin.current]}
@@ -189,9 +189,9 @@ export default function Home() {
             loop: carouselItems.length > 1,
           }}
         >
-          <CarouselContent>
+          <CarouselContent className="-ml-4 px-4">
             {isLoading ? (
-                 <CarouselItem>
+                 <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
                         <Skeleton className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem]" />
                     </div>
@@ -199,7 +199,7 @@ export default function Home() {
             ) : carouselItems.map((item, index) => {
               if (item.type === 'welcome') {
                 return (
-                  <CarouselItem key="welcome">
+                  <CarouselItem key="welcome" className="pl-4">
                     <WelcomeCard imageUrl={homepageContent?.welcomeImageUrl} />
                   </CarouselItem>
                 );
@@ -207,7 +207,7 @@ export default function Home() {
               if (item.type === 'banner' && item.banner) {
                 const banner = item.banner;
                 return (
-                  <CarouselItem key={banner.id}>
+                  <CarouselItem key={banner.id} className="pl-4">
                     <BannerCard
                       href={banner.href}
                       title={banner.title}
@@ -222,7 +222,7 @@ export default function Home() {
             })}
              {
               !isLoading && carouselItems.length === 0 && (
-                <CarouselItem>
+                <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
                        <div className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
                           <p className="text-muted-foreground">No promotional content available right now.</p>
@@ -234,7 +234,7 @@ export default function Home() {
           </CarouselContent>
         </Carousel>
         {scrollSnaps.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+            <div className="mt-4 flex justify-center">
               <div className="bg-background/50 backdrop-blur-sm p-1 rounded-full flex items-center gap-1.5 shadow-md">
                 {scrollSnaps.map((_, index) => (
                     <button
