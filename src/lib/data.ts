@@ -49,6 +49,7 @@ const getXeroxOptionCollection = (type: XeroxOptionType) => {
         case 'colorOption': return collection(db, 'colorOptions');
         case 'bindingType': return collection(db, 'bindingTypes');
         case 'laminationType': return collection(db, 'laminationTypes');
+        case 'formatType': return collection(db, 'formatTypes');
         default: throw new Error('Invalid Xerox option type');
     }
 };
@@ -404,5 +405,3 @@ export const deleteXeroxOption = async (type: XeroxOptionType, id: string): Prom
         throw new Error(`Failed to delete Xerox option from ${type}.`);
     }
 };
-
-    

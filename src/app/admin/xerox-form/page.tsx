@@ -71,6 +71,7 @@ const optionSchema = z.object({
 const optionCategories: { type: XeroxOptionType; title: string }[] = [
   { type: "paperType", title: "Paper Types" },
   { type: "colorOption", title: "Color Options" },
+  { type: "formatType", title: "Formats" },
   { type: "bindingType", title: "Binding Types" },
   { type: "laminationType", title: "Lamination Types" },
 ];
@@ -82,6 +83,7 @@ export default function ManageXeroxFormPage() {
   const [options, setOptions] = useState<Record<XeroxOptionType, XeroxOption[]>>({
     paperType: [],
     colorOption: [],
+    formatType: [],
     bindingType: [],
     laminationType: [],
   });
@@ -342,5 +344,3 @@ export default function ManageXeroxFormPage() {
     </>
   );
 }
-
-    
