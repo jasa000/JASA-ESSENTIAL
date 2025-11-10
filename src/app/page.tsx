@@ -180,7 +180,7 @@ export default function Home() {
 
   return (
     <div className="w-screen overflow-x-hidden">
-       <div className="container mx-auto px-4 py-8 space-y-8">
+       <div className="container mx-auto px-4 py-8">
         <div className="relative w-full">
             <Input
               type="text"
@@ -194,6 +194,8 @@ export default function Home() {
               <Search className="h-5 w-5 text-muted-foreground" />
             </span>
         </div>
+      </div>
+      <div className="py-8">
          <Carousel
           setApi={setEmblaApi}
           plugins={[plugin.current]}
@@ -204,7 +206,7 @@ export default function Home() {
             loop: carouselItems.length > 1,
           }}
         >
-          <CarouselContent className="-ml-4 px-4">
+          <CarouselContent className="px-4 -ml-4">
             {isLoading ? (
                  <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
@@ -249,7 +251,7 @@ export default function Home() {
           </CarouselContent>
         </Carousel>
         {scrollSnaps.length > 1 && (
-            <div className="flex justify-center">
+            <div className="mt-4 flex justify-center">
               <div className="bg-background/50 backdrop-blur-sm p-1 rounded-full flex items-center gap-1.5 shadow-md">
                 {scrollSnaps.map((_, index) => (
                     <button
