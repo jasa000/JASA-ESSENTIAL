@@ -29,7 +29,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog, UserRoundCog } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog, UserRoundCog, ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -380,6 +380,14 @@ export default function AppSidebar() {
                           <Link href="/admin/xerox-manage">
                               <Copy />
                               <span>Manage Xerox List</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/admin/xerox-form')}>
+                          <Link href="/admin/xerox-form">
+                              <ClipboardList />
+                              <span>Manage Xerox Form</span>
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
