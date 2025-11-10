@@ -47,7 +47,7 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-sky-100 via-teal-100 to-sky-100 dark:from-sky-900/50 dark:via-teal-900/50 dark:to-sky-900/50"></div>
       )}
       <Card className={cn(
-        "relative z-10 w-full h-64 md:h-80 lg:h-[23rem] flex flex-col justify-center",
+        "relative z-10 w-full h-64 md:h-80 lg:h-[23rem] flex flex-col justify-center rounded-2xl",
         imageUrl ? "bg-transparent" : "bg-background/80 backdrop-blur-sm dark:bg-background/60"
       )}>
         {imageUrl && (
@@ -55,7 +55,7 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
                 src={imageUrl} 
                 alt="Welcome background" 
                 fill 
-                className="object-cover rounded-lg -z-10"
+                className="object-cover rounded-2xl -z-10"
             />
         )}
         <CardHeader className="text-center">
@@ -73,5 +73,3 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
     </div>
   );
 }
-
-    
