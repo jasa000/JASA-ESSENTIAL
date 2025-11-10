@@ -373,9 +373,13 @@ export const getXeroxOptions = async (type: XeroxOptionType): Promise<XeroxOptio
 export const addXeroxOption = async (type: XeroxOptionType, optionData: Partial<Omit<XeroxOption, 'id' | 'createdAt'>>): Promise<XeroxOption> => {
   const newOptionData = {
     ...optionData,
-    price: optionData.price ?? 0,
+    price: optionData.price, // Keep price for paperType, or be undefined for others
     createdAt: serverTimestamp(),
   };
+  if (type !== 'paperType') {
+    delete newOptionData.price;
+  }
+
   try {
     const collectionRef = getXeroxOptionCollection(type);
     const docRef = await addDoc(collectionRef, newOptionData);
@@ -391,8 +395,8 @@ export const updateXeroxOption = async (type: XeroxOptionType, id: string, optio
         const collectionRef = getXeroxOptionCollection(type);
         const optionDoc = doc(collectionRef, id);
         const updateData = { ...optionData };
-        if (updateData.price === undefined) {
-            updateData.price = 0;
+        if (type !== 'paperType' && 'price' in updateData) {
+            delete updateData.price;
         }
         await updateDoc(optionDoc, updateData);
     } catch (error) {

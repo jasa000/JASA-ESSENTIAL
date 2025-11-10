@@ -68,7 +68,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const optionSchema = z.object({
   name: z.string().min(1, "Option name is required."),
-  price: z.coerce.number().min(0, "Price must be a non-negative number."),
 });
 
 const paperTypeSchema = z.object({
@@ -123,7 +122,7 @@ const OptionCheckboxList = ({ control, name, label, items }: { control: any, nam
                   <FormLabel className="font-normal w-full">
                     <div className="flex justify-between">
                       <span>{item.name}</span>
-                      <span>Rs {item.price?.toFixed(2)}</span>
+                      {item.price !== undefined && <span>Rs {item.price?.toFixed(2)}</span>}
                     </div>
                   </FormLabel>
                 </FormItem>
@@ -177,7 +176,7 @@ const AddNewDialog = ({
         resolver: zodResolver(isPaperType ? paperTypeSchema : optionSchema),
         defaultValues: isPaperType
           ? { name: "", price: 0, colorOptionIds: [], formatTypeIds: [], printRatioIds: [], bindingTypeIds: [], laminationTypeIds: [] }
-          : { name: "", price: 0 },
+          : { name: "" },
       });
 
       const onNewSubmit = async (values: any) => {
@@ -202,14 +201,9 @@ const AddNewDialog = ({
                 {isPaperType ? (
                   <PaperTypeFormFields formControl={form.control} options={options} />
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="name" render={({ field }) => (
-                      <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="price" render={({ field }) => (
-                      <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                 )}
                 <DialogFooter>
                   <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
@@ -242,7 +236,7 @@ export default function ManageXeroxFormPage() {
   
   const form = useForm<z.infer<typeof optionSchema>>({
     resolver: zodResolver(optionSchema),
-    defaultValues: { name: "", price: 0 },
+    defaultValues: { name: "" },
   });
 
   const paperTypeForm = useForm<z.infer<typeof paperTypeSchema>>({
@@ -283,11 +277,10 @@ export default function ManageXeroxFormPage() {
       } else {
         form.reset({
           name: editingOption.option.name,
-          price: editingOption.option.price,
         });
       }
     } else {
-      form.reset({ name: "", price: 0 });
+      form.reset({ name: "" });
       paperTypeForm.reset({
         name: "", price: 0, colorOptionIds: [], formatTypeIds: [], printRatioIds: [], bindingTypeIds: [], laminationTypeIds: [],
       });
@@ -334,7 +327,8 @@ export default function ManageXeroxFormPage() {
   const handleAddNewSubmit = async (values: z.infer<typeof optionSchema> | z.infer<typeof paperTypeSchema>, type: XeroxOptionType) => {
     setIsSubmitting(true);
     try {
-      await addXeroxOption(type, values);
+      const payload = type === 'paperType' ? values : { ...values, price: 0 };
+      await addXeroxOption(type, payload);
       toast({ title: "Option Added", description: `${values.name} has been added.` });
       await fetchAllOptions();
       return true; // Indicate success for closing dialog
@@ -386,7 +380,7 @@ export default function ManageXeroxFormPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Option Name</TableHead>
-                <TableHead>Price</TableHead>
+                {isPaperType && <TableHead>Price</TableHead>}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -394,16 +388,16 @@ export default function ManageXeroxFormPage() {
               {isLoading ? Array.from({ length: 2 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                  {isPaperType && <TableCell><Skeleton className="h-6 w-16" /></TableCell>}
                   <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                 </TableRow>
               )) : optionList.length === 0 ? (
-                <TableRow><TableCell colSpan={3} className="text-center">No options configured.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isPaperType ? 3 : 2} className="text-center">No options configured.</TableCell></TableRow>
               ) : (
                 optionList.map(option => (
                   <TableRow key={option.id}>
                     <TableCell className="font-medium">{option.name}</TableCell>
-                    <TableCell>Rs {option.price?.toFixed(2)}</TableCell>
+                    {isPaperType && <TableCell>Rs {option.price?.toFixed(2)}</TableCell>}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => setEditingOption({ option, type })}>
@@ -465,14 +459,9 @@ export default function ManageXeroxFormPage() {
            ) : (
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="name" render={({ field }) => (
+                   <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="price" render={({ field }) => (
-                        <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
                   <DialogFooter>
                       <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                       <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}</Button>
