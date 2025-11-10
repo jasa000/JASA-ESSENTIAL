@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bell, LogIn, Search, ShoppingCart, User, Home, UserPlus } from 'lucide-react';
+import { Bell, LogIn, Search, ShoppingCart, User, Home, UserPlus, ShoppingBag } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Button } from './ui/button';
@@ -27,19 +27,21 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-            <SidebarTrigger className="relative h-7 w-7 bg-transparent text-foreground hover:bg-transparent/20" />
-            <Link href="/" className="hidden items-center gap-2 sm:flex">
-                <span className="font-headline text-lg font-bold">
-                Jasa Essentials
-                </span>
+        <div className="flex items-center gap-2">
+            <SidebarTrigger className="relative h-8 w-8 bg-transparent text-foreground hover:bg-transparent/20" />
+            <Link href="/" className="flex flex-col">
+              <div className="flex items-center gap-1">
+                <span className="font-headline text-2xl font-bold">JASA</span>
+                <ShoppingBag className="h-5 w-5" />
+              </div>
+              <span className="text-xs font-medium tracking-[0.2em]">ESSENTIALS</span>
             </Link>
         </div>
 
         <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
           <div className="flex items-center justify-end space-x-2">
               <Button asChild variant="ghost" size="icon" className={cn(
-                'rounded-full', 
+                'rounded-full h-9 w-9', 
                 !isHomePage && 'border-2 border-transparent animate-border-pulse'
               )}>
                 <Link href="/">
@@ -48,21 +50,21 @@ export default function Header() {
                 </Link>
               </Button>
               {user && (
-                <Button asChild variant="ghost" size="icon" className='rounded-full'>
+                <Button asChild variant="ghost" size="icon" className='rounded-full h-9 w-9'>
                     <Link href="/notifications">
                         <Bell className="h-5 w-5" />
                         <span className="sr-only">Notifications</span>
                     </Link>
                 </Button>
               )}
-              <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
+              <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full h-9 w-9 md:w-auto'>
                   <Link href="/cart">
                       <ShoppingCart className={isMobile ? "h-5 w-5" : "h-4 w-4"}/>
                       <span className="hidden md:inline">Cart</span>
                   </Link>
               </Button>
             {user ? (
-                <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full'>
+                <Button asChild variant="outline" size={isMobile ? "icon" : "default"} className='rounded-full h-9 w-9 md:w-auto'>
                   <Link href="/profile">
                     <User className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                     <span className="hidden md:inline">Profile</span>
@@ -73,7 +75,7 @@ export default function Header() {
                 <DialogTrigger asChild>
                   <Button 
                     size={isMobile ? "icon" : "default"} 
-                    className='rounded-full' 
+                    className='rounded-full h-9 w-9 md:w-auto' 
                     onClick={() => setAuthDialogDefaultTab('login')}>
                     <LogIn className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                     <span className="hidden md:inline">Login</span>
@@ -83,7 +85,7 @@ export default function Header() {
                    <Button 
                     variant="secondary"
                     size={isMobile ? "icon" : "default"} 
-                    className='rounded-full' 
+                    className='rounded-full h-9 w-9 md:w-auto' 
                     onClick={() => setAuthDialogDefaultTab('signup')}>
                     <UserPlus className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                     <span className="hidden md:inline">Sign Up</span>
