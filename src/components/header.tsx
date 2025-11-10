@@ -30,9 +30,9 @@ export default function Header() {
         <div className="flex items-center gap-2">
             <SidebarTrigger className="relative h-8 w-8 bg-transparent text-foreground hover:bg-transparent/20" />
             <Link href="/" className="flex flex-col">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 text-primary">
                 <span className="font-headline text-2xl font-bold">JASA</span>
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingCart className="h-5 w-5" />
               </div>
               <span className="text-xs font-medium tracking-[0.2em]">ESSENTIALS</span>
             </Link>
