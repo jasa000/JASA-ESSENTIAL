@@ -370,9 +370,9 @@ export const getXeroxOptions = async (type: XeroxOptionType): Promise<XeroxOptio
     }
 };
 
-export const addXeroxOption = async (type: XeroxOptionType, optionData: Omit<XeroxOption, 'id' | 'createdAt'>): Promise<XeroxOption> => {
+export const addXeroxOption = async (type: XeroxOptionType, optionData: Partial<Omit<XeroxOption, 'id' | 'createdAt'>>): Promise<XeroxOption> => {
   const newOptionData = {
-    name: optionData.name,
+    ...optionData,
     price: optionData.price ?? 0,
     createdAt: serverTimestamp(),
   };

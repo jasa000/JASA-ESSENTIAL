@@ -162,4 +162,10 @@ export type XeroxOption = {
   name: string;
   price?: number;
   createdAt: any;
+  // Fields for paperType dependency
+  colorOptionIds?: string[];
+  formatTypeIds?: string[];
+  printRatioIds?: string[];
+  bindingTypeIds?: string[];
+  laminationTypeIds?: string[];
 };
