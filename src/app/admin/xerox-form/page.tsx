@@ -173,16 +173,18 @@ const AddNewDialog = ({
   }) => {
       const [isOpen, setIsOpen] = useState(false);
       
-      const newForm = useForm<z.infer<typeof (isPaperType ? paperTypeSchema : optionSchema)>>({
+      const form = useForm<z.infer<typeof paperTypeSchema | typeof optionSchema>>({
         resolver: zodResolver(isPaperType ? paperTypeSchema : optionSchema),
-        defaultValues: isPaperType ? { name: "", price: 0, colorOptionIds: [], formatTypeIds: [], printRatioIds: [], bindingTypeIds: [], laminationTypeIds: [] } : { name: "", price: 0 },
+        defaultValues: isPaperType
+          ? { name: "", price: 0, colorOptionIds: [], formatTypeIds: [], printRatioIds: [], bindingTypeIds: [], laminationTypeIds: [] }
+          : { name: "", price: 0 },
       });
 
       const onNewSubmit = async (values: any) => {
           const success = await handleAddNewSubmit(values, type);
           if(success) {
             setIsOpen(false);
-            newForm.reset();
+            form.reset();
           }
       }
       
@@ -195,16 +197,16 @@ const AddNewDialog = ({
             <DialogHeader>
               <DialogTitle>Add New {title}</DialogTitle>
             </DialogHeader>
-            <Form {...newForm}>
-              <form onSubmit={newForm.handleSubmit(onNewSubmit)} className="space-y-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onNewSubmit)} className="space-y-4">
                 {isPaperType ? (
-                  <PaperTypeFormFields formControl={newForm.control} options={options} />
+                  <PaperTypeFormFields formControl={form.control} options={options} />
                 ) : (
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField control={newForm.control} name="name" render={({ field }) => (
+                    <FormField control={form.control} name="name" render={({ field }) => (
                       <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <FormField control={newForm.control} name="price" render={({ field }) => (
+                    <FormField control={form.control} name="price" render={({ field }) => (
                       <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                   </div>
