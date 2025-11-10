@@ -39,7 +39,7 @@ export default function Header() {
         <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
           <div className="flex items-center justify-end space-x-2">
               <Button asChild variant="ghost" size="icon" className={cn(
-                'h-7 w-7 rounded-full', 
+                'rounded-full', 
                 !isHomePage && 'border-2 border-transparent animate-border-pulse'
               )}>
                 <Link href="/">
