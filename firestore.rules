@@ -75,6 +75,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /printRatios/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /bindingTypes/{docId} {
       allow read: if true;
       allow write: if isAdmin();

@@ -50,6 +50,7 @@ const getXeroxOptionCollection = (type: XeroxOptionType) => {
         case 'bindingType': return collection(db, 'bindingTypes');
         case 'laminationType': return collection(db, 'laminationTypes');
         case 'formatType': return collection(db, 'formatTypes');
+        case 'printRatio': return collection(db, 'printRatios');
         default: throw new Error('Invalid Xerox option type');
     }
 };

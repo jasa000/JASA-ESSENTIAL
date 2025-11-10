@@ -155,7 +155,7 @@ export type XeroxService = {
 };
 
 // Types for Xerox Order Form Configuration
-export type XeroxOptionType = 'paperType' | 'colorOption' | 'bindingType' | 'laminationType' | 'formatType';
+export type XeroxOptionType = 'paperType' | 'colorOption' | 'bindingType' | 'laminationType' | 'formatType' | 'printRatio';
 
 export type XeroxOption = {
   id: string;

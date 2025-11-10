@@ -72,6 +72,7 @@ const optionCategories: { type: XeroxOptionType; title: string }[] = [
   { type: "paperType", title: "Paper Types" },
   { type: "colorOption", title: "Color Options" },
   { type: "formatType", title: "Formats" },
+  { type: "printRatio", title: "Print Ratios" },
   { type: "bindingType", title: "Binding Types" },
   { type: "laminationType", title: "Lamination Types" },
 ];
@@ -84,6 +85,7 @@ export default function ManageXeroxFormPage() {
     paperType: [],
     colorOption: [],
     formatType: [],
+    printRatio: [],
     bindingType: [],
     laminationType: [],
   });
