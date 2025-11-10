@@ -91,6 +91,136 @@ const optionCategories: { type: XeroxOptionType; title: string; }[] = [
   { type: "laminationType", title: "Lamination Types" },
 ];
 
+const OptionCheckboxList = ({ control, name, label, items }: { control: any, name: any, label: string, items: XeroxOption[] }) => (
+    <div>
+      <FormLabel>{label}</FormLabel>
+      <ScrollArea className="h-40 rounded-md border p-4 mt-2">
+        {items.map((item) => (
+          <FormField
+            key={item.id}
+            control={control}
+            name={name}
+            render={({ field }) => {
+              return (
+                <FormItem
+                  key={item.id}
+                  className="flex flex-row items-start space-x-3 space-y-0 mb-4"
+                >
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value?.includes(item.id)}
+                      onCheckedChange={(checked) => {
+                        return checked
+                          ? field.onChange([...(field.value || []), item.id])
+                          : field.onChange(
+                              (field.value || []).filter(
+                                (value: string) => value !== item.id
+                              )
+                            );
+                      }}
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal w-full">
+                    <div className="flex justify-between">
+                      <span>{item.name}</span>
+                      <span>Rs {item.price?.toFixed(2)}</span>
+                    </div>
+                  </FormLabel>
+                </FormItem>
+              );
+            }}
+          />
+        ))}
+      </ScrollArea>
+    </div>
+  );
+
+const PaperTypeFormFields = ({ formControl, options }: { formControl: any, options: Record<XeroxOptionType, XeroxOption[]>}) => (
+    <>
+       <div className="grid grid-cols-2 gap-4">
+        <FormField control={formControl} name="name" render={({ field }) => (
+          <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={formControl} name="price" render={({ field }) => (
+          <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+      </div>
+      <Separator />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <OptionCheckboxList control={formControl} name="colorOptionIds" label="Available Color Options" items={options.colorOption} />
+        <OptionCheckboxList control={formControl} name="formatTypeIds" label="Available Formats" items={options.formatType} />
+        <OptionCheckboxList control={formControl} name="printRatioIds" label="Available Print Ratios" items={options.printRatio} />
+        <OptionCheckboxList control={formControl} name="bindingTypeIds" label="Available Binding Types" items={options.bindingType} />
+        <OptionCheckboxList control={formControl} name="laminationTypeIds" label="Available Lamination Types" items={options.laminationType} />
+      </div>
+    </>
+  );
+
+const AddNewDialog = ({
+    type,
+    title,
+    options,
+    isPaperType,
+    handleAddNewSubmit,
+    isSubmitting,
+  }: {
+    type: XeroxOptionType,
+    title: string,
+    options: Record<XeroxOptionType, XeroxOption[]>,
+    isPaperType: boolean,
+    handleAddNewSubmit: (values: any, type: XeroxOptionType) => Promise<boolean>,
+    isSubmitting: boolean
+  }) => {
+      const [isOpen, setIsOpen] = useState(false);
+      
+      const newForm = useForm<z.infer<typeof (isPaperType ? paperTypeSchema : optionSchema)>>({
+        resolver: zodResolver(isPaperType ? paperTypeSchema : optionSchema),
+        defaultValues: isPaperType ? { name: "", price: 0, colorOptionIds: [], formatTypeIds: [], printRatioIds: [], bindingTypeIds: [], laminationTypeIds: [] } : { name: "", price: 0 },
+      });
+
+      const onNewSubmit = async (values: any) => {
+          const success = await handleAddNewSubmit(values, type);
+          if(success) {
+            setIsOpen(false);
+            newForm.reset();
+          }
+      }
+      
+      return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Add New</Button>
+          </DialogTrigger>
+          <DialogContent className={isPaperType ? "max-w-3xl" : ""}>
+            <DialogHeader>
+              <DialogTitle>Add New {title}</DialogTitle>
+            </DialogHeader>
+            <Form {...newForm}>
+              <form onSubmit={newForm.handleSubmit(onNewSubmit)} className="space-y-4">
+                {isPaperType ? (
+                  <PaperTypeFormFields formControl={newForm.control} options={options} />
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={newForm.control} name="name" render={({ field }) => (
+                      <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={newForm.control} name="price" render={({ field }) => (
+                      <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                )}
+                <DialogFooter>
+                  <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                  <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Add Option"}</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      );
+};
+
+
 export default function ManageXeroxFormPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -229,123 +359,9 @@ export default function ManageXeroxFormPage() {
     }
   };
 
-  const OptionCheckboxList = ({ control, name, label, items }: { control: any, name: any, label: string, items: XeroxOption[] }) => (
-    <div>
-      <FormLabel>{label}</FormLabel>
-      <ScrollArea className="h-40 rounded-md border p-4 mt-2">
-        {items.map((item) => (
-          <FormField
-            key={item.id}
-            control={control}
-            name={name}
-            render={({ field }) => {
-              return (
-                <FormItem
-                  key={item.id}
-                  className="flex flex-row items-start space-x-3 space-y-0 mb-4"
-                >
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value?.includes(item.id)}
-                      onCheckedChange={(checked) => {
-                        return checked
-                          ? field.onChange([...(field.value || []), item.id])
-                          : field.onChange(
-                              (field.value || []).filter(
-                                (value: string) => value !== item.id
-                              )
-                            );
-                      }}
-                    />
-                  </FormControl>
-                  <FormLabel className="font-normal w-full">
-                    <div className="flex justify-between">
-                      <span>{item.name}</span>
-                      <span>Rs {item.price?.toFixed(2)}</span>
-                    </div>
-                  </FormLabel>
-                </FormItem>
-              );
-            }}
-          />
-        ))}
-      </ScrollArea>
-    </div>
-  );
-
-  const PaperTypeFormFields = ({ formControl }: { formControl: any }) => (
-    <>
-       <div className="grid grid-cols-2 gap-4">
-        <FormField control={formControl} name="name" render={({ field }) => (
-          <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
-        <FormField control={formControl} name="price" render={({ field }) => (
-          <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
-      </div>
-      <Separator />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <OptionCheckboxList control={formControl} name="colorOptionIds" label="Available Color Options" items={options.colorOption} />
-        <OptionCheckboxList control={formControl} name="formatTypeIds" label="Available Formats" items={options.formatType} />
-        <OptionCheckboxList control={formControl} name="printRatioIds" label="Available Print Ratios" items={options.printRatio} />
-        <OptionCheckboxList control={formControl} name="bindingTypeIds" label="Available Binding Types" items={options.bindingType} />
-        <OptionCheckboxList control={formControl} name="laminationTypeIds" label="Available Lamination Types" items={options.laminationType} />
-      </div>
-    </>
-  );
-
   const renderOptionCard = (type: XeroxOptionType, title: string) => {
     const optionList = options[type];
     const isPaperType = type === 'paperType';
-
-    const AddNewDialog = () => {
-      const [isOpen, setIsOpen] = useState(false);
-      const newForm = useForm<z.infer<typeof (isPaperType ? paperTypeSchema : optionSchema)>>({
-        resolver: zodResolver(isPaperType ? paperTypeSchema : optionSchema),
-        defaultValues: isPaperType ? { name: "", price: 0, colorOptionIds: [], formatTypeIds: [], printRatioIds: [], bindingTypeIds: [], laminationTypeIds: [] } : { name: "", price: 0 },
-      });
-
-      const onNewSubmit = async (values: any) => {
-          const success = await handleAddNewSubmit(values, type);
-          if(success) {
-            setIsOpen(false);
-            newForm.reset();
-          }
-      }
-      
-      return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Add New</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Add New {title}</DialogTitle>
-            </DialogHeader>
-            <Form {...newForm}>
-              <form onSubmit={newForm.handleSubmit(onNewSubmit)} className="space-y-4">
-                {isPaperType ? (
-                  <PaperTypeFormFields formControl={newForm.control} />
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={newForm.control} name="name" render={({ field }) => (
-                      <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={newForm.control} name="price" render={({ field }) => (
-                      <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                )}
-                <DialogFooter>
-                  <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-                  <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Add Option"}</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      );
-    };
 
     return (
       <Card>
@@ -354,7 +370,14 @@ export default function ManageXeroxFormPage() {
             <CardTitle>{title}</CardTitle>
             <CardDescription>Manage {title.toLowerCase()} for the order form.</CardDescription>
           </div>
-          <AddNewDialog />
+          <AddNewDialog
+            type={type}
+            title={title}
+            options={options}
+            isPaperType={isPaperType}
+            handleAddNewSubmit={handleAddNewSubmit}
+            isSubmitting={isSubmitting}
+          />
         </CardHeader>
         <CardContent>
           <Table>
@@ -430,7 +453,7 @@ export default function ManageXeroxFormPage() {
            {editingOption?.type === 'paperType' ? (
             <Form {...paperTypeForm}>
                 <form onSubmit={paperTypeForm.handleSubmit(handleFormSubmit)} className="space-y-4">
-                  <PaperTypeFormFields formControl={paperTypeForm.control} />
+                  <PaperTypeFormFields formControl={paperTypeForm.control} options={options} />
                   <DialogFooter>
                       <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                       <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}</Button>
