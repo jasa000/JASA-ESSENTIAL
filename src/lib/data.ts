@@ -1,5 +1,5 @@
 
-import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 
@@ -41,6 +41,17 @@ const productTypesCollection = collection(db, 'productTypes');
 const homepageContentCollection = collection(db, 'homepageContent');
 const xeroxServicesCollection = collection(db, 'xeroxServices');
 
+
+// --- Xerox Form Option Collections ---
+const getXeroxOptionCollection = (type: XeroxOptionType) => {
+    switch(type) {
+        case 'paperType': return collection(db, 'paperTypes');
+        case 'colorOption': return collection(db, 'colorOptions');
+        case 'bindingType': return collection(db, 'bindingTypes');
+        case 'laminationType': return collection(db, 'laminationTypes');
+        default: throw new Error('Invalid Xerox option type');
+    }
+};
 
 export const getHomepageContent = async (): Promise<HomepageContent | null> => {
     try {
@@ -341,3 +352,57 @@ export const updateXeroxServiceOrder = async (updates: {id: string, order: numbe
         throw new Error("Failed to update service order.");
     }
 }
+
+
+// --- Xerox Form Option Functions ---
+
+export const getXeroxOptions = async (type: XeroxOptionType): Promise<XeroxOption[]> => {
+    try {
+        const collectionRef = getXeroxOptionCollection(type);
+        const q = query(collectionRef, orderBy('price', 'asc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as XeroxOption));
+    } catch (error) {
+        console.error(`Error getting Xerox options for ${type}: `, error);
+        throw new Error(`Failed to fetch Xerox options for ${type}.`);
+    }
+};
+
+export const addXeroxOption = async (type: XeroxOptionType, optionData: Omit<XeroxOption, 'id' | 'createdAt'>): Promise<XeroxOption> => {
+  const newOptionData = {
+    ...optionData,
+    createdAt: serverTimestamp(),
+  };
+  try {
+    const collectionRef = getXeroxOptionCollection(type);
+    const docRef = await addDoc(collectionRef, newOptionData);
+    return { ...newOptionData, id: docRef.id } as XeroxOption;
+  } catch (error) {
+    console.error(`Error adding Xerox option to ${type}: `, error);
+    throw new Error(`Failed to add Xerox option to ${type}.`);
+  }
+};
+
+export const updateXeroxOption = async (type: XeroxOptionType, id: string, optionData: Partial<Omit<XeroxOption, 'id' | 'createdAt'>>): Promise<void> => {
+    try {
+        const collectionRef = getXeroxOptionCollection(type);
+        const optionDoc = doc(collectionRef, id);
+        await updateDoc(optionDoc, optionData);
+    } catch (error) {
+        console.error(`Error updating Xerox option in ${type}: `, error);
+        throw new Error(`Failed to update Xerox option in ${type}.`);
+    }
+};
+
+export const deleteXeroxOption = async (type: XeroxOptionType, id: string): Promise<void> => {
+    try {
+        const collectionRef = getXeroxOptionCollection(type);
+        const optionDoc = doc(collectionRef, id);
+        await deleteDoc(optionDoc);
+    } catch (error) {
+        console.error(`Error deleting Xerox option from ${type}: `, error);
+        throw new Error(`Failed to delete Xerox option from ${type}.`);
+    }
+};
+
+    

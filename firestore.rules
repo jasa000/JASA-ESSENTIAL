@@ -61,5 +61,25 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    
+    // Xerox Form Option Collections
+    match /paperTypes/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /colorOptions/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /bindingTypes/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /laminationTypes/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
+
+    

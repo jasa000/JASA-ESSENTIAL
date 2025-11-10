@@ -45,7 +45,7 @@ export type UserProfile = {
   canManageProducts?: boolean; // New permission for employees
   mobile?: string;
   altMobiles?: { value: string }[];
-  altEmails?: { value: string }[];
+  altEmails?: { value: string().email("Invalid email address") }[];
   addresses?: {
     type: 'Home' | 'Work';
     line1: string;
@@ -153,3 +153,15 @@ export type XeroxService = {
   unit?: string;
   createdAt: any;
 };
+
+// Types for Xerox Order Form Configuration
+export type XeroxOptionType = 'paperType' | 'colorOption' | 'bindingType' | 'laminationType';
+
+export type XeroxOption = {
+  id: string;
+  name: string;
+  price: number;
+  createdAt: any;
+};
+
+    
