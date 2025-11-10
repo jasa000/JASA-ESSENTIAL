@@ -178,7 +178,7 @@ export default function Home() {
 
   return (
     <div className="w-screen overflow-x-hidden">
-       <div className="w-full py-8">
+       <div className="w-full py-8 relative">
          <Carousel
           setApi={setEmblaApi}
           plugins={[plugin.current]}
@@ -234,18 +234,20 @@ export default function Home() {
           </CarouselContent>
         </Carousel>
         {scrollSnaps.length > 1 && (
-            <div className="mt-4 flex justify-center gap-2">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+              <div className="bg-background/50 backdrop-blur-sm p-1 rounded-full flex items-center gap-1.5 shadow-md">
                 {scrollSnaps.map((_, index) => (
                     <button
                         key={index}
                         onClick={() => emblaApi?.scrollTo(index)}
                         className={cn(
                             "h-2 w-2 rounded-full transition-all duration-300",
-                            currentSlide === index ? "w-6 bg-primary" : "bg-muted-foreground/50"
+                            currentSlide === index ? "w-4 bg-primary" : "bg-muted-foreground/50 hover:bg-muted-foreground"
                         )}
                         aria-label={`Go to slide ${index + 1}`}
                     />
                 ))}
+              </div>
             </div>
         )}
       </div>
