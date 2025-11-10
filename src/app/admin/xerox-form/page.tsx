@@ -173,7 +173,7 @@ const AddNewDialog = ({
   }) => {
       const [isOpen, setIsOpen] = useState(false);
       
-      const form = useForm<z.infer<typeof paperTypeSchema | typeof optionSchema>>({
+      const form = useForm({
         resolver: zodResolver(isPaperType ? paperTypeSchema : optionSchema),
         defaultValues: isPaperType
           ? { name: "", price: 0, colorOptionIds: [], formatTypeIds: [], printRatioIds: [], bindingTypeIds: [], laminationTypeIds: [] }
