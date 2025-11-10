@@ -361,7 +361,7 @@ export const updateXeroxServiceOrder = async (updates: {id: string, order: numbe
 export const getXeroxOptions = async (type: XeroxOptionType): Promise<XeroxOption[]> => {
     try {
         const collectionRef = getXeroxOptionCollection(type);
-        const q = query(collectionRef, orderBy('price', 'asc'));
+        const q = query(collectionRef, orderBy('name', 'asc'));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as XeroxOption));
     } catch (error) {
@@ -372,7 +372,8 @@ export const getXeroxOptions = async (type: XeroxOptionType): Promise<XeroxOptio
 
 export const addXeroxOption = async (type: XeroxOptionType, optionData: Omit<XeroxOption, 'id' | 'createdAt'>): Promise<XeroxOption> => {
   const newOptionData = {
-    ...optionData,
+    name: optionData.name,
+    price: optionData.price ?? 0,
     createdAt: serverTimestamp(),
   };
   try {
@@ -389,7 +390,11 @@ export const updateXeroxOption = async (type: XeroxOptionType, id: string, optio
     try {
         const collectionRef = getXeroxOptionCollection(type);
         const optionDoc = doc(collectionRef, id);
-        await updateDoc(optionDoc, optionData);
+        const updateData = { ...optionData };
+        if (updateData.price === undefined) {
+            updateData.price = 0;
+        }
+        await updateDoc(optionDoc, updateData);
     } catch (error) {
         console.error(`Error updating Xerox option in ${type}: `, error);
         throw new Error(`Failed to update Xerox option in ${type}.`);

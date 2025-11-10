@@ -160,6 +160,6 @@ export type XeroxOptionType = 'paperType' | 'colorOption' | 'bindingType' | 'lam
 export type XeroxOption = {
   id: string;
   name: string;
-  price: number;
+  price?: number;
   createdAt: any;
 };

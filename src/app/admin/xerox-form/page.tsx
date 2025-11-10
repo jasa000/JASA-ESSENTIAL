@@ -63,18 +63,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, Pencil, PlusCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const optionSchema = z.object({
+const optionWithPriceSchema = z.object({
   name: z.string().min(1, "Option name is required."),
   price: z.coerce.number().min(0, "Price must be a non-negative number."),
 });
 
-const optionCategories: { type: XeroxOptionType; title: string }[] = [
-  { type: "paperType", title: "Paper Types" },
-  { type: "colorOption", title: "Color Options" },
-  { type: "formatType", title: "Formats" },
-  { type: "printRatio", title: "Print Ratios" },
-  { type: "bindingType", title: "Binding Types" },
-  { type: "laminationType", title: "Lamination Types" },
+const optionWithoutPriceSchema = z.object({
+  name: z.string().min(1, "Option name is required."),
+});
+
+const optionCategories: { type: XeroxOptionType; title: string; hasPrice: boolean }[] = [
+  { type: "paperType", title: "Paper Types", hasPrice: true },
+  { type: "colorOption", title: "Color Options", hasPrice: false },
+  { type: "formatType", title: "Formats", hasPrice: false },
+  { type: "printRatio", title: "Print Ratios", hasPrice: false },
+  { type: "bindingType", title: "Binding Types", hasPrice: false },
+  { type: "laminationType", title: "Lamination Types", hasPrice: false },
 ];
 
 export default function ManageXeroxFormPage() {
@@ -90,14 +94,20 @@ export default function ManageXeroxFormPage() {
     laminationType: [],
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [editingOption, setEditingOption] = useState<{ option: XeroxOption; type: XeroxOptionType } | null>(null);
+  const [editingOption, setEditingOption] = useState<{ option: XeroxOption; type: XeroxOptionType, hasPrice: boolean } | null>(null);
   const [deletingOption, setDeletingOption] = useState<{ option: XeroxOption; type: XeroxOptionType } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const form = useForm<z.infer<typeof optionSchema>>({
-    resolver: zodResolver(optionSchema),
+  const form = useForm<z.infer<typeof optionWithPriceSchema>>({
+    resolver: zodResolver(optionWithPriceSchema),
     defaultValues: { name: "", price: 0 },
   });
+  
+  const simpleForm = useForm<z.infer<typeof optionWithoutPriceSchema>>({
+    resolver: zodResolver(optionWithoutPriceSchema),
+    defaultValues: { name: "" },
+  });
+
 
   useEffect(() => {
     if (!authLoading) {
@@ -111,14 +121,21 @@ export default function ManageXeroxFormPage() {
 
   useEffect(() => {
     if (editingOption) {
-      form.reset({
-        name: editingOption.option.name,
-        price: editingOption.option.price,
-      });
+      if(editingOption.hasPrice) {
+        form.reset({
+          name: editingOption.option.name,
+          price: editingOption.option.price,
+        });
+      } else {
+        simpleForm.reset({
+          name: editingOption.option.name,
+        });
+      }
     } else {
       form.reset({ name: "", price: 0 });
+      simpleForm.reset({ name: "" });
     }
-  }, [editingOption, form]);
+  }, [editingOption, form, simpleForm]);
 
   const fetchAllOptions = async () => {
     setIsLoading(true);
@@ -142,7 +159,7 @@ export default function ManageXeroxFormPage() {
     }
   };
 
-  const handleFormSubmit = async (values: z.infer<typeof optionSchema>) => {
+  const handleFormSubmit = async (values: z.infer<typeof optionWithPriceSchema> | z.infer<typeof optionWithoutPriceSchema>) => {
     if (!editingOption) return;
     setIsSubmitting(true);
     try {
@@ -157,7 +174,7 @@ export default function ManageXeroxFormPage() {
     }
   };
   
-  const handleAddNewSubmit = async (values: z.infer<typeof optionSchema>, type: XeroxOptionType) => {
+  const handleAddNewSubmit = async (values: z.infer<typeof optionWithPriceSchema> | z.infer<typeof optionWithoutPriceSchema>, type: XeroxOptionType) => {
     setIsSubmitting(true);
     try {
       await addXeroxOption(type, values);
@@ -187,14 +204,14 @@ export default function ManageXeroxFormPage() {
     }
   };
 
-  const AddNewOptionDialog = ({ type, title }: { type: XeroxOptionType, title: string }) => {
+  const AddNewOptionDialog = ({ type, title, hasPrice }: { type: XeroxOptionType, title: string, hasPrice: boolean }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const newForm = useForm<z.infer<typeof optionSchema>>({
-      resolver: zodResolver(optionSchema),
+    const newForm = useForm<z.infer<typeof optionWithPriceSchema>>({
+      resolver: zodResolver(hasPrice ? optionWithPriceSchema : optionWithoutPriceSchema),
       defaultValues: { name: "", price: 0 },
     });
 
-    const onNewSubmit = async (values: z.infer<typeof optionSchema>) => {
+    const onNewSubmit = async (values: z.infer<typeof optionWithPriceSchema>) => {
         const success = await handleAddNewSubmit(values, type);
         if(success) {
           setIsOpen(false);
@@ -216,9 +233,9 @@ export default function ManageXeroxFormPage() {
               <FormField control={newForm.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={newForm.control} name="price" render={({ field }) => (
+              {hasPrice && <FormField control={newForm.control} name="price" render={({ field }) => (
                 <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+              )} />}
               <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Add Option"}</Button>
@@ -230,7 +247,7 @@ export default function ManageXeroxFormPage() {
     );
   };
   
-  const renderOptionCard = (type: XeroxOptionType, title: string) => {
+  const renderOptionCard = (type: XeroxOptionType, title: string, hasPrice: boolean) => {
     const optionList = options[type];
     return (
       <Card>
@@ -239,14 +256,14 @@ export default function ManageXeroxFormPage() {
             <CardTitle>{title}</CardTitle>
             <CardDescription>Manage {title.toLowerCase()} for the order form.</CardDescription>
           </div>
-          <AddNewOptionDialog type={type} title={title} />
+          <AddNewOptionDialog type={type} title={title} hasPrice={hasPrice} />
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Option Name</TableHead>
-                <TableHead>Price</TableHead>
+                {hasPrice && <TableHead>Price</TableHead>}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -254,19 +271,19 @@ export default function ManageXeroxFormPage() {
               {isLoading ? Array.from({ length: 2 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                  {hasPrice && <TableCell><Skeleton className="h-6 w-16" /></TableCell>}
                   <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                 </TableRow>
               )) : optionList.length === 0 ? (
-                <TableRow><TableCell colSpan={3} className="text-center">No options configured.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={hasPrice ? 3 : 2} className="text-center">No options configured.</TableCell></TableRow>
               ) : (
                 optionList.map(option => (
                   <TableRow key={option.id}>
                     <TableCell className="font-medium">{option.name}</TableCell>
-                    <TableCell>Rs {option.price.toFixed(2)}</TableCell>
+                    {hasPrice && <TableCell>Rs {option.price?.toFixed(2)}</TableCell>}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingOption({ option, type })}>
+                        <Button variant="ghost" size="icon" onClick={() => setEditingOption({ option, type, hasPrice })}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => setDeletingOption({ option, type })}>
@@ -301,7 +318,7 @@ export default function ManageXeroxFormPage() {
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
           {optionCategories.map(cat => (
             <div key={cat.type}>
-              {renderOptionCard(cat.type, cat.title)}
+              {renderOptionCard(cat.type, cat.title, cat.hasPrice)}
             </div>
           ))}
         </div>
@@ -312,20 +329,34 @@ export default function ManageXeroxFormPage() {
           <DialogHeader>
             <DialogTitle>Edit Option</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="price" render={({ field }) => (
-                <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}</Button>
-              </DialogFooter>
-            </form>
-          </Form>
+           {editingOption?.hasPrice ? (
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="price" render={({ field }) => (
+                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}</Button>
+                </DialogFooter>
+                </form>
+            </Form>
+           ) : (
+            <Form {...simpleForm}>
+                <form onSubmit={simpleForm.handleSubmit(handleFormSubmit)} className="space-y-4">
+                <FormField control={simpleForm.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}</Button>
+                </DialogFooter>
+                </form>
+            </Form>
+           )}
         </DialogContent>
       </Dialog>
       
