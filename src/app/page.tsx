@@ -15,11 +15,13 @@ import type { Product, HomepageContent, Category } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import XeroxTicker from "@/components/xerox-ticker";
+import { Input } from "@/components/ui/input";
+import Image from "next/image";
 
 
 export default function Home() {
@@ -178,7 +180,20 @@ export default function Home() {
 
   return (
     <div className="w-screen overflow-x-hidden">
-       <div className="w-full py-8">
+       <div className="container mx-auto px-4 py-8 space-y-8">
+        <div className="relative w-full">
+            <Input
+              type="text"
+              placeholder="Search your product"
+              className="h-12 rounded-full border-primary pl-12 pr-10 text-base"
+            />
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+               <Image src="/favicon.ico" alt="Jasa Essentials" width={32} height={32} className="rounded-full border-2 border-primary" />
+            </span>
+             <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </span>
+        </div>
          <Carousel
           setApi={setEmblaApi}
           plugins={[plugin.current]}
@@ -193,7 +208,7 @@ export default function Home() {
             {isLoading ? (
                  <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
-                        <Skeleton className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem]" />
+                        <Skeleton className="relative h-64 w-full rounded-2xl md:h-80 lg:h-[23rem]" />
                     </div>
                  </CarouselItem>
             ) : carouselItems.map((item, index) => {
@@ -224,7 +239,7 @@ export default function Home() {
               !isLoading && carouselItems.length === 0 && (
                 <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
-                       <div className="relative h-64 w-full rounded-lg md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
+                       <div className="relative h-64 w-full rounded-2xl md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
                           <p className="text-muted-foreground">No promotional content available right now.</p>
                        </div>
                     </div>
@@ -234,7 +249,7 @@ export default function Home() {
           </CarouselContent>
         </Carousel>
         {scrollSnaps.length > 1 && (
-            <div className="mt-4 flex justify-center">
+            <div className="flex justify-center">
               <div className="bg-background/50 backdrop-blur-sm p-1 rounded-full flex items-center gap-1.5 shadow-md">
                 {scrollSnaps.map((_, index) => (
                     <button

@@ -45,22 +45,6 @@ export default function Header() {
             </Link>
         </div>
 
-        <div className="flex flex-1 justify-center px-4">
-          <div className="relative w-full max-w-md">
-            <Input
-              type="text"
-              placeholder="Search your product"
-              className="rounded-full border-primary pl-12 pr-10"
-            />
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-               <Image src="/favicon.ico" alt="Jasa Essentials" width={32} height={32} className="rounded-full border-2 border-primary" />
-            </span>
-             <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-              <Search className="h-5 w-5 text-muted-foreground" />
-            </span>
-          </div>
-        </div>
-        
         <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
           <div className="flex items-center justify-end space-x-2">
               {user && (
