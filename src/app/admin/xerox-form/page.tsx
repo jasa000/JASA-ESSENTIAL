@@ -437,7 +437,7 @@ export default function ManageXeroxFormPage() {
         </p>
         
         <Tabs defaultValue="paperType" className="mt-8">
-          <ScrollArea>
+          <ScrollArea className="w-full whitespace-nowrap">
             <TabsList>
               {optionCategories.map(cat => (
                 <TabsTrigger key={cat.type} value={cat.type}>
@@ -504,5 +504,7 @@ export default function ManageXeroxFormPage() {
     </>
   );
 }
+
+    
 
     
