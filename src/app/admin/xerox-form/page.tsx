@@ -437,21 +437,21 @@ export default function ManageXeroxFormPage() {
         </p>
         
         <Tabs defaultValue="paperType" className="mt-8">
-          <ScrollArea className="w-full whitespace-nowrap">
-            <TabsList>
-              {optionCategories.map(cat => (
-                <TabsTrigger key={cat.type} value={cat.type}>
-                  {cat.title}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </ScrollArea>
+            <div className="w-full overflow-x-auto pb-2 no-scrollbar">
+              <TabsList className="whitespace-nowrap">
+                {optionCategories.map(cat => (
+                  <TabsTrigger key={cat.type} value={cat.type}>
+                    {cat.title}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
-          {optionCategories.map(cat => (
-            <TabsContent key={cat.type} value={cat.type} className="mt-4">
-              {renderOptionTable(cat.type, cat.title)}
-            </TabsContent>
-          ))}
+            {optionCategories.map(cat => (
+              <TabsContent key={cat.type} value={cat.type} className="mt-4">
+                {renderOptionTable(cat.type, cat.title)}
+              </TabsContent>
+            ))}
         </Tabs>
 
       </div>
@@ -504,6 +504,8 @@ export default function ManageXeroxFormPage() {
     </>
   );
 }
+
+    
 
     
 
