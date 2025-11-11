@@ -452,6 +452,15 @@ export default function ManageXeroxFormPage() {
             ))}
         </Tabs>
 
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Xerox Form</CardTitle>
+          </CardHeader>
+          <CardContent>
+            for now
+          </CardContent>
+        </Card>
+
       </div>
 
       <Dialog open={!!editingOption} onOpenChange={() => setEditingOption(null)}>
