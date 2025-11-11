@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -60,13 +60,20 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Pencil, PlusCircle, Loader2 } from "lucide-react";
+import { Trash2, Pencil, PlusCircle, Loader2, FileUp, XCircle, FileText, FileImage, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Image from "next/image";
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
 
+// Set up worker for pdf.js
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+}
 
 const optionSchema = z.object({
   name: z.string().min(1, "Option name is required."),
@@ -218,6 +225,109 @@ const AddNewDialog = ({
       );
 };
 
+const XeroxFormSection = () => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [fileDetails, setFileDetails] = useState<{name: string; type: string; pages?: number; preview?: string;} | null>(null);
+    const [isParsing, setIsParsing] = useState(false);
+    const { toast } = useToast();
+
+    const getPageCount = async (file: File) => {
+        setIsParsing(true);
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            if (file.type === 'application/pdf') {
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                return pdf.numPages;
+            } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                // This is an approximation; mammoth doesn't directly give page count.
+                // We'll estimate based on word count. A standard page is ~250 words.
+                const pageBreaks = (result.value.match(/\\page/g) || []).length + 1;
+                return pageBreaks;
+            }
+        } catch (error) {
+            console.error("Error getting page count:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not parse the document to get page count.' });
+        } finally {
+            setIsParsing(false);
+        }
+        return undefined;
+    };
+
+    const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const pages = await getPageCount(file);
+            const isImage = file.type.startsWith('image/');
+            setFileDetails({
+                name: file.name,
+                type: file.type,
+                pages,
+                preview: isImage ? URL.createObjectURL(file) : undefined,
+            });
+        }
+    }, [toast]);
+
+    const handleClearFile = () => {
+        setFileDetails(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    return (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ClipboardList /> Xerox Form</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!fileDetails ? (
+              <div
+                className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileUp className="h-12 w-12 text-muted-foreground" />
+                <p className="mt-2 text-sm font-medium text-muted-foreground">Upload your document</p>
+                <p className="text-xs text-muted-foreground">PDF, DOCX, or Image</p>
+                <Input 
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+                />
+              </div>
+            ) : (
+              <Card className="p-4 relative">
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={handleClearFile}>
+                      <XCircle className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                  </Button>
+                  <div className="flex items-start gap-4">
+                      {fileDetails.preview ? (
+                          <div className="relative h-24 w-24 flex-shrink-0">
+                             <Image src={fileDetails.preview} alt="File preview" fill className="rounded-md object-cover" />
+                          </div>
+                      ) : (
+                          <div className="h-24 w-24 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
+                             <FileText className="h-10 w-10 text-muted-foreground" />
+                          </div>
+                      )}
+                      <div className="flex-grow">
+                          <p className="font-semibold truncate">{fileDetails.name}</p>
+                          <p className="text-sm text-muted-foreground capitalize">{fileDetails.type.split('/')[1]}</p>
+                          {isParsing ? (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin"/> Checking pages...</p>
+                          ) : fileDetails.pages !== undefined && (
+                              <p className="text-sm text-muted-foreground">Pages: {fileDetails.pages}</p>
+                          )}
+                      </div>
+                  </div>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
+    )
+}
 
 export default function ManageXeroxFormPage() {
   const { user, loading: authLoading } = useAuth();
@@ -452,14 +562,7 @@ export default function ManageXeroxFormPage() {
             ))}
         </Tabs>
 
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Xerox Form</CardTitle>
-          </CardHeader>
-          <CardContent>
-            for now
-          </CardContent>
-        </Card>
+        <XeroxFormSection />
 
       </div>
 
@@ -511,7 +614,3 @@ export default function ManageXeroxFormPage() {
     </>
   );
 }
-
-    
-
-    
