@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
 }
 
 const xeroxOrderSchema = z.object({
-  file: z.any().optional(),
+  file: z.any().refine(file => file, "Please upload a document."),
   paperType: z.string().min(1, "Please select a paper type."),
   colorOption: z.string().min(1, "Please select a color option."),
   formatType: z.string().min(1, "Please select a format."),
@@ -118,9 +118,12 @@ export default function XeroxOrderPage() {
               const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
               return pdf.numPages;
           } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+              // This is an estimation for docx, as it doesn't have a fixed page concept
+              // like PDF. A more accurate server-side conversion would be needed for precision.
               const result = await mammoth.extractRawText({ arrayBuffer });
-              const pageBreaks = (result.value.match(/\\page/g) || []).length + 1;
-              return pageBreaks;
+              // Simple estimation: 250 words per page.
+              const wordCount = result.value.split(/\s+/).length;
+              return Math.ceil(wordCount / 250);
           }
       } catch (error) {
           console.error("Error getting page count:", error);
@@ -139,24 +142,64 @@ export default function XeroxOrderPage() {
           setFileDetails({
               name: file.name,
               type: file.type,
-              pages,
+              pages: isImage ? 1 : pages, // Assume an image is 1 page
               preview: isImage ? URL.createObjectURL(file) : undefined,
           });
-          form.setValue('file', file);
+          form.setValue('file', file, { shouldValidate: true });
       }
   }, [toast, form]);
 
   const handleClearFile = () => {
       setFileDetails(null);
-      form.setValue('file', null);
+      form.setValue('file', null, { shouldValidate: true });
       if (fileInputRef.current) {
           fileInputRef.current.value = '';
       }
   };
 
   function onSubmit(values: z.infer<typeof xeroxOrderSchema>) {
-    console.log(values);
-    toast({ title: "Order Calculated", description: "Your Xerox order has been calculated." });
+    if (!fileDetails?.pages) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Calculate',
+        description: 'Page count for the uploaded document could not be determined.',
+      });
+      return;
+    }
+
+    const selectedPaper = options.paperType.find(opt => opt.id === values.paperType);
+    if (!selectedPaper?.price) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Calculate',
+        description: 'The selected paper type does not have a price associated with it.',
+      });
+      return;
+    }
+
+    const selectedRatio = options.printRatio.find(opt => opt.id === values.printRatio);
+    if (!selectedRatio) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Calculate',
+        description: 'Please select a valid print ratio.',
+      });
+      return;
+    }
+
+    let pagesToCharge = fileDetails.pages;
+    if (selectedRatio.name === '1:2') {
+      pagesToCharge = Math.ceil(fileDetails.pages / 2);
+    }
+    // You can add more ratio logic here, e.g., '1:4'
+    
+    const totalCost = pagesToCharge * selectedPaper.price * values.quantity;
+
+    toast({
+      title: "Order Calculated",
+      description: `The estimated total cost for your order is Rs ${totalCost.toFixed(2)}.`,
+      duration: 9000,
+    });
   }
 
   if (authLoading || !user) {
@@ -222,6 +265,7 @@ export default function XeroxOrderPage() {
                             </div>
                         </Card>
                         )}
+                        <FormField control={form.control} name="file" render={({ field }) => <FormItem><FormMessage /></FormItem>} />
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormField
@@ -235,7 +279,7 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a paper type" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.paperType.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
+                                        {options.paperType.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name} (Rs {opt.price?.toFixed(2)})</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -307,7 +351,7 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a binding type" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.bindingType.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
+                                        {options.bindingType.map(opt => <SelectItem key={opt.id} value={optid}>{opt.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -340,3 +384,5 @@ export default function XeroxOrderPage() {
     </div>
   );
 }
+
+    
