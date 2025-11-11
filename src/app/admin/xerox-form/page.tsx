@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/context/auth-provider";
@@ -65,6 +65,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const optionSchema = z.object({
   name: z.string().min(1, "Option name is required."),
@@ -190,7 +192,7 @@ const AddNewDialog = ({
       return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Add New</Button>
+            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Add New {title}</Button>
           </DialogTrigger>
           <DialogContent className={isPaperType ? "max-w-3xl" : ""}>
             <DialogHeader>
@@ -355,25 +357,27 @@ export default function ManageXeroxFormPage() {
     }
   };
 
-  const renderOptionCard = (type: XeroxOptionType, title: string) => {
+  const renderOptionTable = (type: XeroxOptionType, title: string) => {
     const optionList = options[type];
     const isPaperType = type === 'paperType';
 
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>Manage {title.toLowerCase()} for the order form.</CardDescription>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>Manage {title.toLowerCase()} for the order form.</CardDescription>
+            </div>
+            <AddNewDialog
+              type={type}
+              title={title}
+              options={options}
+              isPaperType={isPaperType}
+              handleAddNewSubmit={handleAddNewSubmit}
+              isSubmitting={isSubmitting}
+            />
           </div>
-          <AddNewDialog
-            type={type}
-            title={title}
-            options={options}
-            isPaperType={isPaperType}
-            handleAddNewSubmit={handleAddNewSubmit}
-            isSubmitting={isSubmitting}
-          />
         </CardHeader>
         <CardContent>
           <Table>
@@ -431,14 +435,25 @@ export default function ManageXeroxFormPage() {
         <p className="mt-2 text-muted-foreground">
           Configure the options and pricing for the user-facing Xerox order form.
         </p>
+        
+        <Tabs defaultValue="paperType" className="mt-8">
+          <ScrollArea>
+            <TabsList>
+              {optionCategories.map(cat => (
+                <TabsTrigger key={cat.type} value={cat.type}>
+                  {cat.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </ScrollArea>
 
-        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
           {optionCategories.map(cat => (
-            <div key={cat.type}>
-              {renderOptionCard(cat.type, cat.title)}
-            </div>
+            <TabsContent key={cat.type} value={cat.type} className="mt-4">
+              {renderOptionTable(cat.type, cat.title)}
+            </TabsContent>
           ))}
-        </div>
+        </Tabs>
+
       </div>
 
       <Dialog open={!!editingOption} onOpenChange={() => setEditingOption(null)}>
@@ -489,3 +504,5 @@ export default function ManageXeroxFormPage() {
     </>
   );
 }
+
+    
