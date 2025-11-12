@@ -90,7 +90,7 @@ export default function XeroxOrderPage() {
   const fetchAllOptions = async () => {
     setIsLoading(true);
     try {
-      const optionCategories: XeroxOptionType[] = ['paperType', 'colorOption', 'formatType', 'printRatio', 'bindingType'];
+      const optionCategories: XeroxOptionType[] = ['paperType', 'formatType', 'printRatio', 'bindingType'];
       const allFetchedOptions = await Promise.all(
         optionCategories.map(cat => getXeroxOptions(cat))
       );
@@ -297,7 +297,9 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a color option" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.colorOption.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
+                                            <SelectItem value="black-and-white">Black and White</SelectItem>
+                                            <SelectItem value="colour">Colour</SelectItem>
+                                            <SelectItem value="gradient">Gradient</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
