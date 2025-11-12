@@ -90,7 +90,7 @@ export default function XeroxOrderPage() {
   const fetchAllOptions = async () => {
     setIsLoading(true);
     try {
-      const optionCategories: XeroxOptionType[] = ['paperType', 'formatType', 'printRatio', 'bindingType'];
+      const optionCategories: XeroxOptionType[] = ['paperType', 'bindingType'];
       const allFetchedOptions = await Promise.all(
         optionCategories.map(cat => getXeroxOptions(cat))
       );
@@ -177,21 +177,12 @@ export default function XeroxOrderPage() {
       return;
     }
 
-    const selectedRatio = options.printRatio.find(opt => opt.id === values.printRatio);
-    if (!selectedRatio) {
-      toast({
-        variant: 'destructive',
-        title: 'Cannot Calculate',
-        description: 'Please select a valid print ratio.',
-      });
-      return;
-    }
-
+    const selectedRatio = values.printRatio;
+    
     let pagesToCharge = fileDetails.pages;
-    if (selectedRatio.name === '1:2') {
+    if (selectedRatio === '1:2') {
       pagesToCharge = Math.ceil(fileDetails.pages / 2);
     }
-    // You can add more ratio logic here, e.g., '1:4'
     
     const totalCost = pagesToCharge * selectedPaper.price * values.quantity;
 
@@ -317,7 +308,8 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a format" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.formatType.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
+                                            <SelectItem value="front-only">Front Only</SelectItem>
+                                            <SelectItem value="front-back">Front & Back</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -335,7 +327,8 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a print ratio" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.printRatio.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
+                                            <SelectItem value="1:1">1:1 (Single Side)</SelectItem>
+                                            <SelectItem value="1:2">1:2 (Double Side)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
