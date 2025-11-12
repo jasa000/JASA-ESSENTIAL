@@ -351,7 +351,7 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a binding type" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.bindingType.map(opt => <SelectItem key={opt.id} value={optid}>{opt.name}</SelectItem>)}
+                                        {options.bindingType.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -384,5 +384,3 @@ export default function XeroxOrderPage() {
     </div>
   );
 }
-
-    
