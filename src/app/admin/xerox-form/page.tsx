@@ -242,10 +242,10 @@ export default function XeroxOrderPage() {
       return;
     }
 
-    const selectedRatio = values.printRatio;
+    const selectedFormat = values.formatType;
     
     let pagesToCharge = fileDetails.pages;
-    if (selectedRatio === '1:2') {
+    if (selectedFormat === 'front-back') {
       pagesToCharge = Math.ceil(fileDetails.pages / 2);
     }
     
