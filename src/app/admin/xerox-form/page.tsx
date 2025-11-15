@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
-import { getXeroxOptions } from "@/lib/data";
+import { getXeroxOptions, addXeroxOption, deleteXeroxOption } from "@/lib/data";
 import type { XeroxOption, XeroxOptionType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from "@/components/ui/card";
 import {
   Form,
@@ -24,6 +25,34 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -33,7 +62,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileUp, XCircle, FileText, ClipboardList } from "lucide-react";
+import { Loader2, FileUp, XCircle, FileText, ClipboardList, Trash2, Cog } from "lucide-react";
 import Image from "next/image";
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -53,21 +82,23 @@ const xeroxOrderSchema = z.object({
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
 });
 
+const paperTypeSchema = z.object({
+  name: z.string().min(3, "Paper type name is required."),
+  price: z.coerce.number().positive("Price must be a positive number."),
+});
+
 
 export default function XeroxOrderPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
-  const [options, setOptions] = useState<Record<XeroxOptionType, XeroxOption[]>>({
-    paperType: [],
-    colorOption: [],
-    formatType: [],
-    printRatio: [],
-    bindingType: [],
-    laminationType: [], // Kept for data structure consistency, not used in form
-  });
+  const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
+  const [bindingTypes, setBindingTypes] = useState<XeroxOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [deletingPaperType, setDeletingPaperType] = useState<XeroxOption | null>(null);
+  const [isManagePaperTypesOpen, setIsManagePaperTypesOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileDetails, setFileDetails] = useState<{name: string; type: string; pages?: number; preview?: string;} | null>(null);
@@ -80,6 +111,11 @@ export default function XeroxOrderPage() {
     },
   });
 
+  const paperTypeForm = useForm<z.infer<typeof paperTypeSchema>>({
+    resolver: zodResolver(paperTypeSchema),
+    defaultValues: { name: "", price: 0 },
+  });
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
@@ -87,18 +123,24 @@ export default function XeroxOrderPage() {
     fetchAllOptions();
   }, [user, authLoading, router]);
 
+  const fetchPaperTypes = async () => {
+     try {
+        const fetchedPaperTypes = await getXeroxOptions('paperType');
+        setPaperTypes(fetchedPaperTypes);
+     } catch (e) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to refresh paper types." });
+     }
+  };
+
   const fetchAllOptions = async () => {
     setIsLoading(true);
     try {
-      const optionCategories: XeroxOptionType[] = ['paperType', 'bindingType'];
-      const allFetchedOptions = await Promise.all(
-        optionCategories.map(cat => getXeroxOptions(cat))
-      );
-      const newOptionsState = { ...options };
-      optionCategories.forEach((cat, index) => {
-        newOptionsState[cat] = allFetchedOptions[index];
-      });
-      setOptions(newOptionsState);
+      const [fetchedPaperTypes, fetchedBindingTypes] = await Promise.all([
+        getXeroxOptions('paperType'),
+        getXeroxOptions('bindingType'),
+      ]);
+      setPaperTypes(fetchedPaperTypes);
+      setBindingTypes(fetchedBindingTypes);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -107,6 +149,29 @@ export default function XeroxOrderPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAddPaperType = async (values: z.infer<typeof paperTypeSchema>) => {
+    try {
+      await addXeroxOption('paperType', values);
+      toast({ title: "Paper Type Added" });
+      paperTypeForm.reset();
+      fetchPaperTypes();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  };
+
+  const handleDeletePaperType = async () => {
+    if (!deletingPaperType) return;
+    try {
+      await deleteXeroxOption('paperType', deletingPaperType.id);
+      toast({ title: "Paper Type Deleted" });
+      setDeletingPaperType(null);
+      fetchPaperTypes();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
     }
   };
 
@@ -167,7 +232,7 @@ export default function XeroxOrderPage() {
       return;
     }
 
-    const selectedPaper = options.paperType.find(opt => opt.id === values.paperType);
+    const selectedPaper = paperTypes.find(opt => opt.id === values.paperType);
     if (!selectedPaper?.price) {
       toast({
         variant: 'destructive',
@@ -198,13 +263,65 @@ export default function XeroxOrderPage() {
   }
 
   return (
+    <>
     <div className="container mx-auto px-4 py-8">
-        <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
-            Xerox Order Form
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-            Upload your document and select your printing options.
-        </p>
+        <div className="flex items-center justify-between">
+            <div>
+                <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
+                    Xerox Order Form
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                    Upload your document and select your printing options.
+                </p>
+            </div>
+            {user.roles.includes('admin') && (
+                 <Dialog open={isManagePaperTypesOpen} onOpenChange={setIsManagePaperTypesOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline"><Cog className="mr-2 h-4 w-4" /> Manage Paper Types</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-xl">
+                      <DialogHeader>
+                        <DialogTitle>Manage Paper Types</DialogTitle>
+                        <DialogDescription>Add or remove paper types available for selection.</DialogDescription>
+                      </DialogHeader>
+                      
+                      <Form {...paperTypeForm}>
+                        <form onSubmit={paperTypeForm.handleSubmit(handleAddPaperType)} className="grid grid-cols-3 gap-4 items-start">
+                            <FormField control={paperTypeForm.control} name="name" render={({ field }) => (
+                                <FormItem className="col-span-3 sm:col-span-1"><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={paperTypeForm.control} name="price" render={({ field }) => (
+                                <FormItem className="col-span-3 sm:col-span-1"><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <Button type="submit" className="self-end col-span-3 sm:col-span-1" disabled={paperTypeForm.formState.isSubmitting}>Add Paper Type</Button>
+                        </form>
+                      </Form>
+
+                      <div className="mt-4 border rounded-md max-h-60 overflow-y-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow><TableHead>Name</TableHead><TableHead>Price</TableHead><TableHead className="text-right">Action</TableHead></TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paperTypes.map(pt => (
+                                    <TableRow key={pt.id}>
+                                        <TableCell>{pt.name}</TableCell>
+                                        <TableCell>Rs {pt.price?.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => setDeletingPaperType(pt)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                      </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+        </div>
+
 
         <Card className="mt-8">
             <CardHeader>
@@ -270,7 +387,7 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a paper type" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.paperType.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name} (Rs {opt.price?.toFixed(2)})</SelectItem>)}
+                                        {paperTypes.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name} (Rs {opt.price?.toFixed(2)})</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -346,7 +463,7 @@ export default function XeroxOrderPage() {
                                         <SelectTrigger><SelectValue placeholder="Select a binding type" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                        {options.bindingType.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
+                                        {bindingTypes.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -377,5 +494,21 @@ export default function XeroxOrderPage() {
             </CardContent>
         </Card>
     </div>
+
+    <AlertDialog open={!!deletingPaperType} onOpenChange={(open) => !open && setDeletingPaperType(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the "{deletingPaperType?.name}" paper type. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePaperType}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
