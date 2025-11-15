@@ -8,12 +8,12 @@ import * as z from "zod";
 import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
 import {
-  addXeroxService,
-  deleteXeroxService,
-  getXeroxServices,
-  updateXeroxService,
+  addXeroxOption,
+  deleteXeroxOption,
+  getXeroxOptions,
+  updateXeroxOption,
 } from "@/lib/data";
-import type { XeroxService } from "@/lib/types";
+import type { XeroxOption } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Form,
@@ -38,8 +38,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -80,28 +78,29 @@ if (typeof window !== 'undefined') {
 
 const xeroxOrderSchema = z.object({
   file: z.any().refine(file => file, "Please upload a document."),
-  serviceId: z.string().min(1, "Please select a service."),
+  paperType: z.string().min(1, "Please select a paper type."),
+  color: z.string().min(1, "Please select a color option."),
+  format: z.string().min(1, "Please select a format."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
 });
 
-const serviceSchema = z.object({
-  name: z.string().min(3, "Service name is required."),
+const paperTypeSchema = z.object({
+  name: z.string().min(1, "Paper type name is required."),
   price: z.coerce.number().positive("Price must be a positive number."),
 });
-
 
 export default function XeroxOrderPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
-  const [services, setServices] = useState<XeroxService[]>([]);
+  const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isManageServicesOpen, setIsManageServicesOpen] = useState(false);
-  const [editingService, setEditingService] = useState<XeroxService | null>(null);
-  const [deletingService, setDeletingService] = useState<XeroxService | null>(null);
-  const [isSubmittingService, setIsSubmittingService] = useState(false);
+  const [isManagePaperTypesOpen, setIsManagePaperTypesOpen] = useState(false);
+  const [editingPaperType, setEditingPaperType] = useState<XeroxOption | null>(null);
+  const [deletingPaperType, setDeletingPaperType] = useState<XeroxOption | null>(null);
+  const [isSubmittingPaperType, setIsSubmittingPaperType] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileDetails, setFileDetails] = useState<{name: string; type: string; pages?: number; preview?: string;} | null>(null);
@@ -114,68 +113,66 @@ export default function XeroxOrderPage() {
     },
   });
 
-  const serviceForm = useForm<z.infer<typeof serviceSchema>>({
-    resolver: zodResolver(serviceSchema),
+  const paperTypeForm = useForm<z.infer<typeof paperTypeSchema>>({
+    resolver: zodResolver(paperTypeSchema),
     defaultValues: { name: "", price: 0 },
   });
   
   useEffect(() => {
-    if (editingService) {
-        serviceForm.reset({ name: editingService.name, price: editingService.price });
+    if (editingPaperType) {
+        paperTypeForm.reset({ name: editingPaperType.name, price: editingPaperType.price });
     } else {
-        serviceForm.reset({ name: "", price: 0 });
+        paperTypeForm.reset({ name: "", price: 0 });
     }
-  }, [editingService, serviceForm]);
+  }, [editingPaperType, paperTypeForm]);
 
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
     }
-    fetchServices();
+    fetchPaperTypes();
   }, [user, authLoading, router]);
 
-  const fetchServices = async () => {
+  const fetchPaperTypes = async () => {
      setIsLoading(true);
      try {
-        const fetchedServices = await getXeroxServices();
-        setServices(fetchedServices);
+        const fetchedPaperTypes = await getXeroxOptions('paperType');
+        setPaperTypes(fetchedPaperTypes);
      } catch (e) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to refresh services." });
+        toast({ variant: "destructive", title: "Error", description: "Failed to refresh paper types." });
      } finally {
         setIsLoading(false);
      }
   };
-
-  const handleAddOrUpdateService = async (values: z.infer<typeof serviceSchema>) => {
-    setIsSubmittingService(true);
+  
+  const handleAddOrUpdatePaperType = async (values: z.infer<typeof paperTypeSchema>) => {
+    setIsSubmittingPaperType(true);
     try {
-        if(editingService) {
-            await updateXeroxService(editingService.id, values);
-            toast({ title: "Service Updated" });
+        if(editingPaperType) {
+            await updateXeroxOption('paperType', editingPaperType.id, values);
+            toast({ title: "Paper Type Updated" });
         } else {
-            // A simple way to order, might need improvement
-            const newOrder = services.length > 0 ? Math.max(...services.map(s => s.order || 0)) + 1 : 1;
-            await addXeroxService({ ...values, order: newOrder });
-            toast({ title: "Service Added" });
+            await addXeroxOption('paperType', values);
+            toast({ title: "Paper Type Added" });
         }
-      serviceForm.reset();
-      setEditingService(null);
-      fetchServices(); // Refresh list
+      paperTypeForm.reset();
+      setEditingPaperType(null);
+      fetchPaperTypes(); // Refresh list
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
-        setIsSubmittingService(false);
+        setIsSubmittingPaperType(false);
     }
   };
 
-  const handleDeleteService = async () => {
-    if (!deletingService) return;
+  const handleDeletePaperType = async () => {
+    if (!deletingPaperType) return;
     try {
-      await deleteXeroxService(deletingService.id);
-      toast({ title: "Service Deleted" });
-      setDeletingService(null);
-      fetchServices(); // Refresh list
+      await deleteXeroxOption('paperType', deletingPaperType.id);
+      toast({ title: "Paper Type Deleted" });
+      setDeletingPaperType(null);
+      fetchPaperTypes(); // Refresh list
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     }
@@ -189,10 +186,10 @@ export default function XeroxOrderPage() {
               const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
               return pdf.numPages;
           } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+              // Mammoth gives word count, not page count. Estimate pages.
               const result = await mammoth.extractRawText({ arrayBuffer });
-              // Simple estimation: ~250 words per page
               const wordCount = result.value.split(/\s+/).length;
-              return Math.ceil(wordCount / 250);
+              return Math.ceil(wordCount / 250); // Rough estimation
           }
       } catch (error) {
           console.error("Error getting page count:", error);
@@ -236,21 +233,20 @@ export default function XeroxOrderPage() {
       return;
     }
 
-    const selectedService = services.find(s => s.id === values.serviceId);
-    if (!selectedService) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Selected service not found.' });
+    const selectedPaper = paperTypes.find(p => p.id === values.paperType);
+    if (!selectedPaper || selectedPaper.price === undefined) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Selected paper type not found or has no price.' });
         return;
     }
 
-    // Crude check for 'front and back' or similar terms in the service name
-    const isFrontAndBack = selectedService.name.toLowerCase().includes('back') || selectedService.name.toLowerCase().includes('double');
+    const isFrontAndBack = values.format.toLowerCase().includes('back');
     
     let pagesToCharge = fileDetails.pages;
     if (isFrontAndBack) {
       pagesToCharge = Math.ceil(fileDetails.pages / 2);
     }
     
-    const totalCost = pagesToCharge * selectedService.price * values.quantity;
+    const totalCost = pagesToCharge * selectedPaper.price * values.quantity;
 
     toast({
       title: "Order Calculated",
@@ -276,27 +272,27 @@ export default function XeroxOrderPage() {
                 </p>
             </div>
             {user.roles.includes('admin') && (
-                 <Dialog open={isManageServicesOpen} onOpenChange={setIsManageServicesOpen}>
+                 <Dialog open={isManagePaperTypesOpen} onOpenChange={setIsManagePaperTypesOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline"><Cog className="mr-2 h-4 w-4" /> Manage Services</Button>
+                      <Button variant="outline"><Cog className="mr-2 h-4 w-4" /> Manage Paper Types</Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-xl">
                       <DialogHeader>
-                        <DialogTitle>{editingService ? 'Edit Service' : 'Manage Services'}</DialogTitle>
-                        <DialogDescription>{editingService ? 'Update the service details.' : 'Add or remove printing services.'}</DialogDescription>
+                        <DialogTitle>{editingPaperType ? 'Edit Paper Type' : 'Manage Paper Types'}</DialogTitle>
+                        <DialogDescription>{editingPaperType ? 'Update the paper type details.' : 'Add or remove paper types and their prices.'}</DialogDescription>
                       </DialogHeader>
                       
-                      <Form {...serviceForm}>
-                        <form onSubmit={serviceForm.handleSubmit(handleAddOrUpdateService)} className="grid grid-cols-3 gap-4 items-start">
-                            <FormField control={serviceForm.control} name="name" render={({ field }) => (
-                                <FormItem className="col-span-3 sm:col-span-1"><FormLabel>Name</FormLabel><FormControl><Input {...field} placeholder="e.g., A4 B&W Front" /></FormControl><FormMessage /></FormItem>
+                      <Form {...paperTypeForm}>
+                        <form onSubmit={paperTypeForm.handleSubmit(handleAddOrUpdatePaperType)} className="grid grid-cols-3 gap-4 items-start pt-4">
+                            <FormField control={paperTypeForm.control} name="name" render={({ field }) => (
+                                <FormItem className="col-span-3 sm:col-span-1"><FormLabel>Name</FormLabel><FormControl><Input {...field} placeholder="e.g., A4" /></FormControl><FormMessage /></FormItem>
                             )} />
-                             <FormField control={serviceForm.control} name="price" render={({ field }) => (
+                             <FormField control={paperTypeForm.control} name="price" render={({ field }) => (
                                 <FormItem className="col-span-3 sm:col-span-1"><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} step="0.01" /></FormControl><FormMessage /></FormItem>
                             )} />
                             <div className="flex gap-2 self-end col-span-3 sm:col-span-1">
-                                {editingService && <Button type="button" variant="secondary" onClick={() => setEditingService(null)}>Cancel</Button>}
-                                <Button type="submit" disabled={isSubmittingService}>{isSubmittingService ? 'Saving...' : (editingService ? 'Update' : 'Add')}</Button>
+                                {editingPaperType && <Button type="button" variant="secondary" onClick={() => setEditingPaperType(null)}>Cancel Edit</Button>}
+                                <Button type="submit" disabled={isSubmittingPaperType}>{isSubmittingPaperType ? 'Saving...' : (editingPaperType ? 'Update' : 'Add')}</Button>
                             </div>
                         </form>
                       </Form>
@@ -307,15 +303,15 @@ export default function XeroxOrderPage() {
                                 <TableRow><TableHead>Name</TableHead><TableHead>Price</TableHead><TableHead className="text-right">Action</TableHead></TableRow>
                             </TableHeader>
                             <TableBody>
-                                {services.map(s => (
-                                    <TableRow key={s.id}>
-                                        <TableCell>{s.name}</TableCell>
-                                        <TableCell>Rs {s.price?.toFixed(2)}</TableCell>
+                                {paperTypes.map(pt => (
+                                    <TableRow key={pt.id}>
+                                        <TableCell>{pt.name}</TableCell>
+                                        <TableCell>Rs {pt.price?.toFixed(2)}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => setEditingService(s)}>
+                                            <Button variant="ghost" size="icon" onClick={() => setEditingPaperType(pt)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => setDeletingService(s)}>
+                                            <Button variant="ghost" size="icon" onClick={() => setDeletingPaperType(pt)}>
                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                             </Button>
                                         </TableCell>
@@ -382,38 +378,51 @@ export default function XeroxOrderPage() {
                         )}
                         <FormField control={orderForm.control} name="file" render={({ field }) => <FormItem><FormMessage /></FormItem>} />
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <FormField
-                                control={orderForm.control}
-                                name="serviceId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Service Type</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                        {services.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name} (Rs {opt.price?.toFixed(2)})</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={orderForm.control}
-                                name="quantity"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Quantity</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" min="1" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:grid-cols-4">
+                           <FormField control={orderForm.control} name="paperType" render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Paper Type</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select paper" /></SelectTrigger></FormControl>
+                                    <SelectContent>{paperTypes.map(opt => <SelectItem key={opt.id} value={opt.id}>{opt.name} (Rs {opt.price?.toFixed(2)})</SelectItem>)}</SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={orderForm.control} name="color" render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Color</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select color" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Black and White">Black and White</SelectItem>
+                                        <SelectItem value="Colour">Colour</SelectItem>
+                                        <SelectItem value="Gradient">Gradient</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )} />
+                             <FormField control={orderForm.control} name="format" render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Format</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select format" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Front Only">Front Only</SelectItem>
+                                        <SelectItem value="Front & Back">Front & Back</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )} />
+                             <FormField control={orderForm.control} name="quantity" render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Quantity</FormLabel>
+                                <FormControl><Input type="number" min="1" {...field} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )} />
                         </div>
 
                         <Button type="submit" disabled={isLoading || orderForm.formState.isSubmitting} className="w-full">
@@ -426,17 +435,17 @@ export default function XeroxOrderPage() {
         </Card>
     </div>
 
-    <AlertDialog open={!!deletingService} onOpenChange={(open) => !open && setDeletingService(null)}>
+    <AlertDialog open={!!deletingPaperType} onOpenChange={(open) => !open && setDeletingPaperType(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the "{deletingService?.name}" service. This action cannot be undone.
+              This will permanently delete the "{deletingPaperType?.name}" paper type. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteService}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDeletePaperType}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
