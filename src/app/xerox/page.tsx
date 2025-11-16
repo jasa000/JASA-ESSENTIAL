@@ -36,6 +36,7 @@ if (typeof window !== 'undefined') {
 
 type ColorOption = "bw" | "color";
 type PrintRatioOption = "1:1" | "1:2";
+type FormatOption = "front-only" | "front-back";
 
 export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
@@ -53,6 +54,7 @@ export default function XeroxPage() {
   const [selectedPaperType, setSelectedPaperType] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<ColorOption>('bw');
   const [selectedPrintRatio, setSelectedPrintRatio] = useState<PrintRatioOption>('1:1');
+  const [selectedFormat, setSelectedFormat] = useState<FormatOption>('front-only');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,14 +138,21 @@ export default function XeroxPage() {
     if (pricePerPage === undefined) {
       return 0;
     }
-
+    
     const documentPages = fileDetails.pages;
-    const physicalPages = selectedPrintRatio === '1:2' 
+    
+    // Apply print ratio
+    let ratioAdjustedPages = selectedPrintRatio === '1:2' 
       ? Math.ceil(documentPages / 2)
       : documentPages;
+      
+    // Apply format (single vs double sided)
+    const physicalPages = selectedFormat === 'front-back'
+      ? Math.ceil(ratioAdjustedPages / 2)
+      : ratioAdjustedPages;
 
     return physicalPages * pricePerPage;
-  }, [fileDetails, paperTypes, selectedPaperType, selectedColor, selectedPrintRatio]);
+  }, [fileDetails, paperTypes, selectedPaperType, selectedColor, selectedPrintRatio, selectedFormat]);
 
 
   return (
@@ -310,7 +319,7 @@ export default function XeroxPage() {
                 </Card>
                 )}
                  {fileDetails && (
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <Label htmlFor="paper-type">Paper Type</Label>
                             <Select value={selectedPaperType} onValueChange={setSelectedPaperType} disabled={isLoading}>
@@ -350,6 +359,18 @@ export default function XeroxPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                         <div>
+                           <Label htmlFor="format-option">Format</Label>
+                           <Select value={selectedFormat} onValueChange={(value) => setSelectedFormat(value as FormatOption)}>
+                                <SelectTrigger id="format-option">
+                                    <SelectValue placeholder="Select format..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="front-only">Front Only - Single Side</SelectItem>
+                                    <SelectItem value="front-back">Front and Back - Double Side</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                  )}
             </CardContent>
@@ -376,4 +397,3 @@ export default function XeroxPage() {
     </div>
   );
 }
-
