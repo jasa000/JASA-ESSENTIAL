@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getXeroxServices } from "@/lib/data";
 import type { XeroxService } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,14 +18,30 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import Image from "next/image";
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
+import { Button } from "@/components/ui/button";
+
+// Set up worker for pdf.js
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+}
 
 export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileDetails, setFileDetails] = useState<{name: string; type: string; pages?: number; preview?: string;} | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -43,6 +59,49 @@ export default function XeroxPage() {
 
     fetchServices();
   }, []);
+
+  const getPageCount = async (file: File) => {
+      setIsParsing(true);
+      try {
+          const arrayBuffer = await file.arrayBuffer();
+          if (file.type === 'application/pdf') {
+              const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+              return pdf.numPages;
+          } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+              const result = await mammoth.extractRawText({ arrayBuffer });
+              const wordCount = result.value.split(/\s+/).length;
+              return Math.ceil(wordCount / 250); // Rough estimation
+          }
+      } catch (error) {
+          console.error("Error getting page count:", error);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not parse document page count.' });
+      } finally {
+          setIsParsing(false);
+      }
+      return undefined;
+  };
+
+  const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+          const pages = await getPageCount(file);
+          const isImage = file.type.startsWith('image/');
+          setFileDetails({
+              name: file.name,
+              type: file.type,
+              pages: isImage ? 1 : pages, // Assume an image is 1 page
+              preview: isImage ? URL.createObjectURL(file) : undefined,
+          });
+      }
+  }, [toast]);
+
+  const handleClearFile = () => {
+      setFileDetails(null);
+      if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+      }
+  };
+
 
   return (
     <div>
@@ -157,6 +216,60 @@ export default function XeroxPage() {
           </Collapsible>
         </Card>
       </div>
+
+       <div className="container mx-auto px-4 py-8">
+        <Card>
+            <CardHeader>
+                <CardTitle>ADD document</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {!fileDetails ? (
+                <div
+                    className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <FileUp className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-2 text-sm font-medium text-muted-foreground">Upload your document</p>
+                    <p className="text-xs text-muted-foreground">PDF, DOCX, or Image</p>
+                    <Input 
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileChange}
+                        accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+                    />
+                </div>
+                ) : (
+                <Card className="p-4 relative">
+                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={handleClearFile}>
+                        <XCircle className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                    <div className="flex items-start gap-4">
+                        {fileDetails.preview ? (
+                            <div className="relative h-24 w-24 flex-shrink-0">
+                                <Image src={fileDetails.preview} alt="File preview" fill className="rounded-md object-cover" />
+                            </div>
+                        ) : (
+                            <div className="h-24 w-24 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
+                                <FileText className="h-10 w-10 text-muted-foreground" />
+                            </div>
+                        )}
+                        <div className="flex-grow">
+                            <p className="font-semibold truncate">{fileDetails.name}</p>
+                            <p className="text-sm text-muted-foreground capitalize">{fileDetails.type.split('/')[1]}</p>
+                            {isParsing ? (
+                                <p className="text-sm text-muted-foreground flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin"/> Checking pages...</p>
+                            ) : fileDetails.pages !== undefined && (
+                                <p className="text-sm text-muted-foreground">Pages: {fileDetails.pages}</p>
+                            )}
+                        </div>
+                    </div>
+                </Card>
+                )}
+            </CardContent>
+        </Card>
+      </div>
+
     </div>
   );
 }
