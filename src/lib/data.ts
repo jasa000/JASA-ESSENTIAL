@@ -410,13 +410,13 @@ export const updateXeroxOption = async (type: XeroxOptionType, id: string, optio
 };
 
 export const setPaperTypeAsDefault = async (paperTypeId: string) => {
-    const paperTypesRef = collection(db, 'paperTypes');
+    const paperTypesRef = getXeroxOptionCollection('paperType');
     await runTransaction(db, async (transaction) => {
         // First, find and unset the current default
         const q = query(paperTypesRef, where("isDefault", "==", true));
         const currentDefaultDocs = await transaction.get(q);
-        currentDefaultDocs.forEach((doc) => {
-            transaction.update(doc.ref, { isDefault: false });
+        currentDefaultDocs.forEach((docSnapshot) => {
+            transaction.update(docSnapshot.ref, { isDefault: false });
         });
 
         // Now, set the new default
