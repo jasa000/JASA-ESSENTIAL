@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -41,7 +40,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -66,12 +64,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, Pencil, Star, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 
 const paperTypeSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   priceBw: z.coerce.number().positive("B&W price must be a positive number."),
   priceColor: z.coerce.number().positive("Color price must be a positive number."),
+  isDefault: z.boolean().optional(),
 });
 
 export default function ManageXeroxFormPage() {
@@ -92,6 +93,7 @@ export default function ManageXeroxFormPage() {
             name: "",
             priceBw: 0,
             priceColor: 0,
+            isDefault: false,
         },
     });
 
@@ -125,9 +127,10 @@ export default function ManageXeroxFormPage() {
                     name: editingPaperType.name,
                     priceBw: editingPaperType.priceBw || 0,
                     priceColor: editingPaperType.priceColor || 0,
+                    isDefault: editingPaperType.isDefault || false,
                 });
             } else {
-                form.reset({ name: "", priceBw: 0, priceColor: 0 });
+                form.reset({ name: "", priceBw: 0, priceColor: 0, isDefault: false });
             }
         }
     }, [isFormOpen, editingPaperType, form]);
@@ -135,13 +138,23 @@ export default function ManageXeroxFormPage() {
     const handleFormSubmit = async (values: z.infer<typeof paperTypeSchema>) => {
         setIsSubmitting(true);
         try {
+            let savedPaperTypeId: string | null = null;
             if (editingPaperType) {
                 await updateXeroxOption('paperType', editingPaperType.id, values);
+                savedPaperTypeId = editingPaperType.id;
                 toast({ title: "Paper Type Updated", description: `${values.name} has been updated.` });
             } else {
-                await addXeroxOption('paperType', values);
+                const newPaperType = await addXeroxOption('paperType', values);
+                savedPaperTypeId = newPaperType.id;
                 toast({ title: "Paper Type Added", description: `${values.name} has been added.` });
             }
+
+            // If isDefault is true, run the transaction to set it
+            if (values.isDefault && savedPaperTypeId) {
+                await setPaperTypeAsDefault(savedPaperTypeId);
+                toast({ title: "Default Set", description: `${values.name} is now the default paper type.` });
+            }
+
             fetchPaperTypes();
             setIsFormOpen(false);
             setEditingPaperType(null);
@@ -162,19 +175,6 @@ export default function ManageXeroxFormPage() {
             setDeletingPaperType(null);
         } catch (error: any) {
             toast({ variant: "destructive", title: "Error", description: error.message });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleSetDefault = async (paperTypeId: string) => {
-        setIsSubmitting(true);
-        try {
-            await setPaperTypeAsDefault(paperTypeId);
-            toast({ title: "Default Set", description: "The default paper type has been updated." });
-            fetchPaperTypes();
-        } catch (error: any) {
-            toast({ variant: "destructive", title: "Error", description: `Failed to set default: ${error.message}` });
         } finally {
             setIsSubmitting(false);
         }
@@ -218,6 +218,27 @@ export default function ManageXeroxFormPage() {
                         )}
                     />
                 </div>
+                <FormField
+                    control={form.control}
+                    name="isDefault"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                        <FormLabel>Set as Default</FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                            This will be the pre-selected paper type for users.
+                        </p>
+                        </div>
+                        <FormControl>
+                        <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                        </FormControl>
+                    </FormItem>
+                    )}
+                />
+
                 <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                     <Button type="submit" disabled={isSubmitting}>
@@ -252,7 +273,7 @@ export default function ManageXeroxFormPage() {
                 <Alert className="mt-4">
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                        Set a paper type as default by clicking the star icon. This will be the pre-selected option for users.
+                        Set a paper type as default in the edit menu. This will be the pre-selected option for users.
                     </AlertDescription>
                 </Alert>
 
@@ -290,15 +311,11 @@ export default function ManageXeroxFormPage() {
                                     paperTypes.map((type) => (
                                         <TableRow key={type.id}>
                                             <TableCell>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => !type.isDefault && handleSetDefault(type.id)}
-                                                    disabled={isSubmitting || type.isDefault}
-                                                    aria-label="Set as default"
-                                                >
-                                                    <Star className={type.isDefault ? "h-5 w-5 text-yellow-400 fill-yellow-400" : "h-5 w-5 text-muted-foreground"} />
-                                                </Button>
+                                                {type.isDefault && (
+                                                    <div className="flex justify-center">
+                                                        <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                                                    </div>
+                                                )}
                                             </TableCell>
                                             <TableCell className="font-medium">{type.name}</TableCell>
                                             <TableCell>Rs {type.priceBw?.toFixed(2)}</TableCell>

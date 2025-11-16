@@ -67,6 +67,7 @@ export default function XeroxPage() {
         if (defaultPaper) {
             setSelectedPaperType(defaultPaper.id);
         } else if (fetchedPaperTypes.length > 0) {
+            // Fallback to the first item if no default is set
             setSelectedPaperType(fetchedPaperTypes[0].id);
         }
 
