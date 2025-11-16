@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { getXeroxServices } from "@/lib/data";
-import type { XeroxService } from "@/lib/types";
+import { getXeroxServices, getXeroxOptions } from "@/lib/data";
+import type { XeroxService, XeroxOption } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -26,29 +26,50 @@ import Image from "next/image";
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 // Set up worker for pdf.js
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 }
 
+type ColorOption = "bw" | "color";
+
 export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
+  const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isPriceListOpen, setIsPriceListOpen] = useState(false);
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileDetails, setFileDetails] = useState<{name: string; type: string; pages?: number; preview?: string;} | null>(null);
   const [isParsing, setIsParsing] = useState(false);
 
+  // Form state
+  const [selectedPaperType, setSelectedPaperType] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<ColorOption>('bw');
+
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        const fetchedServices = await getXeroxServices();
+        const [fetchedServices, fetchedPaperTypes] = await Promise.all([
+          getXeroxServices(),
+          getXeroxOptions('paperType')
+        ]);
         setServices(fetchedServices);
+        setPaperTypes(fetchedPaperTypes);
+        
+        const defaultPaper = fetchedPaperTypes.find(pt => pt.isDefault);
+        if (defaultPaper) {
+            setSelectedPaperType(defaultPaper.id);
+        } else if (fetchedPaperTypes.length > 0) {
+            setSelectedPaperType(fetchedPaperTypes[0].id);
+        }
+
       } catch (err) {
         setError("Failed to load printing services. Please try again later.");
         console.error(err);
@@ -57,7 +78,7 @@ export default function XeroxPage() {
       }
     };
 
-    fetchServices();
+    fetchData();
   }, []);
 
   const getPageCount = async (file: File) => {
@@ -116,14 +137,14 @@ export default function XeroxPage() {
 
       <div className="w-full bg-muted">
         <Card className="container mx-auto mt-0 rounded-none border-x-0 border-y shadow-none">
-          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <Collapsible open={isPriceListOpen} onOpenChange={setIsPriceListOpen}>
             <CollapsibleTrigger className="w-full">
               <CardHeader className="flex flex-row items-center justify-between text-center">
                 <CardTitle>Price List</CardTitle>
                 <ChevronDown
                   className={cn(
                     "h-6 w-6 transform transition-transform duration-200",
-                    isOpen ? "rotate-180" : "rotate-0"
+                    isPriceListOpen ? "rotate-180" : "rotate-0"
                   )}
                 />
               </CardHeader>
@@ -266,6 +287,37 @@ export default function XeroxPage() {
                     </div>
                 </Card>
                 )}
+                 {fileDetails && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="paper-type">Paper Type</Label>
+                            <Select value={selectedPaperType} onValueChange={setSelectedPaperType}>
+                                <SelectTrigger id="paper-type">
+                                    <SelectValue placeholder="Select paper type..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {paperTypes.map(type => (
+                                        <SelectItem key={type.id} value={type.id}>
+                                            {type.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                           <Label htmlFor="color-option">Color</Label>
+                           <Select value={selectedColor} onValueChange={(value) => setSelectedColor(value as ColorOption)}>
+                                <SelectTrigger id="color-option">
+                                    <SelectValue placeholder="Select color option..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="bw">Black & White</SelectItem>
+                                    <SelectItem value="color">Gradient / Colour</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                 )}
             </CardContent>
         </Card>
       </div>

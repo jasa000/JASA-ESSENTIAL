@@ -160,7 +160,9 @@ export type XeroxOptionType = 'paperType' | 'colorOption' | 'bindingType' | 'lam
 export type XeroxOption = {
   id: string;
   name: string;
-  price?: number;
+  priceBw?: number;
+  priceColor?: number;
+  isDefault?: boolean;
   createdAt: any;
   // Fields for paperType dependency
   colorOptionIds?: string[];

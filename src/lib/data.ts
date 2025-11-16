@@ -1,7 +1,7 @@
 
 import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType } from './types';
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
 
 export const categories: Category[] = [
     {
@@ -372,13 +372,12 @@ export const getXeroxOptions = async (type: XeroxOptionType): Promise<XeroxOptio
 
 export const addXeroxOption = async (type: XeroxOptionType, optionData: Partial<Omit<XeroxOption, 'id' | 'createdAt'>>): Promise<XeroxOption> => {
   const newOptionData = {
-    ...optionData,
-    price: optionData.price, // Keep price for paperType, or be undefined for others
+    name: optionData.name || '',
+    priceBw: optionData.priceBw || 0,
+    priceColor: optionData.priceColor || 0,
+    isDefault: false, // Always add as not default
     createdAt: serverTimestamp(),
   };
-  if (type !== 'paperType') {
-    delete newOptionData.price;
-  }
 
   try {
     const collectionRef = getXeroxOptionCollection(type);
@@ -394,16 +393,37 @@ export const updateXeroxOption = async (type: XeroxOptionType, id: string, optio
     try {
         const collectionRef = getXeroxOptionCollection(type);
         const optionDoc = doc(collectionRef, id);
-        const updateData = { ...optionData };
-        if (type !== 'paperType' && 'price' in updateData) {
-            delete updateData.price;
+        const updateData: { [key: string]: any } = { ...optionData };
+        
+        if (type !== 'paperType') {
+            delete updateData.priceBw;
+            delete updateData.priceColor;
+            delete updateData.isDefault;
         }
+
         await updateDoc(optionDoc, updateData);
     } catch (error) {
         console.error(`Error updating Xerox option in ${type}: `, error);
         throw new Error(`Failed to update Xerox option in ${type}.`);
     }
 };
+
+export const setPaperTypeAsDefault = async (paperTypeId: string) => {
+    const paperTypesRef = collection(db, 'paperTypes');
+    await runTransaction(db, async (transaction) => {
+        // First, find and unset the current default
+        const q = query(paperTypesRef, where("isDefault", "==", true));
+        const currentDefaultDocs = await transaction.get(q);
+        currentDefaultDocs.forEach((doc) => {
+            transaction.update(doc.ref, { isDefault: false });
+        });
+
+        // Now, set the new default
+        const newDefaultRef = doc(paperTypesRef, paperTypeId);
+        transaction.update(newDefaultRef, { isDefault: true });
+    });
+};
+
 
 export const deleteXeroxOption = async (type: XeroxOptionType, id: string): Promise<void> => {
     try {
