@@ -7,7 +7,7 @@ service cloud.firestore {
     // Helper function to check if a user is an admin
     function isAdmin() {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles[0] == 'admin';
     }
 
     // Default deny all
@@ -64,7 +64,8 @@ service cloud.firestore {
     
     // Xerox Form Option Collections
     match /paperTypes/{docId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
     match /colorOptions/{docId} {
