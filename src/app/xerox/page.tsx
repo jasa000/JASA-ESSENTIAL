@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getXeroxServices, getXeroxOptions } from "@/lib/data";
 import type { XeroxService, XeroxOption } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2, FileUp, XCircle, FileText } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ if (typeof window !== 'undefined') {
 }
 
 type ColorOption = "bw" | "color";
+type PrintRatioOption = "1:1" | "1:2";
 
 export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
@@ -51,6 +52,7 @@ export default function XeroxPage() {
   // Form state
   const [selectedPaperType, setSelectedPaperType] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<ColorOption>('bw');
+  const [selectedPrintRatio, setSelectedPrintRatio] = useState<PrintRatioOption>('1:1');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,6 +125,25 @@ export default function XeroxPage() {
           fileInputRef.current.value = '';
       }
   };
+
+  const estimatedPrice = useMemo(() => {
+    const paper = paperTypes.find(pt => pt.id === selectedPaperType);
+    if (!paper || !fileDetails?.pages) {
+      return 0;
+    }
+
+    const pricePerPage = selectedColor === 'bw' ? paper.priceBw : paper.priceColor;
+    if (pricePerPage === undefined) {
+      return 0;
+    }
+
+    const documentPages = fileDetails.pages;
+    const physicalPages = selectedPrintRatio === '1:2' 
+      ? Math.ceil(documentPages / 2)
+      : documentPages;
+
+    return physicalPages * pricePerPage;
+  }, [fileDetails, paperTypes, selectedPaperType, selectedColor, selectedPrintRatio]);
 
 
   return (
@@ -289,10 +310,10 @@ export default function XeroxPage() {
                 </Card>
                 )}
                  {fileDetails && (
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <Label htmlFor="paper-type">Paper Type</Label>
-                            <Select value={selectedPaperType} onValueChange={setSelectedPaperType}>
+                            <Select value={selectedPaperType} onValueChange={setSelectedPaperType} disabled={isLoading}>
                                 <SelectTrigger id="paper-type">
                                     <SelectValue placeholder="Select paper type..." />
                                 </SelectTrigger>
@@ -317,12 +338,42 @@ export default function XeroxPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div>
+                           <Label htmlFor="print-ratio">Print Ratio</Label>
+                           <Select value={selectedPrintRatio} onValueChange={(value) => setSelectedPrintRatio(value as PrintRatioOption)}>
+                                <SelectTrigger id="print-ratio">
+                                    <SelectValue placeholder="Select print ratio..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1:1">1:1 (One page per sheet)</SelectItem>
+                                    <SelectItem value="1:2">1:2 (Two pages per sheet)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                  )}
             </CardContent>
         </Card>
+
+        {fileDetails && (
+            <Card className="mt-4">
+                <CardHeader>
+                    <CardTitle>Estimated Price</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between">
+                    <p className="text-3xl font-bold">
+                        Rs {estimatedPrice.toFixed(2)}
+                    </p>
+                    <Button size="lg" disabled={!fileDetails}>
+                        <ShoppingCart className="mr-2 h-5 w-5" />
+                        Add to Cart
+                    </Button>
+                </CardContent>
+            </Card>
+        )}
       </div>
 
     </div>
   );
 }
+
