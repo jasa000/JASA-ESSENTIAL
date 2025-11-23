@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -28,7 +29,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog, UserRoundCog, ClipboardList, Database, BookCopy, Map } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog, UserRoundCog, ClipboardList, Database, BookCopy, Map, PieChart } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -334,6 +335,14 @@ export default function AppSidebar() {
           <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>ADMIN ACCESS</SidebarGroupLabel>
               <SidebarMenu>
+                   <SidebarMenuItem>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/admin/dashboard')}>
+                          <Link href="/admin/dashboard">
+                              <PieChart />
+                              <span>Dashboard</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-users')}>
                           <Link href="/manage-users">
@@ -363,6 +372,14 @@ export default function AppSidebar() {
                           <Link href="/manage-shops">
                               <Store />
                               <span>Manage Shops</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/admin/manage-pincodes')}>
+                          <Link href="/admin/manage-pincodes">
+                              <Map />
+                              <span>Manage Pincodes</span>
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
