@@ -136,7 +136,6 @@ export default function XeroxPage() {
           if ('selectedPaperType' in updates && updates.selectedPaperType !== doc.selectedPaperType) {
             const newPaperDetails = paperTypes.find(pt => pt.id === updates.selectedPaperType) || null;
             updatedDoc.currentPaperDetails = newPaperDetails;
-            // Reset dependent options only if they are no longer valid for the new paper type
             if (newPaperDetails && !newPaperDetails.colorOptionIds?.includes(updatedDoc.selectedColorOption)) {
                 updatedDoc.selectedColorOption = newPaperDetails.colorOptionIds?.[0] || '';
             }
@@ -158,8 +157,6 @@ export default function XeroxPage() {
         return doc;
       })
     );
-     // Also update editingDocument state if it's the one being edited
-    setEditingDocument(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
   };
   
   const removeDocument = (id: number) => {
@@ -234,7 +231,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -247,11 +244,35 @@ export default function XeroxPage() {
     return documentPrices.reduce((total, item) => total + item.price, 0);
   }, [documentPrices]);
   
-  const EditDocumentDialog = ({ doc, index }: { doc: DocumentState | null, index: number }) => {
-    if (!doc) return null;
-    
-    const currentPaperDetails = paperTypes.find(pt => pt.id === doc.selectedPaperType);
+  const EditDocumentDialog = ({ doc, index, onSave }: { doc: DocumentState | null, index: number, onSave: (updatedDoc: DocumentState) => void }) => {
+    const [localDoc, setLocalDoc] = useState<DocumentState | null>(doc);
+  
+    useEffect(() => {
+      setLocalDoc(doc);
+    }, [doc]);
+  
+    if (!localDoc) return null;
+  
+    const handleLocalUpdate = (updates: Partial<DocumentState>) => {
+      setLocalDoc(prev => {
+        if (!prev) return null;
+        const updatedDoc = { ...prev, ...updates };
 
+        if ('selectedPaperType' in updates && updates.selectedPaperType !== prev.selectedPaperType) {
+          const newPaperDetails = paperTypes.find(pt => pt.id === updates.selectedPaperType) || null;
+          updatedDoc.currentPaperDetails = newPaperDetails;
+          if (newPaperDetails) {
+            if (!newPaperDetails.colorOptionIds?.includes(updatedDoc.selectedColorOption)) updatedDoc.selectedColorOption = newPaperDetails.colorOptionIds?.[0] || '';
+            if (!newPaperDetails.formatTypeIds?.includes(updatedDoc.selectedFormatType)) updatedDoc.selectedFormatType = newPaperDetails.formatTypeIds?.[0] || '';
+            if (!newPaperDetails.printRatioIds?.includes(updatedDoc.selectedPrintRatio)) updatedDoc.selectedPrintRatio = newPaperDetails.printRatioIds?.[0] || '';
+            if (!newPaperDetails.bindingTypeIds?.includes(updatedDoc.selectedBindingType)) updatedDoc.selectedBindingType = 'none';
+            if (!newPaperDetails.laminationTypeIds?.includes(updatedDoc.selectedLaminationType)) updatedDoc.selectedLaminationType = 'none';
+          }
+        }
+        return updatedDoc;
+      });
+    };
+  
     const renderOptionSelect = (
         id: string, label: string, selectedValue: string | undefined,
         onValueChange: (value: string) => void,
@@ -281,24 +302,29 @@ export default function XeroxPage() {
         );
     }
     
-    const wordCount = doc.message?.trim().split(/\s+/).filter(Boolean).length || 0;
+    const wordCount = localDoc.message?.trim().split(/\s+/).filter(Boolean).length || 0;
   
     return (
-      <Dialog open={!!doc} onOpenChange={(open) => !open && setEditingDocument(null)}>
+      <Dialog open={!!doc} onOpenChange={(open) => {
+          if (!open) {
+              if (localDoc) onSave(localDoc);
+              setEditingDocument(null);
+          }
+      }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Options for Document {index + 1}</DialogTitle>
-            <DialogDescription>{doc.fileDetails?.name}</DialogDescription>
+            <DialogTitle>Edit Options for: Document {index + 1}</DialogTitle>
+            <DialogDescription>{localDoc.fileDetails?.name}</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
-                <Label htmlFor={`paper-type-${doc.id}`}>Paper Type</Label>
+                <Label htmlFor={`paper-type-${localDoc.id}`}>Paper Type</Label>
                 <Select
-                  value={doc.selectedPaperType}
-                  onValueChange={value => updateDocumentState(doc.id, { selectedPaperType: value })}
+                  value={localDoc.selectedPaperType}
+                  onValueChange={value => handleLocalUpdate({ selectedPaperType: value })}
                   disabled={isLoading}
                 >
-                    <SelectTrigger id={`paper-type-${doc.id}`}>
+                    <SelectTrigger id={`paper-type-${localDoc.id}`}>
                         <SelectValue placeholder="Select paper type..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -308,26 +334,26 @@ export default function XeroxPage() {
                     </SelectContent>
                 </Select>
             </div>
-            {renderOptionSelect(`color-option-${doc.id}`, 'Color', doc.selectedColorOption, value => updateDocumentState(doc.id, { selectedColorOption: value }), currentPaperDetails?.colorOptionIds, HARDCODED_XEROX_OPTIONS.colorOptions)}
-            {renderOptionSelect(`format-type-${doc.id}`, 'Format', doc.selectedFormatType, value => updateDocumentState(doc.id, { selectedFormatType: value }), currentPaperDetails?.formatTypeIds, HARDCODED_XEROX_OPTIONS.formatTypes)}
-            {renderOptionSelect(`print-ratio-${doc.id}`, 'Print Ratio', doc.selectedPrintRatio, value => updateDocumentState(doc.id, { selectedPrintRatio: value }), currentPaperDetails?.printRatioIds, HARDCODED_XEROX_OPTIONS.printRatios)}
-            {renderOptionSelect(`binding-type-${doc.id}`, 'Binding Type', doc.selectedBindingType, value => updateDocumentState(doc.id, { selectedBindingType: value }), currentPaperDetails?.bindingTypeIds, allOptions.bindingTypes, true)}
-            {renderOptionSelect(`lamination-type-${doc.id}`, 'Lamination Type', doc.selectedLaminationType, value => updateDocumentState(doc.id, { selectedLaminationType: value }), currentPaperDetails?.laminationTypeIds, allOptions.laminationTypes, true)}
+            {renderOptionSelect(`color-option-${localDoc.id}`, 'Color', localDoc.selectedColorOption, value => handleLocalUpdate({ selectedColorOption: value }), localDoc.currentPaperDetails?.colorOptionIds, HARDCODED_XEROX_OPTIONS.colorOptions)}
+            {renderOptionSelect(`format-type-${localDoc.id}`, 'Format', localDoc.selectedFormatType, value => handleLocalUpdate({ selectedFormatType: value }), localDoc.currentPaperDetails?.formatTypeIds, HARDCODED_XEROX_OPTIONS.formatTypes)}
+            {renderOptionSelect(`print-ratio-${localDoc.id}`, 'Print Ratio', localDoc.selectedPrintRatio, value => handleLocalUpdate({ selectedPrintRatio: value }), localDoc.currentPaperDetails?.printRatioIds, HARDCODED_XEROX_OPTIONS.printRatios)}
+            {renderOptionSelect(`binding-type-${localDoc.id}`, 'Binding Type', localDoc.selectedBindingType, value => handleLocalUpdate({ selectedBindingType: value }), localDoc.currentPaperDetails?.bindingTypeIds, allOptions.bindingTypes, true)}
+            {renderOptionSelect(`lamination-type-${localDoc.id}`, 'Lamination Type', localDoc.selectedLaminationType, value => handleLocalUpdate({ selectedLaminationType: value }), localDoc.currentPaperDetails?.laminationTypeIds, allOptions.laminationTypes, true)}
             <div>
-                <Label htmlFor={`quantity-${doc.id}`}>Quantity</Label>
+                <Label htmlFor={`quantity-${localDoc.id}`}>Quantity</Label>
                 <div className="flex items-center gap-2 mt-2">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => updateDocumentState(doc.id, { quantity: Math.max(1, doc.quantity - 1) })}> <Minus className="h-4 w-4" /> </Button>
-                    <Input id={`quantity-${doc.id}`} type="number" min="1" value={doc.quantity} onChange={(e) => updateDocumentState(doc.id, { quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })} className="h-9 w-20 text-center" />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => updateDocumentState(doc.id, { quantity: doc.quantity + 1 })}> <Plus className="h-4 w-4" /> </Button>
+                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => handleLocalUpdate({ quantity: Math.max(1, localDoc.quantity - 1) })}> <Minus className="h-4 w-4" /> </Button>
+                    <Input id={`quantity-${localDoc.id}`} type="number" min="1" value={localDoc.quantity} onChange={(e) => handleLocalUpdate({ quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })} className="h-9 w-20 text-center" />
+                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => handleLocalUpdate({ quantity: localDoc.quantity + 1 })}> <Plus className="h-4 w-4" /> </Button>
                 </div>
             </div>
             <div>
-                <Label htmlFor={`message-${doc.id}`}>Special Instructions (Optional)</Label>
+                <Label htmlFor={`message-${localDoc.id}`}>Special Instructions (Optional)</Label>
                 <Textarea 
-                    id={`message-${doc.id}`} 
+                    id={`message-${localDoc.id}`} 
                     placeholder="e.g., 'Please use a thick cover for binding.'"
-                    value={doc.message}
-                    onChange={e => updateDocumentState(doc.id, { message: e.target.value })}
+                    value={localDoc.message}
+                    onChange={e => handleLocalUpdate({ message: e.target.value })}
                     className="mt-2"
                 />
                 <p className={cn("text-xs mt-1", wordCount > MAX_WORDS ? "text-destructive" : "text-muted-foreground")}>
@@ -613,7 +639,7 @@ export default function XeroxPage() {
         </Card>
       </div>
       
-      {editingDocument && <EditDocumentDialog doc={editingDocument} index={documents.findIndex(d => d.id === editingDocument.id)} />}
+      {editingDocument && <EditDocumentDialog doc={editingDocument} index={documents.findIndex(d => d.id === editingDocument.id)} onSave={(updatedDoc) => updateDocumentState(updatedDoc.id, updatedDoc)} />}
 
        {documents.length === 0 && !isLoading ? renderInitialState() : (
          <div className="container mx-auto px-4 py-8 space-y-4">
@@ -643,5 +669,3 @@ export default function XeroxPage() {
     </div>
   );
 }
-
-    
