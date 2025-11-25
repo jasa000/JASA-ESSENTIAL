@@ -132,14 +132,25 @@ export default function XeroxPage() {
       prev.map(doc => {
         if (doc.id === id) {
           const updatedDoc = { ...doc, ...updates };
-          if ('selectedPaperType' in updates) {
+          if ('selectedPaperType' in updates && updates.selectedPaperType !== doc.selectedPaperType) {
             const newPaperDetails = paperTypes.find(pt => pt.id === updates.selectedPaperType) || null;
             updatedDoc.currentPaperDetails = newPaperDetails;
-            updatedDoc.selectedColorOption = newPaperDetails?.colorOptionIds?.[0] || '';
-            updatedDoc.selectedFormatType = newPaperDetails?.formatTypeIds?.[0] || '';
-            updatedDoc.selectedPrintRatio = newPaperDetails?.printRatioIds?.[0] || '';
-            updatedDoc.selectedBindingType = 'none';
-            updatedDoc.selectedLaminationType = 'none';
+            // Reset dependent options only if they are no longer valid for the new paper type
+            if (!newPaperDetails?.colorOptionIds?.includes(updatedDoc.selectedColorOption)) {
+                updatedDoc.selectedColorOption = newPaperDetails?.colorOptionIds?.[0] || '';
+            }
+            if (!newPaperDetails?.formatTypeIds?.includes(updatedDoc.selectedFormatType)) {
+                updatedDoc.selectedFormatType = newPaperDetails?.formatTypeIds?.[0] || '';
+            }
+            if (!newPaperDetails?.printRatioIds?.includes(updatedDoc.selectedPrintRatio)) {
+                updatedDoc.selectedPrintRatio = newPaperDetails?.printRatioIds?.[0] || '';
+            }
+             if (!newPaperDetails?.bindingTypeIds?.includes(updatedDoc.selectedBindingType)) {
+                updatedDoc.selectedBindingType = 'none';
+            }
+            if (!newPaperDetails?.laminationTypeIds?.includes(updatedDoc.selectedLaminationType)) {
+                updatedDoc.selectedLaminationType = 'none';
+            }
           }
           return updatedDoc;
         }
@@ -386,7 +397,7 @@ export default function XeroxPage() {
             <CardFooter className="flex justify-between items-center bg-muted/50 p-4">
                 <div className="flex items-center gap-2">
                     <p className="text-lg font-bold">Rs {singleDocPrice.toFixed(2)}</p>
-                    <Button variant="outline" size="sm" onClick={() => setEditingDocument(document)}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setEditingDocument(document)}>
                         <Pencil className="mr-2 h-4 w-4"/> Edit
                     </Button>
                 </div>
@@ -421,26 +432,38 @@ export default function XeroxPage() {
           <div className="space-y-4">
             {documents.map((doc, index) => {
               const docPrice = documentPrices.find(p => p.id === doc.id)?.price || 0;
-              const options = [
-                  getOptionName('paperType', doc.selectedPaperType),
-                  getOptionName('colorOption', doc.selectedColorOption),
-                  getOptionName('formatType', doc.selectedFormatType),
-                  getOptionName('printRatio', doc.selectedPrintRatio),
-                  getOptionName('bindingTypes', doc.selectedBindingType),
-                  getOptionName('laminationTypes', doc.selectedLaminationType),
-              ].filter(Boolean).join(' | ');
+              const details = [
+                { key: 'Paper', value: getOptionName('paperType', doc.selectedPaperType) },
+                { key: 'Color', value: getOptionName('colorOption', doc.selectedColorOption) },
+                { key: 'Format', value: getOptionName('formatType', doc.selectedFormatType) },
+                { key: 'Ratio', value: getOptionName('printRatio', doc.selectedPrintRatio) },
+                { key: 'Binding', value: getOptionName('bindingTypes', doc.selectedBindingType) },
+                { key: 'Lamination', value: getOptionName('laminationTypes', doc.selectedLaminationType) },
+              ].filter(d => d.value);
 
               return (
-                <div key={doc.id} className="text-xs border-b pb-2">
-                    <div className="flex justify-between items-start">
+                <div key={doc.id} className="border-b pb-3 mb-3">
+                    <div className="flex justify-between items-start mb-2">
                         <p className="font-medium truncate max-w-xs flex-1">Doc {index + 1}: {doc.fileDetails?.name}</p>
                         <div className="text-right">
                            <p className="font-semibold">Rs {docPrice.toFixed(2)}</p>
-                           <p className="text-muted-foreground">{doc.quantity} x copies</p>
+                           <p className="text-muted-foreground text-xs">{doc.quantity} x copies</p>
                         </div>
                     </div>
-                    {options && <p className="text-muted-foreground mt-1">{options}</p>}
-                    {doc.message && <p className="text-muted-foreground mt-1 italic">Note: "{doc.message}"</p>}
+                    
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {details.map(d => (
+                            <div key={d.key}>
+                                <span className="font-semibold text-foreground/80">{d.key}:</span> {d.value}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {doc.message && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                             <span className="font-semibold text-foreground/80">Note:</span> {doc.message}
+                        </div>
+                    )}
                 </div>
               )
             })}
