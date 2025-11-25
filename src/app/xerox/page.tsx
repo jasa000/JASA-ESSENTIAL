@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, ChevronsUpDown } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, ChevronsUpDown, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,15 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 // Set up worker for pdf.js
 if (typeof window !== 'undefined') {
@@ -69,8 +78,8 @@ export default function XeroxPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<DocumentState[]>([]);
   const nextId = useRef(0);
-  const [activeDocumentId, setActiveDocumentId] = useState<number | null>(null);
-
+  
+  const [editingDocument, setEditingDocument] = useState<DocumentState | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,7 +125,6 @@ export default function XeroxPage() {
     };
     setDocuments(prev => [...prev, newDocument]);
     handleFileChange(file, newDocId);
-    setActiveDocumentId(newDocId);
   };
   
   const updateDocumentState = (id: number, updates: Partial<DocumentState>) => {
@@ -124,11 +132,9 @@ export default function XeroxPage() {
       prev.map(doc => {
         if (doc.id === id) {
           const updatedDoc = { ...doc, ...updates };
-          // If paper type is changed, find the new details from the cached paperTypes
           if ('selectedPaperType' in updates) {
             const newPaperDetails = paperTypes.find(pt => pt.id === updates.selectedPaperType) || null;
             updatedDoc.currentPaperDetails = newPaperDetails;
-            // Reset dependent options to defaults for the new paper type
             updatedDoc.selectedColorOption = newPaperDetails?.colorOptionIds?.[0] || '';
             updatedDoc.selectedFormatType = newPaperDetails?.formatTypeIds?.[0] || '';
             updatedDoc.selectedPrintRatio = newPaperDetails?.printRatioIds?.[0] || '';
@@ -156,9 +162,9 @@ export default function XeroxPage() {
           } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
               const result = await mammoth.extractRawText({ arrayBuffer });
               const wordCount = result.value.split(/\s+/).length;
-              return Math.ceil(wordCount / 250); // Rough estimation
+              return Math.ceil(wordCount / 250);
           }
-           return 1; // Default for images and other file types
+           return 1;
       } catch (error) {
           console.error("Error getting page count:", error);
           toast({ variant: 'destructive', title: 'Error', description: 'Could not parse document page count.' });
@@ -186,7 +192,7 @@ export default function XeroxPage() {
       Array.from(e.target.files).forEach(file => {
         addNewDocument(file);
       });
-      e.target.value = ''; // Reset input to allow same file upload again
+      e.target.value = '';
     }
   }
 
@@ -214,7 +220,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -226,15 +232,36 @@ export default function XeroxPage() {
   const finalTotalPrice = useMemo(() => {
     return documentPrices.reduce((total, item) => total + item.price, 0);
   }, [documentPrices]);
+  
+  const handleEditConfirm = (id: number, newValues: Partial<DocumentState>) => {
+    updateDocumentState(id, newValues);
+    setEditingDocument(null);
+  };
+  
+  const EditDocumentDialog = ({ doc, onConfirm }: { doc: DocumentState | null, onConfirm: (id: number, values: Partial<DocumentState>) => void }) => {
+    const [tempState, setTempState] = useState<Partial<DocumentState>>({});
+  
+    useEffect(() => {
+        if (doc) {
+            setTempState({
+                selectedPaperType: doc.selectedPaperType,
+                selectedColorOption: doc.selectedColorOption,
+                selectedFormatType: doc.selectedFormatType,
+                selectedPrintRatio: doc.selectedPrintRatio,
+                selectedBindingType: doc.selectedBindingType,
+                selectedLaminationType: doc.selectedLaminationType,
+                quantity: doc.quantity,
+                message: doc.message,
+            });
+        }
+    }, [doc]);
 
-
-  const DocumentCard = ({ document }: { document: DocumentState }) => {
-    const isExpanded = activeDocumentId === document.id;
-    const singleDocPrice = documentPrices.find(p => p.id === document.id)?.price || 0;
-    const wordCount = document.message.trim().split(/\s+/).filter(Boolean).length;
+    if (!doc) return null;
+    
+    const currentPaperDetails = paperTypes.find(pt => pt.id === (tempState.selectedPaperType || doc.selectedPaperType));
 
     const renderOptionSelect = (
-        id: string, label: string, selectedValue: string,
+        id: string, label: string, selectedValue: string | undefined,
         onValueChange: (value: string) => void,
         optionIds: string[] | undefined, allOptionList: { id: string, name: string, price?: number }[],
         includeNone: boolean = false
@@ -262,117 +289,175 @@ export default function XeroxPage() {
         );
     }
     
+    const wordCount = tempState.message?.trim().split(/\s+/).filter(Boolean).length || 0;
+  
     return (
-        <Card>
-          <Collapsible open={isExpanded} onOpenChange={(open) => setActiveDocumentId(open ? document.id : null)}>
-            
-             <CardHeader className="flex flex-row justify-between items-center p-4">
-                <h4 className="text-base font-bold truncate">Document {documents.findIndex(d => d.id === document.id) + 1}</h4>
-                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={(e) => { e.stopPropagation(); removeDocument(document.id); }}>
-                  <XCircle className="h-5 w-5 text-red-500" />
-                </Button>
-            </CardHeader>
+      <Dialog open={!!doc} onOpenChange={(open) => !open && setEditingDocument(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Print Options</DialogTitle>
+            <DialogDescription>{doc.fileDetails?.name}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+                <Label htmlFor={`paper-type-${doc.id}`}>Paper Type</Label>
+                <Select value={tempState.selectedPaperType} onValueChange={value => setTempState(prev => ({ ...prev, selectedPaperType: value, selectedBindingType: 'none', selectedLaminationType: 'none' }))} disabled={isLoading}>
+                    <SelectTrigger id={`paper-type-${doc.id}`}>
+                        <SelectValue placeholder="Select paper type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {paperTypes.map(type => (
+                            <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            {renderOptionSelect(`color-option-${doc.id}`, 'Color', tempState.selectedColorOption, value => setTempState(prev => ({...prev, selectedColorOption: value})), currentPaperDetails?.colorOptionIds, HARDCODED_XEROX_OPTIONS.colorOptions)}
+            {renderOptionSelect(`format-type-${doc.id}`, 'Format', tempState.selectedFormatType, value => setTempState(prev => ({...prev, selectedFormatType: value})), currentPaperDetails?.formatTypeIds, HARDCODED_XEROX_OPTIONS.formatTypes)}
+            {renderOptionSelect(`print-ratio-${doc.id}`, 'Print Ratio', tempState.selectedPrintRatio, value => setTempState(prev => ({...prev, selectedPrintRatio: value})), currentPaperDetails?.printRatioIds, HARDCODED_XEROX_OPTIONS.printRatios)}
+            {renderOptionSelect(`binding-type-${doc.id}`, 'Binding Type', tempState.selectedBindingType, value => setTempState(prev => ({...prev, selectedBindingType: value})), currentPaperDetails?.bindingTypeIds, allOptions.bindingTypes, true)}
+            {renderOptionSelect(`lamination-type-${doc.id}`, 'Lamination Type', tempState.selectedLaminationType, value => setTempState(prev => ({...prev, selectedLaminationType: value})), currentPaperDetails?.laminationTypeIds, allOptions.laminationTypes, true)}
+            <div>
+                <Label htmlFor={`quantity-${doc.id}`}>Quantity</Label>
+                <div className="flex items-center gap-2 mt-2">
+                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setTempState(prev => ({...prev, quantity: Math.max(1, (prev.quantity || 1) - 1)}))}> <Minus className="h-4 w-4" /> </Button>
+                    <Input id={`quantity-${doc.id}`} type="number" min="1" value={tempState.quantity} onChange={(e) => setTempState(prev => ({...prev, quantity: Math.max(1, parseInt(e.target.value, 10) || 1)}))} className="h-9 w-20 text-center" />
+                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setTempState(prev => ({...prev, quantity: (prev.quantity || 1) + 1}))}> <Plus className="h-4 w-4" /> </Button>
+                </div>
+            </div>
+            <div>
+                <Label htmlFor={`message-${doc.id}`}>Special Instructions (Optional)</Label>
+                <Textarea 
+                    id={`message-${doc.id}`} 
+                    placeholder="e.g., 'Please use a thick cover for binding.'"
+                    value={tempState.message}
+                    onChange={e => setTempState(prev => ({...prev, message: e.target.value}))}
+                    className="mt-2"
+                />
+                <p className={cn("text-xs mt-1", wordCount > MAX_WORDS ? "text-destructive" : "text-muted-foreground")}>
+                    {wordCount} / {MAX_WORDS} words
+                </p>
+            </div>
+          </div>
+           <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="secondary">Cancel</Button>
+                </DialogClose>
+                <Button onClick={() => onConfirm(doc.id, tempState)}>Save Changes</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
-            <CardContent className="p-4 pt-0">
-                {!isExpanded ? (
-                     <Table>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell className="font-medium truncate p-1">{document.fileDetails?.name}</TableCell>
-                                <TableCell className="text-right font-semibold p-1">Rs {singleDocPrice.toFixed(2)}</TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                ) : (
-                <CollapsibleContent>
-                  <Card className="p-4 relative">
-                      <div className="flex items-start gap-4">
-                          {document.fileDetails?.preview ? (
-                              <div className="relative h-24 w-24 flex-shrink-0">
-                                  <Image src={document.fileDetails.preview} alt="File preview" fill className="rounded-md object-cover" />
-                              </div>
-                          ) : (
-                              <div className="h-24 w-24 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
-                                  <FileText className="h-10 w-10 text-muted-foreground" />
-                              </div>
-                          )}
-                          <div className="flex-grow min-w-0">
-                              <p className="font-semibold truncate">{document.fileDetails?.name}</p>
-                              <p className="text-sm text-muted-foreground capitalize truncate">{document.fileDetails?.type.split('/')[1]}</p>
-                              {document.isParsing ? (
-                                  <p className="text-sm text-muted-foreground flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin"/> Checking pages...</p>
-                              ) : document.fileDetails?.pages !== undefined && (
-                                  <p className="text-sm text-muted-foreground">Pages: {document.fileDetails.pages}</p>
-                              )}
-                          </div>
-                      </div>
-                  </Card>
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div>
-                          <Label htmlFor={`paper-type-${document.id}`}>Paper Type</Label>
-                          <Select value={document.selectedPaperType} onValueChange={value => updateDocumentState(document.id, { selectedPaperType: value })} disabled={isLoading}>
-                              <SelectTrigger id={`paper-type-${document.id}`}>
-                                  <SelectValue placeholder="Select paper type..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {paperTypes.map(type => (
-                                      <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                      {renderOptionSelect(`color-option-${document.id}`, 'Color', document.selectedColorOption, value => updateDocumentState(document.id, {selectedColorOption: value}), document.currentPaperDetails?.colorOptionIds, HARDCODED_XEROX_OPTIONS.colorOptions)}
-                      {renderOptionSelect(`format-type-${document.id}`, 'Format', document.selectedFormatType, value => updateDocumentState(document.id, {selectedFormatType: value}), document.currentPaperDetails?.formatTypeIds, HARDCODED_XEROX_OPTIONS.formatTypes)}
-                      {renderOptionSelect(`print-ratio-${document.id}`, 'Print Ratio', document.selectedPrintRatio, value => updateDocumentState(document.id, {selectedPrintRatio: value}), document.currentPaperDetails?.printRatioIds, HARDCODED_XEROX_OPTIONS.printRatios)}
-                      {renderOptionSelect(`binding-type-${document.id}`, 'Binding Type', document.selectedBindingType, value => updateDocumentState(document.id, {selectedBindingType: value}), document.currentPaperDetails?.bindingTypeIds, allOptions.bindingTypes, true)}
-                      {renderOptionSelect(`lamination-type-${document.id}`, 'Lamination Type', document.selectedLaminationType, value => updateDocumentState(document.id, {selectedLaminationType: value}), document.currentPaperDetails?.laminationTypeIds, allOptions.laminationTypes, true)}
-                      <div>
-                          <Label htmlFor={`quantity-${document.id}`}>Quantity</Label>
-                          <div className="flex items-center gap-2 mt-2">
-                              <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => updateDocumentState(document.id, { quantity: Math.max(1, document.quantity - 1) })}> <Minus className="h-4 w-4" /> </Button>
-                              <Input id={`quantity-${document.id}`} type="number" min="1" value={document.quantity} onChange={(e) => updateDocumentState(document.id, { quantity: Math.max(1, parseInt(e.target.value, 10) || 1)})} className="h-9 w-20 text-center" />
-                              <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => updateDocumentState(document.id, { quantity: document.quantity + 1 })}> <Plus className="h-4 w-4" /> </Button>
-                          </div>
-                      </div>
-                  </div>
-                  <div className="mt-4">
-                      <Label htmlFor={`message-${document.id}`}>Special Instructions (Optional)</Label>
-                      <Textarea 
-                          id={`message-${document.id}`} 
-                          placeholder="e.g., 'Please use a thick cover for binding.'"
-                          value={document.message}
-                          onChange={e => updateDocumentState(document.id, { message: e.target.value })}
-                          className="mt-2"
-                      />
-                      <p className={cn("text-xs mt-1", wordCount > MAX_WORDS ? "text-destructive" : "text-muted-foreground")}>
-                          {wordCount} / {MAX_WORDS} words
-                      </p>
-                  </div>
-                   <div className="mt-4 text-right">
-                      <p className="text-sm text-muted-foreground">Document Price</p>
-                      <p className="text-xl font-bold">Rs {singleDocPrice.toFixed(2)}</p>
-                  </div>
-              </CollapsibleContent>
-                )}
-            </CardContent>
-            <CardFooter className="p-0">
-              <CollapsibleTrigger asChild>
-                  <Button 
-                    variant={isExpanded ? 'default' : 'ghost'} 
-                    className={cn(
-                        "w-full rounded-t-none flex items-center gap-2",
-                        isExpanded && "bg-green-600 text-white hover:bg-gray-500"
+  const DocumentCard = ({ document }: { document: DocumentState }) => {
+    const singleDocPrice = documentPrices.find(p => p.id === document.id)?.price || 0;
+    
+    return (
+        <Card className="relative">
+            <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 flex-shrink-0" onClick={() => removeDocument(document.id)}>
+                <XCircle className="h-5 w-5 text-red-500" />
+            </Button>
+            <CardHeader className="p-4">
+                <div className="flex items-start gap-4">
+                    {document.fileDetails?.preview ? (
+                        <div className="relative h-20 w-20 flex-shrink-0">
+                            <Image src={document.fileDetails.preview} alt="File preview" fill className="rounded-md object-cover" />
+                        </div>
+                    ) : (
+                        <div className="h-20 w-20 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
+                            {document.isParsing ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/> : <FileText className="h-10 w-10 text-muted-foreground" />}
+                        </div>
                     )}
-                  >
-                      <ChevronsUpDown className="h-5 w-5 text-green-600 animate-float-up" />
-                       <span>{isExpanded ? 'COLLAPSE' : 'EXPAND'}</span>
-                  </Button>
-              </CollapsibleTrigger>
+                    <div className="flex-grow min-w-0">
+                        <p className="font-semibold truncate">{document.fileDetails?.name || "Processing..."}</p>
+                        <p className="text-sm text-muted-foreground capitalize truncate">{document.fileDetails?.type?.split('/')[1]}</p>
+                        {document.fileDetails?.pages !== undefined && (
+                            <p className="text-sm text-muted-foreground">Pages: {document.fileDetails.pages}</p>
+                        )}
+                    </div>
+                </div>
+            </CardHeader>
+            <CardFooter className="flex justify-between items-center bg-muted/50 p-4">
+                <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold">Rs {singleDocPrice.toFixed(2)}</p>
+                    <Button variant="outline" size="sm" onClick={() => setEditingDocument(document)}>
+                        <Pencil className="mr-2 h-4 w-4"/> Edit
+                    </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => updateDocumentState(document.id, { quantity: Math.max(1, document.quantity - 1) })}> <Minus className="h-4 w-4" /> </Button>
+                    <span className="font-bold w-10 text-center">{document.quantity}</span>
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => updateDocumentState(document.id, { quantity: document.quantity + 1 })}> <Plus className="h-4 w-4" /> </Button>
+                </div>
             </CardFooter>
-          </Collapsible>
         </Card>
     );
   };
+  
+  const FinalEstimation = () => {
+    if (documents.length === 0) return null;
+
+    const getOptionName = (type: keyof typeof allOptions | 'paperType' | 'colorOption' | 'formatType' | 'printRatio', id: string): string => {
+        if (!id || id === 'none') return '';
+        if (type === 'paperType') return paperTypes.find(o => o.id === id)?.name || '';
+        if (type === 'colorOption') return HARDCODED_XEROX_OPTIONS.colorOptions.find(o => o.id === id)?.name || '';
+        if (type === 'formatType') return HARDCODED_XEROX_OPTIONS.formatTypes.find(o => o.id === id)?.name || '';
+        if (type === 'printRatio') return HARDCODED_XEROX_OPTIONS.printRatios.find(o => o.id === id)?.name || '';
+        return allOptions[type]?.find(o => o.id === id)?.name || '';
+    };
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Final Estimation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Table className="text-xs">
+            <TableBody>
+              {documents.map((doc, index) => {
+                const docPrice = documentPrices.find(p => p.id === doc.id)?.price || 0;
+                const options = [
+                    getOptionName('paperType', doc.selectedPaperType),
+                    getOptionName('colorOption', doc.selectedColorOption),
+                    getOptionName('formatType', doc.selectedFormatType),
+                    getOptionName('printRatio', doc.selectedPrintRatio),
+                    getOptionName('bindingTypes', doc.selectedBindingType),
+                    getOptionName('laminationTypes', doc.selectedLaminationType),
+                ].filter(Boolean).join(' | ');
+
+                return (
+                    <TableRow key={doc.id} className="align-top">
+                        <TableCell className="p-2">
+                            <p className="font-medium truncate max-w-xs">Doc {index + 1}: {doc.fileDetails?.name}</p>
+                            {options && <p className="text-muted-foreground">{options}</p>}
+                        </TableCell>
+                        <TableCell className="p-2 text-right">
+                           <p className="font-semibold">Rs {docPrice.toFixed(2)}</p>
+                           <p className="text-muted-foreground">{doc.quantity} x copies</p>
+                        </TableCell>
+                    </TableRow>
+                )
+              })}
+              <TableRow className="font-bold text-base border-t-2">
+                <TableCell className="p-2">Final Price</TableCell>
+                <TableCell className="p-2 text-right">Rs {finalTotalPrice.toFixed(2)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <Button 
+            size="lg" 
+            className="w-full"
+            disabled={documents.some(d => d.isParsing)}
+          >
+            <ShoppingCart className="mr-2 h-5 w-5" />
+            Check Out Now
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  };
+
 
   const renderInitialState = () => (
     <div className="container mx-auto px-4 py-8">
@@ -517,6 +602,8 @@ export default function XeroxPage() {
           </Collapsible>
         </Card>
       </div>
+      
+      {editingDocument && <EditDocumentDialog doc={editingDocument} onConfirm={handleEditConfirm} />}
 
        {documents.length === 0 && !isLoading ? renderInitialState() : (
          <div className="container mx-auto px-4 py-8 space-y-4">
@@ -539,42 +626,9 @@ export default function XeroxPage() {
                 onChange={handleMultipleFileChanges}
                 accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
             />
-
-          {documents.length > 0 && (
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Final Estimation</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Table>
-                        <TableBody>
-                            {documentPrices.map((item, index) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="font-medium">Document {index + 1}</TableCell>
-                                    <TableCell className="text-right">Rs {item.price.toFixed(2)}</TableCell>
-                                </TableRow>
-                            ))}
-                             <TableRow className="font-bold text-lg border-t-2">
-                                <TableCell>Final Price</TableCell>
-                                <TableCell className="text-right">Rs {finalTotalPrice.toFixed(2)}</TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                    <Button 
-                      size="lg" 
-                      className="w-full"
-                      disabled={documents.some(d => d.isParsing)}
-                    >
-                      <ShoppingCart className="mr-2 h-5 w-5" />
-                      Check Out Now
-                    </Button>
-                  </CardContent>
-              </Card>
-          )}
+            <FinalEstimation />
         </div>
        )}
     </div>
   );
 }
-
-    
