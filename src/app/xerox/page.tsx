@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, ChevronsUpDown, Pencil } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -84,6 +84,7 @@ export default function XeroxPage() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const [fetchedServices, fetchedPaperTypes, bindingTypes, laminationTypes] = await Promise.all([
           getXeroxServices(),
@@ -136,19 +137,19 @@ export default function XeroxPage() {
             const newPaperDetails = paperTypes.find(pt => pt.id === updates.selectedPaperType) || null;
             updatedDoc.currentPaperDetails = newPaperDetails;
             // Reset dependent options only if they are no longer valid for the new paper type
-            if (!newPaperDetails?.colorOptionIds?.includes(updatedDoc.selectedColorOption)) {
-                updatedDoc.selectedColorOption = newPaperDetails?.colorOptionIds?.[0] || '';
+            if (newPaperDetails && !newPaperDetails.colorOptionIds?.includes(updatedDoc.selectedColorOption)) {
+                updatedDoc.selectedColorOption = newPaperDetails.colorOptionIds?.[0] || '';
             }
-            if (!newPaperDetails?.formatTypeIds?.includes(updatedDoc.selectedFormatType)) {
-                updatedDoc.selectedFormatType = newPaperDetails?.formatTypeIds?.[0] || '';
+            if (newPaperDetails && !newPaperDetails.formatTypeIds?.includes(updatedDoc.selectedFormatType)) {
+                updatedDoc.selectedFormatType = newPaperDetails.formatTypeIds?.[0] || '';
             }
-            if (!newPaperDetails?.printRatioIds?.includes(updatedDoc.selectedPrintRatio)) {
-                updatedDoc.selectedPrintRatio = newPaperDetails?.printRatioIds?.[0] || '';
+            if (newPaperDetails && !newPaperDetails.printRatioIds?.includes(updatedDoc.selectedPrintRatio)) {
+                updatedDoc.selectedPrintRatio = newPaperDetails.printRatioIds?.[0] || '';
             }
-             if (!newPaperDetails?.bindingTypeIds?.includes(updatedDoc.selectedBindingType)) {
+             if (newPaperDetails && !newPaperDetails.bindingTypeIds?.includes(updatedDoc.selectedBindingType)) {
                 updatedDoc.selectedBindingType = 'none';
             }
-            if (!newPaperDetails?.laminationTypeIds?.includes(updatedDoc.selectedLaminationType)) {
+            if (newPaperDetails && !newPaperDetails.laminationTypeIds?.includes(updatedDoc.selectedLaminationType)) {
                 updatedDoc.selectedLaminationType = 'none';
             }
           }
@@ -157,6 +158,8 @@ export default function XeroxPage() {
         return doc;
       })
     );
+     // Also update editingDocument state if it's the one being edited
+    setEditingDocument(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
   };
   
   const removeDocument = (id: number) => {
@@ -231,7 +234,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -397,7 +400,6 @@ export default function XeroxPage() {
         if (type === 'formatType') return HARDCODED_XEROX_OPTIONS.formatTypes.find(o => o.id === id)?.name || '';
         if (type === 'printRatio') return HARDCODED_XEROX_OPTIONS.printRatios.find(o => o.id === id)?.name || '';
         
-        // This is a safe assertion because we've handled all other keys
         const optionsList = allOptions[type as keyof typeof allOptions];
         return optionsList.find(o => o.id === id)?.name || '';
     };
@@ -641,3 +643,5 @@ export default function XeroxPage() {
     </div>
   );
 }
+
+    
