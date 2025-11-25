@@ -29,6 +29,7 @@ import mammoth from 'mammoth';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 // Set up worker for pdf.js
 if (typeof window !== 'undefined') {
@@ -47,7 +48,10 @@ type DocumentState = {
   selectedBindingType: string;
   selectedLaminationType: string;
   quantity: number;
+  message: string;
 };
+
+const MAX_WORDS = 100;
 
 export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
@@ -108,6 +112,7 @@ export default function XeroxPage() {
       selectedBindingType: 'none',
       selectedLaminationType: 'none',
       quantity: 1,
+      message: '',
     };
     setDocuments(prev => [...prev, newDocument]);
     handleFileChange(file, newDocId);
@@ -226,6 +231,7 @@ export default function XeroxPage() {
   const DocumentCard = ({ document }: { document: DocumentState }) => {
     const isExpanded = activeDocumentId === document.id;
     const singleDocPrice = documentPrices.find(p => p.id === document.id)?.price || 0;
+    const wordCount = document.message.trim().split(/\s+/).filter(Boolean).length;
 
     const renderOptionSelect = (
         id: string, label: string, selectedValue: string,
@@ -328,6 +334,19 @@ export default function XeroxPage() {
                               <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => updateDocumentState(document.id, { quantity: document.quantity + 1 })}> <Plus className="h-4 w-4" /> </Button>
                           </div>
                       </div>
+                  </div>
+                  <div className="mt-4">
+                      <Label htmlFor={`message-${document.id}`}>Special Instructions (Optional)</Label>
+                      <Textarea 
+                          id={`message-${document.id}`} 
+                          placeholder="e.g., 'Please use a thick cover for binding.'"
+                          value={document.message}
+                          onChange={e => updateDocumentState(document.id, { message: e.target.value })}
+                          className="mt-2"
+                      />
+                      <p className={cn("text-xs mt-1", wordCount > MAX_WORDS ? "text-destructive" : "text-muted-foreground")}>
+                          {wordCount} / {MAX_WORDS} words
+                      </p>
                   </div>
                    <div className="mt-4 text-right">
                       <p className="text-sm text-muted-foreground">Document Price</p>
@@ -557,3 +576,5 @@ export default function XeroxPage() {
     </div>
   );
 }
+
+    
