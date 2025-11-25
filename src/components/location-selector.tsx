@@ -9,9 +9,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,9 +21,14 @@ import { useToast } from "@/hooks/use-toast";
 export default function LocationSelector() {
   const { userLocation, setUserLocation } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [pincode, setPincode] = useState("");
+  const [name, setName] = useState(userLocation?.name || "");
+  const [pincode, setPincode] = useState(userLocation?.pincode || "");
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (userLocation) {
@@ -36,15 +41,14 @@ export default function LocationSelector() {
   }, [userLocation]);
   
   useEffect(() => {
-    // Open the dialog if no location is set
-    if (!userLocation) {
+    if (isClient && !userLocation) {
         const hasBeenPrompted = sessionStorage.getItem('locationPrompted');
         if (!hasBeenPrompted) {
             setIsOpen(true);
             sessionStorage.setItem('locationPrompted', 'true');
         }
     }
-  }, [userLocation]);
+  }, [userLocation, isClient]);
 
   const handleSave = () => {
     if (name.trim() && pincode.trim()) {
@@ -88,27 +92,41 @@ export default function LocationSelector() {
         <DialogHeader>
           <DialogTitle>Set Your Delivery Location</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="location-name">Area / City Name</Label>
-            <Input
-              id="location-name"
-              placeholder="e.g., Anna Nagar, Chennai"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+        {isClient ? (
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="location-name">Area / City Name</Label>
+              <Input
+                id="location-name"
+                placeholder="e.g., Anna Nagar, Chennai"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pincode">Pincode</Label>
+              <Input
+                id="pincode"
+                placeholder="e.g., 600040"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                maxLength={6}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="pincode">Pincode</Label>
-            <Input
-              id="pincode"
-              placeholder="e.g., 600040"
-              value={pincode}
-              onChange={(e) => setPincode(e.target.value)}
-              maxLength={6}
-            />
+        ) : (
+          <div className="space-y-4 py-4">
+            {/* Render a placeholder or skeleton loader on the server */}
+            <div className="space-y-2">
+              <Label htmlFor="location-name">Area / City Name</Label>
+              <Input id="location-name" disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pincode">Pincode</Label>
+              <Input id="pincode" disabled />
+            </div>
           </div>
-        </div>
+        )}
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="secondary">Cancel</Button>
