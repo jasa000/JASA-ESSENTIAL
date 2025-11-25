@@ -1,4 +1,5 @@
 
+
 import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
@@ -435,3 +436,4 @@ export const deleteXeroxOption = async (type: XeroxOptionType, id: string): Prom
         throw new Error(`Failed to delete Xerox option from ${type}.`);
     }
 };
+

@@ -61,11 +61,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+     match /homepageContent/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+     }
     
     // Xerox Form Option Collections
     match /paperTypes/{docId} {
-      allow get: if true;
-      allow list: if true;
+      allow read: if true;
       allow write: if isAdmin();
     }
     match /colorOptions/{docId} {
