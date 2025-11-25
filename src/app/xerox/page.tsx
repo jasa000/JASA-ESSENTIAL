@@ -161,7 +161,7 @@ export default function XeroxPage() {
               return pdf.numPages;
           } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
               const result = await mammoth.extractRawText({ arrayBuffer });
-              const wordCount = result.value.split(/\s+/).length;
+              const wordCount = result.value.split(/\s+/).filter(Boolean).length;
               return Math.ceil(wordCount / 250);
           }
            return 1;
@@ -240,6 +240,11 @@ export default function XeroxPage() {
   
   const EditDocumentDialog = ({ doc, onConfirm }: { doc: DocumentState | null, onConfirm: (id: number, values: Partial<DocumentState>) => void }) => {
     const [tempState, setTempState] = useState<Partial<DocumentState>>({});
+    
+    const docIndex = useMemo(() => {
+        if (!doc) return -1;
+        return documents.findIndex(d => d.id === doc.id);
+    }, [doc]);
   
     useEffect(() => {
         if (doc) {
@@ -295,7 +300,7 @@ export default function XeroxPage() {
       <Dialog open={!!doc} onOpenChange={(open) => !open && setEditingDocument(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Print Options</DialogTitle>
+            <DialogTitle>Edit Options for Doc {docIndex + 1}</DialogTitle>
             <DialogDescription>{doc.fileDetails?.name}</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -413,38 +418,37 @@ export default function XeroxPage() {
           <CardTitle>Final Estimation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Table className="text-xs">
-            <TableBody>
-              {documents.map((doc, index) => {
-                const docPrice = documentPrices.find(p => p.id === doc.id)?.price || 0;
-                const options = [
-                    getOptionName('paperType', doc.selectedPaperType),
-                    getOptionName('colorOption', doc.selectedColorOption),
-                    getOptionName('formatType', doc.selectedFormatType),
-                    getOptionName('printRatio', doc.selectedPrintRatio),
-                    getOptionName('bindingTypes', doc.selectedBindingType),
-                    getOptionName('laminationTypes', doc.selectedLaminationType),
-                ].filter(Boolean).join(' | ');
+          <div className="space-y-4">
+            {documents.map((doc, index) => {
+              const docPrice = documentPrices.find(p => p.id === doc.id)?.price || 0;
+              const options = [
+                  getOptionName('paperType', doc.selectedPaperType),
+                  getOptionName('colorOption', doc.selectedColorOption),
+                  getOptionName('formatType', doc.selectedFormatType),
+                  getOptionName('printRatio', doc.selectedPrintRatio),
+                  getOptionName('bindingTypes', doc.selectedBindingType),
+                  getOptionName('laminationTypes', doc.selectedLaminationType),
+              ].filter(Boolean).join(' | ');
 
-                return (
-                    <TableRow key={doc.id} className="align-top">
-                        <TableCell className="p-2">
-                            <p className="font-medium truncate max-w-xs">Doc {index + 1}: {doc.fileDetails?.name}</p>
-                            {options && <p className="text-muted-foreground">{options}</p>}
-                        </TableCell>
-                        <TableCell className="p-2 text-right">
+              return (
+                <div key={doc.id} className="text-xs border-b pb-2">
+                    <div className="flex justify-between items-start">
+                        <p className="font-medium truncate max-w-xs flex-1">Doc {index + 1}: {doc.fileDetails?.name}</p>
+                        <div className="text-right">
                            <p className="font-semibold">Rs {docPrice.toFixed(2)}</p>
                            <p className="text-muted-foreground">{doc.quantity} x copies</p>
-                        </TableCell>
-                    </TableRow>
-                )
-              })}
-              <TableRow className="font-bold text-base border-t-2">
-                <TableCell className="p-2">Final Price</TableCell>
-                <TableCell className="p-2 text-right">Rs {finalTotalPrice.toFixed(2)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                        </div>
+                    </div>
+                    {options && <p className="text-muted-foreground mt-1">{options}</p>}
+                    {doc.message && <p className="text-muted-foreground mt-1 italic">Note: "{doc.message}"</p>}
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex justify-between font-bold text-base border-t-2 pt-2">
+            <p>Final Price</p>
+            <p>Rs {finalTotalPrice.toFixed(2)}</p>
+          </div>
           <Button 
             size="lg" 
             className="w-full"
@@ -603,7 +607,7 @@ export default function XeroxPage() {
         </Card>
       </div>
       
-      {editingDocument && <EditDocumentDialog doc={editingDocument} onConfirm={handleEditConfirm} />}
+      <EditDocumentDialog doc={editingDocument} onConfirm={handleEditConfirm} />
 
        {documents.length === 0 && !isLoading ? renderInitialState() : (
          <div className="container mx-auto px-4 py-8 space-y-4">
