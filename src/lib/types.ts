@@ -6,7 +6,7 @@ export type Product = {
   authorIds?: string[];
   productTypeIds?: string[];
   description: string;
-  category: 'stationary' | 'books' | 'electronics';
+  category: 'stationary' | 'books' | 'electronics' | 'xerox';
   price: number;
   discountPrice?: number;
   rating?: number;
@@ -197,4 +197,16 @@ export type OrderSettings = {
   itemDeliveryCharge: number;
   minXeroxOrderPrice: number;
   xeroxDeliveryCharge: number;
+};
+
+export type Pincode = {
+  pincode: string;
+  areaName: string;
+};
+
+export type PincodeDistrict = {
+  id: string;
+  districtName: string;
+  pincodes: Pincode[];
+  isActive: boolean;
 };

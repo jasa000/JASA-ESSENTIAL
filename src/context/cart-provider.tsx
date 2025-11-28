@@ -9,6 +9,7 @@ import { getProducts } from '@/lib/data';
 
 type CartState = {
   items: CartItem[];
+  selectedItems: string[];
 };
 
 type CartAction =
@@ -16,7 +17,8 @@ type CartAction =
   | { type: 'REMOVE_ITEM'; payload: { id: string } }
   | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
   | { type: 'SET_STATE'; payload: CartState }
-  | { type: 'CLEAR_CART' };
+  | { type: 'CLEAR_CART' }
+  | { type: 'SET_SELECTED_ITEMS', payload: string[] };
 
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
@@ -33,16 +35,22 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return { ...state, items: [...state.items, { product: action.payload, quantity: 1 }] };
     }
     case 'REMOVE_ITEM': {
+       const newItems = state.items.filter((item) => item.product.id !== action.payload.id);
+       const newSelectedItems = state.selectedItems.filter(id => id !== action.payload.id);
       return {
         ...state,
-        items: state.items.filter((item) => item.product.id !== action.payload.id),
+        items: newItems,
+        selectedItems: newSelectedItems,
       };
     }
     case 'UPDATE_QUANTITY': {
       if (action.payload.quantity <= 0) {
+        const newItems = state.items.filter((item) => item.product.id !== action.payload.id);
+        const newSelectedItems = state.selectedItems.filter(id => id !== action.payload.id);
         return {
           ...state,
-          items: state.items.filter((item) => item.product.id !== action.payload.id),
+          items: newItems,
+          selectedItems: newSelectedItems,
         };
       }
       return {
@@ -58,7 +66,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return action.payload;
     }
     case 'CLEAR_CART': {
-        return { items: [] };
+        return { items: [], selectedItems: [] };
+    }
+    case 'SET_SELECTED_ITEMS': {
+        return { ...state, selectedItems: action.payload };
     }
     default:
       return state;
@@ -67,17 +78,19 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 type CartContextType = {
   items: CartItem[];
+  selectedItems: string[];
   addItem: (product: Product) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  setSelectedItems: (ids: string[]) => void;
 };
 
 export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
-  const [state, dispatch] = useReducer(cartReducer, { items: [] });
+  const [state, dispatch] = useReducer(cartReducer, { items: [], selectedItems: [] });
   const [isInitialized, setIsInitialized] = useState(false);
 
   const saveCartToDb = useCallback(async (cartItems: CartItem[]) => {
@@ -118,7 +131,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (user) {
         const dbCart = user.cart || [];
         if (dbCart.length > 0 || localCart.length > 0) {
-          const allProducts = await getProducts(); // Fetch all products to resolve IDs
+          const allProducts = await getProducts();
           const productMap = new Map(allProducts.map(p => [p.id, p]));
           
           const mergedCartMap = new Map<string, CartItem>();
@@ -126,8 +139,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           // Process local cart first
           if(Array.isArray(localCart)) {
             localCart.forEach(item => {
-              if(item && item.product) {
-                mergedCartMap.set(item.product.id, item);
+              if(item && item.product && productMap.has(item.product.id)) {
+                mergedCartMap.set(item.product.id, {
+                    ...item,
+                    product: productMap.get(item.product.id)!
+                });
               }
             });
           }
@@ -141,21 +157,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           });
 
           const mergedItems = Array.from(mergedCartMap.values());
-          dispatch({ type: 'SET_STATE', payload: { items: mergedItems } });
+          dispatch({ type: 'SET_STATE', payload: { items: mergedItems, selectedItems: [] } });
           saveCartToDb(mergedItems);
           localStorage.removeItem('cart'); // Clear old local cart after merging into DB
         } else {
-          dispatch({ type: 'SET_STATE', payload: { items: [] } });
+          dispatch({ type: 'SET_STATE', payload: { items: [], selectedItems: [] } });
         }
       } else {
         // For guest users, only load from local storage
         const allProducts = await getProducts();
         const productMap = new Map(allProducts.map(p => [p.id, p]));
-        const validatedLocalCart = localCart.map(item => {
+        const validatedLocalCart = Array.isArray(localCart) ? localCart.map(item => {
+          if (!item || !item.product || !item.product.id) return null;
           const product = productMap.get(item.product.id);
           return product ? { product, quantity: item.quantity } : null;
-        }).filter((item): item is CartItem => item !== null);
-        dispatch({ type: 'SET_STATE', payload: { items: validatedLocalCart } });
+        }).filter((item): item is CartItem => item !== null) : [];
+        dispatch({ type: 'SET_STATE', payload: { items: validatedLocalCart, selectedItems: [] } });
       }
       setIsInitialized(true);
     };
@@ -166,6 +183,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isInitialized && !user) {
         try {
+            // Only save items, not selectedItems to localStorage
             localStorage.setItem('cart', JSON.stringify(state.items));
         } catch (error) {
             console.error("Failed to sync cart to localStorage", error);
@@ -179,9 +197,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const removeItem = (id: string) => dispatch({ type: 'REMOVE_ITEM', payload: { id } });
   const updateQuantity = (id: string, quantity: number) => dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
   const clearCart = () => dispatch({ type: 'CLEAR_CART' });
+  const setSelectedItems = (ids: string[]) => dispatch({ type: 'SET_SELECTED_ITEMS', payload: ids });
 
   return (
-    <CartContext.Provider value={{ items: state.items, addItem, removeItem, updateQuantity, clearCart }}>
+    <CartContext.Provider value={{ items: state.items, selectedItems: state.selectedItems, addItem, removeItem, updateQuantity, clearCart, setSelectedItems }}>
       {children}
     </CartContext.Provider>
   );
