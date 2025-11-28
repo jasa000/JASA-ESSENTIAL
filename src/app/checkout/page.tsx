@@ -9,6 +9,7 @@ import { useCart } from '@/hooks/use-cart';
 import { useAuth } from '@/context/auth-provider';
 import { updateUserProfile } from '@/lib/users';
 import { getShops } from '@/lib/shops';
+import { getOrderSettings } from '@/lib/data';
 import { useState, useEffect, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -16,13 +17,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store } from 'lucide-react';
-import type { UserProfile, Shop, ShopService } from '@/lib/types';
+import { PlusCircle, Store, Info } from 'lucide-react';
+import type { UserProfile, Shop, ShopService, OrderSettings } from '@/lib/types';
 
 
 const addressSchema = z.object({
@@ -47,11 +49,30 @@ export default function CheckoutPage() {
 
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [allShops, setAllShops] = useState<Shop[]>([]);
-  const [loadingShops, setLoadingShops] = useState(true);
+  const [orderSettings, setOrderSettings] = useState<OrderSettings | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const subtotal = items.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
-  const shipping = items.length > 0 ? 5.00 : 0;
-  const total = subtotal + shipping;
+  // Separate items by category type
+  const itemProducts = useMemo(() => items.filter(item => item.product.category !== 'xerox'), [items]);
+  const xeroxProducts = useMemo(() => items.filter(item => item.product.category === 'xerox'), [items]);
+
+  // Calculate subtotals
+  const itemsSubtotal = useMemo(() => itemProducts.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0), [itemProducts]);
+  const xeroxSubtotal = useMemo(() => xeroxProducts.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0), [xeroxProducts]);
+
+  // Determine delivery charges
+  const itemDeliveryCharge = useMemo(() => {
+    if (!orderSettings || itemProducts.length === 0) return 0;
+    return itemsSubtotal < orderSettings.minItemOrderPrice ? orderSettings.itemDeliveryCharge : 0;
+  }, [itemsSubtotal, orderSettings, itemProducts.length]);
+
+  const xeroxDeliveryCharge = useMemo(() => {
+    if (!orderSettings || xeroxProducts.length === 0) return 0;
+    return xeroxSubtotal < orderSettings.minXeroxOrderPrice ? orderSettings.xeroxDeliveryCharge : 0;
+  }, [xeroxSubtotal, orderSettings, xeroxProducts.length]);
+  
+  const total = itemsSubtotal + xeroxSubtotal + itemDeliveryCharge + xeroxDeliveryCharge;
+
 
   const checkoutForm = useForm<z.infer<typeof checkoutFormSchema>>({
     resolver: zodResolver(checkoutFormSchema),
@@ -81,24 +102,32 @@ export default function CheckoutPage() {
         checkoutForm.setValue('selectedAddress', `address-0`);
     }
     
-    const fetchShops = async () => {
+    const fetchInitialData = async () => {
         try {
-            setLoadingShops(true);
-            const shops = await getShops();
+            setLoading(true);
+            const [shops, settings] = await Promise.all([
+                getShops(),
+                getOrderSettings(),
+            ]);
             setAllShops(shops);
+            setOrderSettings(settings);
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not fetch sellers." });
+            toast({ variant: "destructive", title: "Error", description: "Could not fetch checkout data." });
         } finally {
-            setLoadingShops(false);
+            setLoading(false);
         }
     };
-    fetchShops();
+    fetchInitialData();
   }, [user, authLoading, router, checkoutForm, toast]);
 
   const requiredServices = useMemo(() => {
     const services = new Set<ShopService>();
     items.forEach(item => {
-        services.add(item.product.category);
+        if (item.product.category === 'electronics' || item.product.category === 'stationary' || item.product.category === 'books') {
+            services.add(item.product.category);
+        } else if (item.product.category === 'xerox') {
+             services.add('xerox');
+        }
     });
     return Array.from(services);
   }, [items]);
@@ -140,7 +169,7 @@ export default function CheckoutPage() {
     router.push('/profile');
   }
 
-  if (authLoading || loadingShops) {
+  if (authLoading || loading) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>
   }
 
@@ -375,6 +404,16 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2 space-y-8">
           {renderAddressSelection()}
           {renderSellerSelection()}
+           {(itemDeliveryCharge > 0 || xeroxDeliveryCharge > 0) && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Delivery Charges Applied</AlertTitle>
+              <AlertDescription>
+                {itemDeliveryCharge > 0 && `Add items worth Rs ${(orderSettings!.minItemOrderPrice - itemsSubtotal).toFixed(2)} more to get free delivery on items.`}
+                {xeroxDeliveryCharge > 0 && `Add Xerox services worth Rs ${(orderSettings!.minXeroxOrderPrice - xeroxSubtotal).toFixed(2)} more to get free delivery on Xerox.`}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         <div className="lg:col-span-1">
@@ -384,26 +423,57 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {items.map(({ product, quantity }) => (
-                  <div key={product.id} className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-sm text-muted-foreground">Quantity: {quantity}</p>
-                    </div>
-                    <p>Rs {((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
-                  </div>
-                ))}
-                <Separator />
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>Rs {subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>Rs {shipping.toFixed(2)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold">
+                {itemProducts.length > 0 && (
+                    <>
+                        <h4 className="font-medium">Items</h4>
+                        {itemProducts.map(({ product, quantity }) => (
+                            <div key={product.id} className="flex items-center justify-between text-sm">
+                                <div>
+                                <p className="font-medium">{product.name}</p>
+                                <p className="text-xs text-muted-foreground">Quantity: {quantity}</p>
+                                </div>
+                                <p>Rs {((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
+                            </div>
+                        ))}
+                         <div className="flex justify-between text-sm">
+                            <span>Items Subtotal</span>
+                            <span>Rs {itemsSubtotal.toFixed(2)}</span>
+                        </div>
+                        {itemDeliveryCharge > 0 && (
+                            <div className="flex justify-between text-sm text-destructive">
+                                <span>Delivery Charge</span>
+                                <span>Rs {itemDeliveryCharge.toFixed(2)}</span>
+                            </div>
+                        )}
+                        <Separator />
+                    </>
+                )}
+                 {xeroxProducts.length > 0 && (
+                    <>
+                        <h4 className="font-medium">Xerox</h4>
+                        {xeroxProducts.map(({ product, quantity }) => (
+                            <div key={product.id} className="flex items-center justify-between text-sm">
+                                <div>
+                                <p className="font-medium">{product.name}</p>
+                                <p className="text-xs text-muted-foreground">Quantity: {quantity}</p>
+                                </div>
+                                <p>Rs {((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
+                            </div>
+                        ))}
+                        <div className="flex justify-between text-sm">
+                            <span>Xerox Subtotal</span>
+                            <span>Rs {xeroxSubtotal.toFixed(2)}</span>
+                        </div>
+                        {xeroxDeliveryCharge > 0 && (
+                            <div className="flex justify-between text-sm text-destructive">
+                                <span>Delivery Charge</span>
+                                <span>Rs {xeroxDeliveryCharge.toFixed(2)}</span>
+                            </div>
+                        )}
+                        <Separator />
+                    </>
+                )}
+                <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
                   <span>Rs {total.toFixed(2)}</span>
                 </div>

@@ -50,7 +50,7 @@ export type UserProfile = {
   canManageProducts?: boolean; // New permission for employees
   mobile?: string;
   altMobiles?: { value: string }[];
-  altEmails?: { value: string }[];
+  altEmails?: { value: string().email("Invalid email address") }[];
   addresses?: {
     type: 'Home' | 'Work';
     line1: string;
@@ -192,4 +192,9 @@ export type XeroxOption = {
   laminationTypeIds?: string[];
 };
 
-    
+export type OrderSettings = {
+  minItemOrderPrice: number;
+  itemDeliveryCharge: number;
+  minXeroxOrderPrice: number;
+  xeroxDeliveryCharge: number;
+};

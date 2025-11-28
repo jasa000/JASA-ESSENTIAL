@@ -1,6 +1,6 @@
 
 
-import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
 
@@ -41,6 +41,7 @@ const authorsCollection = collection(db, 'authors');
 const productTypesCollection = collection(db, 'productTypes');
 const homepageContentCollection = collection(db, 'homepageContent');
 const xeroxServicesCollection = collection(db, 'xeroxServices');
+const orderSettingsCollection = collection(db, 'orderSettings');
 
 
 // --- Xerox Form Option Collections ---
@@ -437,3 +438,33 @@ export const deleteXeroxOption = async (type: XeroxOptionType, id: string): Prom
     }
 };
 
+// --- Order Settings Functions ---
+export const getOrderSettings = async (): Promise<OrderSettings> => {
+  try {
+    const docRef = doc(orderSettingsCollection, 'config');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as OrderSettings;
+    }
+    // Return default values if not set
+    return {
+      minItemOrderPrice: 0,
+      itemDeliveryCharge: 0,
+      minXeroxOrderPrice: 0,
+      xeroxDeliveryCharge: 0,
+    };
+  } catch (error) {
+    console.error("Error getting order settings: ", error);
+    throw new Error("Failed to fetch order settings.");
+  }
+};
+
+export const updateOrderSettings = async (settings: OrderSettings): Promise<void> => {
+  try {
+    const docRef = doc(orderSettingsCollection, 'config');
+    await setDoc(docRef, settings, { merge: true });
+  } catch (error) {
+    console.error("Error updating order settings: ", error);
+    throw new Error("Failed to update order settings.");
+  }
+};
