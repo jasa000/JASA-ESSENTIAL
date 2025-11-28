@@ -26,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import Link from "next/link";
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
 
 const statusConfig = {
   "Pending Confirmation": { icon: Clock, color: "bg-yellow-500", label: "Pending" },
@@ -40,6 +40,8 @@ const statusConfig = {
 const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: string) => void }) => {
   const { toast } = useToast();
   const StatusIcon = statusConfig[order.status]?.icon || Package;
+  const itemPrice = order.price || 0;
+  const itemQuantity = order.quantity || 1;
 
   return (
     <Card className="overflow-hidden">
@@ -58,9 +60,9 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
             <Alert variant="destructive" className="mb-4">
                 <Info className="h-4 w-4" />
                 <AlertTitle>Rejection Reason</AlertTitle>
-                <AlertDescription>
+                <AlertDesc>
                     {order.rejectionReason}
-                </AlertDescription>
+                </AlertDesc>
             </Alert>
         )}
         <div className="flex items-center gap-4">
@@ -72,9 +74,9 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
                 )}
             </div>
             <div className="space-y-2 text-sm">
-                <p><span className="font-medium">Quantity:</span> {order.quantity}</p>
-                <p><span className="font-medium">Price per item:</span> Rs {order.price.toFixed(2)}</p>
-                <p className="font-bold"><span className="font-medium">Total:</span> Rs {(order.price * order.quantity).toFixed(2)}</p>
+                <p><span className="font-medium">Quantity:</span> {itemQuantity}</p>
+                <p><span className="font-medium">Price per item:</span> Rs {itemPrice.toFixed(2)}</p>
+                <p className="font-bold"><span className="font-medium">Total:</span> Rs {(itemPrice * itemQuantity).toFixed(2)}</p>
             </div>
         </div>
         <Separator className="my-4" />
@@ -127,16 +129,6 @@ export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (!authLoading) {
-            if (!user) {
-                router.push('/login');
-                return;
-            }
-            fetchOrders(user.uid);
-        }
-    }, [user, authLoading, router]);
-    
     const fetchOrders = async (userId: string) => {
         setIsLoading(true);
         try {
@@ -149,11 +141,24 @@ export default function OrdersPage() {
         }
     }
 
+    useEffect(() => {
+        if (!authLoading) {
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+            fetchOrders(user.uid);
+        }
+    }, [user, authLoading, router]);
+    
+
     const handleCancelOrder = async (orderId: string) => {
         try {
             await updateOrderStatus(orderId, 'Cancelled');
             toast({ title: 'Order Cancelled', description: 'Your order has been successfully cancelled.' });
-            fetchOrders(user!.uid); // Refresh orders
+            if (user) {
+              fetchOrders(user.uid); // Refresh orders
+            }
         } catch (error: any) {
              toast({ variant: 'destructive', title: 'Cancellation Failed', description: error.message });
         }
