@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
@@ -11,14 +11,15 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Separator } from "@/components/ui/separator";
 import { Trash2, ShoppingBag, Plus, Minus, Info } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Product } from "@/lib/types";
+import type { Product, OrderSettings } from "@/lib/types";
 import { useAuth } from "@/context/auth-provider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import AuthForm from "@/components/auth-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getOrderSettings } from "@/lib/data";
 
 const categories: { value: string, label: string }[] = [
     { value: 'all', label: 'All' },
@@ -34,6 +35,28 @@ export default function CartPage() {
   const { items, removeItem, updateQuantity, setSelectedItems, selectedItems } = useCart();
   const [activeTab, setActiveTab] = useState('all');
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [orderSettings, setOrderSettings] = useState<OrderSettings | null>(null);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoadingSettings(true);
+        const settings = await getOrderSettings();
+        setOrderSettings(settings);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load order settings.",
+        });
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+    fetchSettings();
+  }, [toast]);
+
 
   const handleToggleSelectedItem = (productId: string) => {
     const newSelectedItems = selectedItems.includes(productId)
@@ -59,11 +82,6 @@ export default function CartPage() {
 
   const selectedCartItems = items.filter(item => selectedItems.includes(item.product.id));
 
-  const subtotal = selectedCartItems.reduce(
-      (acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity,
-      0
-  );
-  
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
       toast({
@@ -109,6 +127,14 @@ export default function CartPage() {
   }
   
   const renderOrderSummary = () => {
+    if (loadingSettings) {
+      return (
+        <Card>
+          <CardHeader><CardTitle className="font-headline">Order Summary</CardTitle></CardHeader>
+          <CardContent><p>Loading summary...</p></CardContent>
+        </Card>
+      );
+    }
     if (selectedItems.length === 0) return (
         <Card>
             <CardHeader>
@@ -120,24 +146,66 @@ export default function CartPage() {
         </Card>
     );
 
+    const { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings } = (() => {
+        const itemsGroup = selectedCartItems.filter(item => ['stationary', 'books', 'electronics'].includes(item.product.category));
+        const xeroxGroup = selectedCartItems.filter(item => item.product.category === 'xerox');
+
+        const itemsSubtotal = itemsGroup.reduce((acc, item) => acc + (item.product.discountPrice ?? item.product.price) * item.quantity, 0);
+        const xeroxSubtotal = xeroxGroup.reduce((acc, item) => acc + (item.product.discountPrice ?? item.product.price) * item.quantity, 0);
+        
+        const originalTotal = selectedCartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+        const savings = originalTotal - (itemsSubtotal + xeroxSubtotal);
+
+        let itemDeliveryCharge = 0;
+        if (orderSettings && itemsSubtotal > 0 && itemsSubtotal < orderSettings.minItemOrderPrice) {
+            itemDeliveryCharge = orderSettings.itemDeliveryCharge;
+        }
+
+        let xeroxDeliveryCharge = 0;
+        // Xerox settings would be handled here if applicable
+        
+        const total = itemsSubtotal + xeroxSubtotal + itemDeliveryCharge + xeroxDeliveryCharge;
+        return { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings };
+    })();
+
     return (
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">Order Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex justify-between">
-            <span>Subtotal ({selectedItems.length} items)</span>
-            <span>Rs {subtotal.toFixed(2)}</span>
+          {selectedCartItems.map(item => (
+            <div key={item.product.id} className="flex justify-between text-sm">
+                <span className="truncate pr-4">{item.product.name} (x{item.quantity})</span>
+                <span className="flex-shrink-0">Rs {((item.product.discountPrice ?? item.product.price) * item.quantity).toFixed(2)}</span>
+            </div>
+          ))}
+          <Separator />
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span>Subtotal</span><span>Rs {(itemsSubtotal + xeroxSubtotal).toFixed(2)}</span></div>
+            {itemDeliveryCharge > 0 && <div className="flex justify-between text-destructive"><span>Item Delivery</span><span>Rs {itemDeliveryCharge.toFixed(2)}</span></div>}
+            {savings > 0 && <div className="flex justify-between text-green-600"><span>You Save</span><span>Rs {savings.toFixed(2)}</span></div>}
           </div>
           <Separator />
-          <div className="text-sm text-muted-foreground">
-            Delivery charges will be calculated at checkout based on your location and selected sellers.
+          <div className="flex justify-between font-bold text-lg">
+            <span>Total</span>
+            <span>Rs {total.toFixed(2)}</span>
           </div>
+
+          {itemDeliveryCharge > 0 && orderSettings && (
+             <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Almost there!</AlertTitle>
+                <AlertDescription>
+                    Add items worth Rs {(orderSettings.minItemOrderPrice - itemsSubtotal).toFixed(2)} more for FREE delivery.
+                </AlertDescription>
+            </Alert>
+          )}
+
         </CardContent>
         <CardFooter>
           <Button className="w-full" onClick={handleCheckout}>
-            Proceed to Checkout
+            Proceed to Checkout ({selectedItems.length} items)
           </Button>
         </CardFooter>
       </Card>
