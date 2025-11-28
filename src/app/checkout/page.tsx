@@ -39,8 +39,10 @@ const addressSchema = z.object({
 
 const checkoutFormSchema = z.object({
   selectedAddress: z.string().min(1, "Please select a shipping address."),
-  // Dynamic validation will be handled in the component
+  // Dynamic validation for sellers will be handled in the component
 });
+
+type CategoryKey = 'stationary' | 'books' | 'electronics' | 'xerox';
 
 export default function CheckoutPage() {
   const { selectedItems, items } = useCart();
@@ -57,24 +59,22 @@ export default function CheckoutPage() {
   
   const itemsByCategory = useMemo(() => {
     return cartItems.reduce((acc, item) => {
-      const category = item.product.category === 'xerox' ? 'xerox' : 'items';
+      const category: CategoryKey = item.product.category;
       if (!acc[category]) {
         acc[category] = [];
       }
       acc[category].push(item);
       return acc;
-    }, {} as Record<'items' | 'xerox', { product: Product; quantity: number }[]>);
+    }, {} as Record<CategoryKey, { product: Product; quantity: number }[]>);
   }, [cartItems]);
   
-  const requiredServices = useMemo(() => {
-    return Object.keys(itemsByCategory).map(key => key === 'items' ? ['stationary', 'books', 'electronics'] : ['xerox']).flat() as ShopService[];
-  }, [itemsByCategory]);
-
+  const presentCategories = Object.keys(itemsByCategory) as CategoryKey[];
 
   const checkoutForm = useForm({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
       selectedAddress: "",
+      ...Object.fromEntries(presentCategories.map(cat => [cat, ""]))
     },
   });
 
@@ -104,31 +104,33 @@ export default function CheckoutPage() {
     fetchInitialData();
   }, [user, authLoading, router, checkoutForm, toast]);
 
-  
   const selectedSellers = checkoutForm.watch();
-  
+
   const { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings } = useMemo(() => {
-    const itemsSubtotal = itemsByCategory.items?.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0) || 0;
+    const itemsSubtotal = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
+        .reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
     const xeroxSubtotal = itemsByCategory.xerox?.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0) || 0;
-    const originalTotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
     
+    const originalItemsTotal = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
+        .reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    const originalXeroxTotal = itemsByCategory.xerox?.reduce((acc, item) => acc + item.product.price * item.quantity, 0) || 0;
+
     let itemDeliveryCharge = 0;
-    if (orderSettings && itemsByCategory.items) {
-      itemDeliveryCharge = itemsSubtotal < orderSettings.minItemOrderPrice ? orderSettings.itemDeliveryCharge : 0;
+    if (orderSettings && itemsSubtotal > 0 && itemsSubtotal < orderSettings.minItemOrderPrice) {
+        itemDeliveryCharge = orderSettings.itemDeliveryCharge;
     }
     
     let xeroxDeliveryCharge = 0;
-    if (orderSettings && itemsByCategory.xerox) {
-      xeroxDeliveryCharge = xeroxSubtotal < orderSettings.minXeroxOrderPrice ? orderSettings.xeroxDeliveryCharge : 0;
+    if (orderSettings && xeroxSubtotal > 0 && xeroxSubtotal < orderSettings.minXeroxOrderPrice) {
+        xeroxDeliveryCharge = orderSettings.xeroxDeliveryCharge;
     }
 
     const currentSubtotal = itemsSubtotal + xeroxSubtotal;
     const total = currentSubtotal + itemDeliveryCharge + xeroxDeliveryCharge;
-    const savings = originalTotal - currentSubtotal;
+    const savings = (originalItemsTotal + originalXeroxTotal) - currentSubtotal;
 
     return { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings };
-  }, [itemsByCategory, orderSettings, cartItems]);
-  
+  }, [itemsByCategory, orderSettings]);
 
   async function onAddressSubmit(values: z.infer<typeof addressSchema>) {
     if (!user) return;
@@ -221,18 +223,15 @@ export default function CheckoutPage() {
     );
   }
   
-  const renderSellerSelection = (category: 'items' | 'xerox') => {
+  const renderSellerSelection = (category: CategoryKey) => {
     if (!selectedAddress) return null;
 
-    const categoryName = category === 'items' ? "Items (Stationary, Books, Electronics)" : "Xerox";
-    const requiredServices = category === 'items' ? ['stationary', 'books', 'electronics'] : ['xerox'];
+    const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
     
-    const availableShops = allShops.filter(shop => {
-        return requiredServices.every(service => shop.services.includes(service as ShopService));
-    });
+    const availableShops = allShops.filter(shop => shop.services.includes(category as ShopService));
 
     if (availableShops.length === 0) {
-        return <p className="text-muted-foreground">Sorry, no single seller provides all services for {categoryName}. Please adjust your cart.</p>
+        return <p className="text-muted-foreground">Sorry, no sellers provide services for {categoryName}. Please adjust your cart.</p>
     }
 
     return (
@@ -288,7 +287,7 @@ export default function CheckoutPage() {
     </Form>
   )
 
-  const isCheckoutDisabled = !checkoutForm.formState.isValid || !selectedAddress || (itemsByCategory.items && !selectedSellers.items) || (itemsByCategory.xerox && !selectedSellers.xerox);
+  const isCheckoutDisabled = !checkoutForm.formState.isValid || !selectedAddress || presentCategories.some(cat => !selectedSellers[cat]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -299,10 +298,13 @@ export default function CheckoutPage() {
             {renderAddressSelection()}
              {selectedAddress && (
               <Card>
-                <CardHeader><CardTitle className="font-headline">2. Select Sellers</CardTitle><CardDescription>Choose a seller for each category of items.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="font-headline">2. Select Sellers</CardTitle><CardDescription>Choose a seller for each category of items in your cart.</CardDescription></CardHeader>
                 <CardContent className="space-y-6">
-                    {itemsByCategory.items && renderSellerSelection('items')}
-                    {itemsByCategory.xerox && renderSellerSelection('xerox')}
+                    {presentCategories.map(cat => (
+                        <div key={cat}>
+                            {renderSellerSelection(cat)}
+                        </div>
+                    ))}
                 </CardContent>
               </Card>
             )}
@@ -313,21 +315,21 @@ export default function CheckoutPage() {
             <CardHeader><CardTitle className="font-headline">Your Order</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(itemsByCategory).map(([category, categoryItems]) => (
+                {presentCategories.map((category) => (
                     <div key={category}>
                         <h4 className="font-medium capitalize mb-2">{category}</h4>
-                        {categoryItems.map(({ product, quantity }) => (
+                        {itemsByCategory[category]?.map(({ product, quantity }) => (
                            <div key={product.id} className="flex items-center justify-between text-sm ml-2">
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 min-w-0">
                                <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden">
                                   {product.imageNames?.[0] ? (<Image src={product.imageNames[0]} alt={product.name} fill className="object-cover" />) : (<div className="flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground">JASA</div>)}
                                </div>
-                                <div>
-                                    <p className="font-medium">{product.name}</p>
+                                <div className="min-w-0">
+                                    <p className="font-medium truncate">{product.name}</p>
                                     <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
                                 </div>
                             </div>
-                            <p>Rs {((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
+                            <p className="flex-shrink-0 pl-2">Rs {((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
                           </div>
                         ))}
                     </div>
@@ -347,7 +349,7 @@ export default function CheckoutPage() {
                     <Info className="h-4 w-4" />
                     <AlertTitle>Delivery Charges Applied</AlertTitle>
                     <AlertDescription>
-                      {itemDeliveryCharge > 0 && `Add items worth Rs ${(orderSettings!.minItemOrderPrice - itemsSubtotal).toFixed(2)} more for free delivery on items.`}
+                      {itemDeliveryCharge > 0 && `Add items worth Rs ${(orderSettings!.minItemOrderPrice - itemsSubtotal).toFixed(2)} more for free delivery on items. `}
                       {xeroxDeliveryCharge > 0 && `Add Xerox worth Rs ${(orderSettings!.minXeroxOrderPrice - xeroxSubtotal).toFixed(2)} more for free delivery.`}
                     </AlertDescription>
                   </Alert>
@@ -364,3 +366,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
