@@ -7,22 +7,13 @@ service cloud.firestore {
     // Helper function to check if a user is an admin
     function isAdmin() {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles[0] == 'admin';
-    }
-
-    // Default deny all
-    match /{document=**} {
-      allow read, write: if false;
+             'admin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
     }
 
     // Users collection
     match /users/{userId} {
-      // Allow users to read their own profile
-      allow get: if request.auth.uid == userId;
-      // Allow users to create their own profile on signup
-      allow create: if request.auth.uid == userId;
-      // Allow users to update their own profile
-      allow update: if request.auth.uid == userId;
+      // Allow users to read and write to their own profile, including the cart.
+      allow read, write: if request.auth.uid == userId;
       // Allow admins to read/write any user profile
       allow read, write: if isAdmin();
     }
@@ -61,6 +52,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+     match /homepageContent/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+     }
     
     // Xerox Form Option Collections
     match /paperTypes/{docId} {

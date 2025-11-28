@@ -19,6 +19,11 @@ export type CartItem = {
   quantity: number;
 };
 
+export type DBCartItem = {
+    productId: string;
+    quantity: number;
+}
+
 export type Category = {
     id: string;
     name: string;
@@ -55,6 +60,7 @@ export type UserProfile = {
     postalCode: string;
   }[];
   userLocation?: UserLocation | null;
+  cart?: DBCartItem[];
   createdAt: any; // Firestore timestamp can be complex, using 'any' for simplicity
 }
 
