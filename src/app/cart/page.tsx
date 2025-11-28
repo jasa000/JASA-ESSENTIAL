@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from "react";
@@ -10,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingBag, Plus, Minus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Product } from "@/lib/types";
 import { useAuth } from "@/context/auth-provider";
@@ -148,25 +147,44 @@ export default function CartPage() {
                                     <h2 className="font-headline text-lg font-semibold">{product.name}</h2>
                                     <p className="text-sm text-muted-foreground">Rs {(product.discountPrice || product.price).toFixed(2)}</p>
                                 </div>
-                                <div className="mt-4 flex items-center gap-4 sm:mt-0">
-                                    <Input
-                                    type="number"
-                                    min="1"
-                                    value={quantity}
-                                    onChange={(e) => {
-                                        const newQuantity = parseInt(e.target.value, 10);
-                                        updateQuantity(product.id, isNaN(newQuantity) ? 0 : newQuantity);
-                                    }}
-                                    className="h-10 w-20 text-center"
-                                    aria-label={`Quantity for ${product.name}`}
-                                    />
+                                <div className="mt-4 flex items-center gap-2 sm:mt-0">
+                                    <div className="flex items-center gap-1 rounded-md border">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9"
+                                            onClick={() => updateQuantity(product.id, quantity - 1)}
+                                        >
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            value={quantity}
+                                            onChange={(e) => {
+                                                const newQuantity = parseInt(e.target.value, 10);
+                                                updateQuantity(product.id, isNaN(newQuantity) ? 0 : newQuantity);
+                                            }}
+                                            className="h-9 w-12 border-0 text-center text-base font-medium focus-visible:ring-0"
+                                            aria-label={`Quantity for ${product.name}`}
+                                        />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9"
+                                            onClick={() => updateQuantity(product.id, quantity + 1)}
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                     <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeItem(product.id)}
-                                    aria-label={`Remove ${product.name} from cart`}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9"
+                                        onClick={() => removeItem(product.id)}
+                                        aria-label={`Remove ${product.name} from cart`}
                                     >
-                                    <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                                        <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
                                     </Button>
                                 </div>
                                 </div>
