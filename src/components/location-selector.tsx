@@ -109,7 +109,7 @@ export default function LocationSelector() {
                 id="pincode"
                 placeholder="e.g., 600040"
                 value={pincode}
-                onChange={(e) => setPincode(e.target.value)}
+                onChange={(e) => setPincode(e.target.value.replace(/[^0-9]/g, ''))}
                 maxLength={6}
               />
             </div>
