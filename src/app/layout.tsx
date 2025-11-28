@@ -6,7 +6,7 @@ import Header from "@/components/header";
 import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/app-sidebar";
-import GlobalLoader from "@/components/global-loader";
+import FullScreenLoader from "@/components/global-loader";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
@@ -43,7 +43,7 @@ export default function RootLayout({
               <AppSidebar />
             </Sidebar>
             <SidebarInset>
-              <GlobalLoader />
+              <FullScreenLoader />
               <div className="flex min-h-screen flex-col">
                 <Header />
                 <main className="flex-grow">{children}</main>
