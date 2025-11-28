@@ -102,10 +102,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       try {
         const storedCart = localStorage.getItem('cart');
         if (storedCart) {
-          localCart = JSON.parse(storedCart);
+          const parsedCart = JSON.parse(storedCart);
+          // Ensure the parsed data is an array before using it
+          if (Array.isArray(parsedCart)) {
+              localCart = parsedCart;
+          } else if (parsedCart && Array.isArray(parsedCart.items)) {
+              // Handle old format { items: [] }
+              localCart = parsedCart.items;
+          }
         }
       } catch (error) {
         console.error("Failed to load cart from localStorage", error);
+        // If parsing fails, localCart remains an empty array, preventing a crash.
       }
       
       if (user) {
@@ -118,7 +126,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
           // Process local cart first
           localCart.forEach(item => {
-            mergedCartMap.set(item.product.id, item);
+            if(item && item.product) {
+              mergedCartMap.set(item.product.id, item);
+            }
           });
           
           // Merge DB cart, overwriting quantities
@@ -132,6 +142,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           const mergedItems = Array.from(mergedCartMap.values());
           dispatch({ type: 'SET_STATE', payload: { items: mergedItems } });
           saveCartToDb(mergedItems);
+          localStorage.removeItem('cart'); // Clear old local cart after merging into DB
         } else {
           dispatch({ type: 'SET_STATE', payload: { items: [] } });
         }
@@ -145,15 +156,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [user, authLoading, saveCartToDb]);
   
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && !user) {
         try {
-            localStorage.setItem('cart', JSON.stringify(state));
-            if (user) {
-                saveCartToDb(state.items);
-            }
+            // For guest users, save the entire state to localStorage.
+            localStorage.setItem('cart', JSON.stringify(state.items));
         } catch (error) {
-            console.error("Failed to sync cart", error);
+            console.error("Failed to sync cart to localStorage", error);
         }
+    } else if (isInitialized && user) {
+        // For logged-in users, sync to DB.
+        saveCartToDb(state.items);
     }
   }, [state, isInitialized, user, saveCartToDb]);
 
