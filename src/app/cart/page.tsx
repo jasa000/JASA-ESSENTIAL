@@ -185,7 +185,7 @@ export default function CartPage() {
           <Separator />
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>Subtotal ({selectedCartItems.length} items)</span>
+              <span>Subtotal ({selectedItems.length} items)</span>
               <span>Rs {(itemsSubtotal + xeroxSubtotal).toFixed(2)}</span>
             </div>
             {itemDeliveryCharge > 0 && <div className="flex justify-between text-destructive"><span>Item Delivery</span><span>Rs {itemDeliveryCharge.toFixed(2)}</span></div>}
@@ -260,6 +260,7 @@ export default function CartPage() {
 
                         {categoryItems.map(({ product, quantity }) => {
                           const mainImage = product.imageNames && product.imageNames.length > 0 ? product.imageNames[0] : null;
+                          const hasDiscount = product.discountPrice && product.discountPrice < product.price;
                           return (
                             <Card key={product.id} className="flex items-center overflow-hidden">
                                 <div className="p-4 flex items-center h-full">
@@ -287,7 +288,16 @@ export default function CartPage() {
                                 <div className="flex flex-grow flex-col p-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex-grow">
                                     <h2 className="font-headline text-lg font-semibold">{product.name}</h2>
-                                    <p className="text-sm text-muted-foreground">Rs {(product.discountPrice || product.price).toFixed(2)}</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-lg font-bold text-primary">
+                                            Rs {hasDiscount ? product.discountPrice?.toFixed(2) : product.price.toFixed(2)}
+                                        </p>
+                                        {hasDiscount && (
+                                            <p className="text-sm text-muted-foreground line-through">
+                                            Rs {product.price.toFixed(2)}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="mt-4 flex items-center gap-2 sm:mt-0">
                                     <div className="flex items-center gap-1 rounded-md border">
@@ -348,5 +358,3 @@ export default function CartPage() {
     </div>
   );
 }
-
-    
