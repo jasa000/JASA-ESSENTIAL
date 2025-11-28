@@ -174,15 +174,20 @@ export default function CartPage() {
           <CardTitle className="font-headline">Order Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {selectedCartItems.map(item => (
-            <div key={item.product.id} className="flex justify-between text-sm">
-                <span className="truncate pr-4">{item.product.name} (x{item.quantity})</span>
-                <span className="flex-shrink-0">Rs {((item.product.discountPrice ?? item.product.price) * item.quantity).toFixed(2)}</span>
-            </div>
-          ))}
+          <div className="space-y-2">
+            {selectedCartItems.map(item => (
+              <div key={item.product.id} className="flex justify-between text-sm">
+                  <span className="truncate pr-4">{item.product.name} (x{item.quantity})</span>
+                  <span className="flex-shrink-0">Rs {((item.product.discountPrice ?? item.product.price) * item.quantity).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
           <Separator />
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span>Subtotal</span><span>Rs {(itemsSubtotal + xeroxSubtotal).toFixed(2)}</span></div>
+            <div className="flex justify-between">
+              <span>Subtotal ({selectedCartItems.length} items)</span>
+              <span>Rs {(itemsSubtotal + xeroxSubtotal).toFixed(2)}</span>
+            </div>
             {itemDeliveryCharge > 0 && <div className="flex justify-between text-destructive"><span>Item Delivery</span><span>Rs {itemDeliveryCharge.toFixed(2)}</span></div>}
             {savings > 0 && <div className="flex justify-between text-green-600"><span>You Save</span><span>Rs {savings.toFixed(2)}</span></div>}
           </div>
