@@ -41,6 +41,15 @@ export type Category = {
 export const USER_ROLES = ['user', 'admin', 'seller', 'employee'] as const;
 export type UserRole = typeof USER_ROLES[number];
 
+export type Address = {
+    type: 'Home' | 'Work';
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+};
+
 export type UserProfile = {
   uid: string;
   shortId: string;
@@ -50,15 +59,8 @@ export type UserProfile = {
   canManageProducts?: boolean; // New permission for employees
   mobile?: string;
   altMobiles?: { value: string }[];
-  altEmails?: { value: string }[];
-  addresses?: {
-    type: 'Home' | 'Work';
-    line1: string;
-    line2?: string;
-    city: string;
-    state: string;
-    postalCode: string;
-  }[];
+  altEmails?: { value: string().email("Invalid email address") }[];
+  addresses?: Address[];
   userLocation?: UserLocation | null;
   cart?: DBCartItem[];
   createdAt: any; // Firestore timestamp can be complex, using 'any' for simplicity
@@ -115,28 +117,22 @@ export type ProductType = {
   createdAt: any;
 };
 
-export type OrderStatus = "Processing" | "Shipped" | "Delivered" | "Cancelled";
+export type OrderStatus = "Pending Confirmation" | "Processing" | "Shipped" | "Delivered" | "Cancelled" | "Rejected";
 
 export type Order = {
   id: string;
-  date: string;
+  userId: string;
+  sellerId: string;
+  productId: string;
+  productName: string;
+  productImage: string | null;
+  quantity: number;
+  price: number; // Price per item at time of order
+  shippingAddress: Address;
   status: OrderStatus;
   category: "stationary" | "books" | "electronics" | "xerox";
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
-  total: number;
-  seller: string;
-  tracking: {
-    ordered: string;
-    confirmed?: string;
-    shipped?: string;
-    delivered?: string;
-    expectedDelivery?: string;
-  };
-  cancellationReason?: string;
+  rejectionReason?: string;
+  createdAt: any;
 };
 
 export type Banner = {

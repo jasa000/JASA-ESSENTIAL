@@ -9,7 +9,7 @@ import { useCart } from '@/hooks/use-cart';
 import { useAuth } from '@/context/auth-provider';
 import { updateUserProfile } from '@/lib/users';
 import { getShops } from '@/lib/shops';
-import { getOrderSettings } from '@/lib/data';
+import { getOrderSettings, createOrder } from '@/lib/data';
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 
@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store, Info, MapPin, ArrowLeft } from 'lucide-react';
+import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import type { UserProfile, Shop, OrderSettings, Product, ShopService } from '@/lib/types';
 
 
@@ -39,13 +39,12 @@ const addressSchema = z.object({
 
 const checkoutFormSchema = z.object({
   selectedAddress: z.string().min(1, "Please select a shipping address."),
-  // Dynamic validation for sellers will be handled in the component
 });
 
 type CategoryKey = 'stationary' | 'books' | 'electronics' | 'xerox';
 
 export default function CheckoutPage() {
-  const { selectedItems, items } = useCart();
+  const { selectedItems, items, removeItem } = useCart();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -54,6 +53,8 @@ export default function CheckoutPage() {
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [orderSettings, setOrderSettings] = useState<OrderSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   const cartItems = useMemo(() => items.filter(item => selectedItems.includes(item.product.id)), [items, selectedItems]);
   
@@ -106,6 +107,11 @@ export default function CheckoutPage() {
 
   const selectedSellers = checkoutForm.watch();
 
+  const combinedItemSubtotal = useMemo(() => {
+    return (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
+        .reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
+  }, [itemsByCategory]);
+  
   const { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings } = useMemo(() => {
     const itemsSubtotal = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
         .reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
@@ -145,10 +151,55 @@ export default function CheckoutPage() {
     }
   }
 
-  function onCheckoutSubmit(values: any) {
-    console.log('Order placed with:', values);
-    toast({ title: 'Order Placed!', description: `Thank you for your purchase.` });
-    router.push('/profile');
+  async function onCheckoutSubmit(values: any) {
+    if (!user || !user.addresses) return;
+    setIsPlacingOrder(true);
+    
+    const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
+    const shippingAddress = user.addresses[addressIndex];
+    
+    const orderCreationPromises = [];
+
+    for (const category of presentCategories) {
+        const sellerId = values[category];
+        if (!sellerId) {
+            toast({ variant: "destructive", title: "Error", description: `Please select a seller for ${category}.` });
+            setIsPlacingOrder(false);
+            return;
+        }
+
+        const itemsToOrder = itemsByCategory[category as CategoryKey] || [];
+        for (const cartItem of itemsToOrder) {
+            orderCreationPromises.push(
+                createOrder({
+                    userId: user.uid,
+                    productId: cartItem.product.id,
+                    productName: cartItem.product.name,
+                    productImage: cartItem.product.imageNames?.[0] || null,
+                    quantity: cartItem.quantity,
+                    price: cartItem.product.discountPrice ?? cartItem.product.price,
+                    sellerId: sellerId,
+                    shippingAddress: shippingAddress,
+                    status: 'Pending Confirmation',
+                    category: cartItem.product.category,
+                })
+            );
+        }
+    }
+
+    try {
+      await Promise.all(orderCreationPromises);
+      // Clear purchased items from cart
+      cartItems.forEach(item => removeItem(item.product.id));
+
+      setOrderPlaced(true);
+      setTimeout(() => {
+        router.push('/orders');
+      }, 2000); // Wait 2 seconds before redirecting
+    } catch (error: any) {
+        toast({ variant: "destructive", title: 'Order Failed', description: `An error occurred while placing your order: ${error.message}` });
+        setIsPlacingOrder(false);
+    }
   }
   
   if (authLoading || loading) {
@@ -287,9 +338,20 @@ export default function CheckoutPage() {
     </Form>
   )
 
-  const isCheckoutDisabled = !checkoutForm.formState.isValid || !selectedAddress || presentCategories.some(cat => !selectedSellers[cat]);
+  const isCheckoutDisabled = isPlacingOrder || !checkoutForm.formState.isValid || !selectedAddress || presentCategories.some(cat => !selectedSellers[cat]);
 
   return (
+    <>
+    <Dialog open={orderPlaced}>
+        <DialogContent hideCloseButton>
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                <h2 className="text-2xl font-bold">Order Placed!</h2>
+                <p className="text-muted-foreground mt-2">You will be redirected to your order history shortly.</p>
+            </div>
+        </DialogContent>
+    </Dialog>
+
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Checkout</h1>
@@ -352,25 +414,29 @@ export default function CheckoutPage() {
                     <Separator />
                     <div className="flex justify-between font-bold text-lg"><span>Total</span><span>Rs {total.toFixed(2)}</span></div>
                 </div>
-                 {(itemDeliveryCharge > 0 || xeroxDeliveryCharge > 0) && (
+                 {(itemDeliveryCharge > 0 || xeroxDeliveryCharge > 0) && orderSettings && (
                   <Alert>
                     <Info className="h-4 w-4" />
                     <AlertTitle>Delivery Charges Applied</AlertTitle>
                     <AlertDescription>
-                      {itemDeliveryCharge > 0 && `Add items worth Rs ${(orderSettings!.minItemOrderPrice - itemsSubtotal).toFixed(2)} more for free delivery on items. `}
-                      {xeroxDeliveryCharge > 0 && `Add Xerox worth Rs ${(orderSettings!.minXeroxOrderPrice - xeroxSubtotal).toFixed(2)} more for free delivery.`}
+                      {itemDeliveryCharge > 0 && `Add items worth Rs ${(orderSettings.minItemOrderPrice - itemsSubtotal).toFixed(2)} more for free delivery on items. `}
+                      {xeroxDeliveryCharge > 0 && `Add Xerox worth Rs ${(orderSettings.minXeroxOrderPrice - xeroxSubtotal).toFixed(2)} more for free delivery.`}
                     </AlertDescription>
                   </Alert>
                 )}
               </div>
             </CardContent>
             <CardFooter>
-                <Button type="submit" className="w-full" disabled={isCheckoutDisabled}>Place Order</Button>
+                <Button type="submit" className="w-full" disabled={isCheckoutDisabled}>
+                    {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isPlacingOrder ? "Placing Order..." : "Place Order"}
+                </Button>
             </CardFooter>
           </Card>
         </div>
       </form>
       </Form>
     </div>
+    </>
   );
 }

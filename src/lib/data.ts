@@ -1,6 +1,5 @@
 
-
-import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
 
@@ -42,6 +41,7 @@ const productTypesCollection = collection(db, 'productTypes');
 const homepageContentCollection = collection(db, 'homepageContent');
 const xeroxServicesCollection = collection(db, 'xeroxServices');
 const orderSettingsCollection = collection(db, 'orderSettings');
+const ordersCollection = collection(db, 'orders');
 
 
 // --- Xerox Form Option Collections ---
@@ -467,4 +467,60 @@ export const updateOrderSettings = async (settings: OrderSettings): Promise<void
     console.error("Error updating order settings: ", error);
     throw new Error("Failed to update order settings.");
   }
+};
+
+// --- Order Functions ---
+export const createOrder = async (orderData: Omit<Order, 'id' | 'createdAt'>): Promise<string> => {
+    try {
+        const docRef = await addDoc(ordersCollection, {
+            ...orderData,
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error creating order:", error);
+        throw new Error("Could not place order.");
+    }
+};
+
+export const getMyOrders = async (userId: string): Promise<Order[]> => {
+    try {
+        const q = query(ordersCollection, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    } catch (error) {
+        console.error("Error fetching user orders:", error);
+        throw new Error("Could not fetch order history.");
+    }
+};
+
+export const getOrdersBySeller = async (sellerId: string): Promise<Order[]> => {
+    try {
+        const q = query(ordersCollection, where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    } catch (error) {
+        console.error("Error fetching seller orders:", error);
+        throw new Error("Could not fetch orders for this shop.");
+    }
+};
+
+export const updateOrderStatus = async (orderId: string, status: Order['status']): Promise<void> => {
+    try {
+        const orderDoc = doc(db, 'orders', orderId);
+        await updateDoc(orderDoc, { status });
+    } catch (error) {
+        console.error("Error updating order status:", error);
+        throw new Error("Failed to update order status.");
+    }
+};
+
+export const updateOrderRejectionReason = async (orderId: string, reason: string): Promise<void> => {
+    try {
+        const orderDoc = doc(db, 'orders', orderId);
+        await updateDoc(orderDoc, { status: 'Rejected', rejectionReason: reason });
+    } catch (error) {
+        console.error("Error updating rejection reason:", error);
+        throw new Error("Failed to update order.");
+    }
 };

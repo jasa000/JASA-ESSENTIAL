@@ -9,18 +9,37 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              'admin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
     }
+    
+    // Helper function to check if a user is a seller for a specific shop
+    function isSellerForShop(shopId) {
+        return exists(/databases/$(database)/documents/shops/$(shopId)) &&
+               request.auth.uid in get(/databases/$(database)/documents/shops/$(shopId)).data.ownerIds;
+    }
 
     // Users collection
     match /users/{userId} {
-      // Allow users to read and write to their own profile, including the cart.
       allow read, write: if request.auth.uid == userId;
-      // Allow admins to read/write any user profile
       allow read, write: if isAdmin();
     }
     
     match /users/{document=**} {
-        // Allow admins to read all user data
         allow read: if isAdmin();
+    }
+    
+    // Orders collection
+    match /orders/{orderId} {
+      // User can create their own order
+      allow create: if request.auth.uid == request.resource.data.userId;
+      // User can read their own orders
+      allow read: if request.auth.uid == resource.data.userId || isAdmin();
+      // User can update their own order only to cancel it, and only if it's pending
+      allow update: if request.auth.uid == resource.data.userId &&
+                       request.resource.data.status == 'Cancelled' &&
+                       resource.data.status == 'Pending Confirmation';
+      // Sellers can read and update orders for their shop
+      allow read, update: if isSellerForShop(resource.data.sellerId);
+      // Admins have full access
+      allow read, update, delete: if isAdmin();
     }
 
     // Public read-only collections
@@ -51,11 +70,15 @@ service cloud.firestore {
      match /xeroxServices/{serviceId} {
       allow read: if true;
       allow write: if isAdmin();
-    }
+     }
      match /homepageContent/{docId} {
       allow read: if true;
       allow write: if isAdmin();
      }
+    match /orderSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     
     // Xerox Form Option Collections
     match /paperTypes/{docId} {
