@@ -103,17 +103,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const storedCart = localStorage.getItem('cart');
         if (storedCart) {
           const parsedCart = JSON.parse(storedCart);
-          // Ensure the parsed data is an array before using it
+          // Safely handle both old {items: []} and new [] formats
           if (Array.isArray(parsedCart)) {
               localCart = parsedCart;
           } else if (parsedCart && Array.isArray(parsedCart.items)) {
-              // Handle old format { items: [] }
               localCart = parsedCart.items;
           }
         }
       } catch (error) {
         console.error("Failed to load cart from localStorage", error);
-        // If parsing fails, localCart remains an empty array, preventing a crash.
+        localCart = []; // Ensure it's an array on error
       }
       
       if (user) {
@@ -125,11 +124,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           const mergedCartMap = new Map<string, CartItem>();
 
           // Process local cart first
-          localCart.forEach(item => {
-            if(item && item.product) {
-              mergedCartMap.set(item.product.id, item);
-            }
-          });
+          if(Array.isArray(localCart)) {
+            localCart.forEach(item => {
+              if(item && item.product) {
+                mergedCartMap.set(item.product.id, item);
+              }
+            });
+          }
           
           // Merge DB cart, overwriting quantities
           dbCart.forEach(dbItem => {
@@ -147,7 +148,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           dispatch({ type: 'SET_STATE', payload: { items: [] } });
         }
       } else {
-        dispatch({ type: 'SET_STATE', payload: { items: localCart } });
+        // For guest users, only load from local storage
+        const allProducts = await getProducts();
+        const productMap = new Map(allProducts.map(p => [p.id, p]));
+        const validatedLocalCart = localCart.map(item => {
+          const product = productMap.get(item.product.id);
+          return product ? { product, quantity: item.quantity } : null;
+        }).filter((item): item is CartItem => item !== null);
+        dispatch({ type: 'SET_STATE', payload: { items: validatedLocalCart } });
       }
       setIsInitialized(true);
     };
@@ -158,16 +166,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isInitialized && !user) {
         try {
-            // For guest users, save the entire state to localStorage.
             localStorage.setItem('cart', JSON.stringify(state.items));
         } catch (error) {
             console.error("Failed to sync cart to localStorage", error);
         }
     } else if (isInitialized && user) {
-        // For logged-in users, sync to DB.
         saveCartToDb(state.items);
     }
-  }, [state, isInitialized, user, saveCartToDb]);
+  }, [state.items, isInitialized, user, saveCartToDb]);
 
   const addItem = (product: Product) => dispatch({ type: 'ADD_ITEM', payload: product });
   const removeItem = (id: string) => dispatch({ type: 'REMOVE_ITEM', payload: { id } });
