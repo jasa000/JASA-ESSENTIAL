@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, PackageOpen, Info, Clock, AlertTriangle, XCircle, ShoppingCart } from "lucide-react";
+import { Package, Truck, CheckCircle, PackageOpen, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import Link from "next/link";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 
 const statusConfig = {
   "Pending Confirmation": { icon: Clock, color: "bg-yellow-500", label: "Pending" },
@@ -78,10 +79,17 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
         </div>
         <Separator className="my-4" />
         <div>
-            <h4 className="font-medium mb-2">Shipping Address</h4>
+            <h4 className="font-medium mb-2">Shipping Address & Contact</h4>
             <div className="text-sm text-muted-foreground">
                 <p>{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ''}</p>
                 <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
+                 <div className="mt-2 flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    <div>
+                        <p>{order.mobile}</p>
+                        {order.altMobiles?.[0]?.value && <p>{order.altMobiles[0].value}</p>}
+                    </div>
+                </div>
             </div>
         </div>
       </CardContent>

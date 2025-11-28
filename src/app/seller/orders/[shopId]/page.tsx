@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, MessageSquare, User, Package, FileText } from 'lucide-react';
+import { Check, X, MessageSquare, User, Package, FileText, Phone } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -146,7 +146,14 @@ export default function ManageShopOrdersPage() {
                 <CardTitle className="flex items-center gap-2">
                     <User /> Customer: {user.name}
                 </CardTitle>
-                <CardDescription>Email: {user.email} | Phone: {user.mobile || 'N/A'}</CardDescription>
+                <CardDescription>Email: {user.email}</CardDescription>
+                 <div className="text-sm text-muted-foreground flex items-center gap-2 pt-2">
+                    <Phone className="h-4 w-4" />
+                    <div>
+                        <p>{orders[0].mobile}</p>
+                        {orders[0].altMobiles?.[0]?.value && <p>{orders[0].altMobiles[0].value}</p>}
+                    </div>
+                </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 {orders.filter(o => o.status === 'Pending Confirmation').map(order => (

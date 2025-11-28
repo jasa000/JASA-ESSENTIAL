@@ -59,7 +59,7 @@ export type UserProfile = {
   canManageProducts?: boolean; // New permission for employees
   mobile?: string;
   altMobiles?: { value: string }[];
-  altEmails?: { value: string().email("Invalid email address") }[];
+  altEmails?: { value: string }[];
   addresses?: Address[];
   userLocation?: UserLocation | null;
   cart?: DBCartItem[];
@@ -129,6 +129,8 @@ export type Order = {
   quantity: number;
   price: number; // Price per item at time of order
   shippingAddress: Address;
+  mobile: string;
+  altMobiles?: { value: string }[];
   status: OrderStatus;
   category: "stationary" | "books" | "electronics" | "xerox";
   rejectionReason?: string;

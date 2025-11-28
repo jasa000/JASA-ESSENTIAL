@@ -37,6 +37,11 @@ const addressSchema = z.object({
   postalCode: z.string().min(1, "Postal Code is required"),
 });
 
+const mobileSchema = z.object({
+    mobile: z.string().min(10, "A valid 10-digit mobile number is required.").max(10),
+    altMobiles: z.array(z.object({ value: z.string() })).optional(),
+});
+
 const checkoutFormSchema = z.object({
   selectedAddress: z.string().min(1, "Please select a shipping address."),
 });
@@ -50,6 +55,7 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [isMobileDialogOpen, setIsMobileDialogOpen] = useState(false);
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [orderSettings, setOrderSettings] = useState<OrderSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +84,14 @@ export default function CheckoutPage() {
       ...Object.fromEntries(presentCategories.map(cat => [cat, ""]))
     },
   });
+  
+  const mobileForm = useForm<z.infer<typeof mobileSchema>>({
+    resolver: zodResolver(mobileSchema),
+    defaultValues: {
+        mobile: user?.mobile || '',
+        altMobiles: user?.altMobiles || [],
+    }
+  });
 
   const addressForm = useForm<z.infer<typeof addressSchema>>({
     resolver: zodResolver(addressSchema),
@@ -88,6 +102,12 @@ export default function CheckoutPage() {
     if (!authLoading && !user) router.push('/login');
     if (user?.addresses && user.addresses.length > 0 && !checkoutForm.getValues('selectedAddress')) {
         checkoutForm.setValue('selectedAddress', `address-0`);
+    }
+    if (user) {
+        mobileForm.reset({
+            mobile: user.mobile || '',
+            altMobiles: user.altMobiles || [],
+        });
     }
     
     const fetchInitialData = async () => {
@@ -103,7 +123,7 @@ export default function CheckoutPage() {
         }
     };
     fetchInitialData();
-  }, [user, authLoading, router, checkoutForm, toast]);
+  }, [user, authLoading, router, checkoutForm, toast, mobileForm]);
 
   const selectedSellers = checkoutForm.watch();
 
@@ -151,17 +171,19 @@ export default function CheckoutPage() {
     }
   }
 
-  async function onCheckoutSubmit(values: any) {
+  const handlePlaceOrder = async () => {
+    const values = checkoutForm.getValues();
     if (!user || !user.addresses) return;
     setIsPlacingOrder(true);
     
     const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
     const shippingAddress = user.addresses[addressIndex];
+    const mobileNumbers = mobileForm.getValues();
     
     const orderCreationPromises = [];
 
     for (const category of presentCategories) {
-        const sellerId = values[category];
+        const sellerId = values[category as keyof typeof values];
         if (!sellerId) {
             toast({ variant: "destructive", title: "Error", description: `Please select a seller for ${category}.` });
             setIsPlacingOrder(false);
@@ -180,6 +202,8 @@ export default function CheckoutPage() {
                     price: cartItem.product.discountPrice ?? cartItem.product.price,
                     sellerId: sellerId,
                     shippingAddress: shippingAddress,
+                    mobile: mobileNumbers.mobile,
+                    altMobiles: mobileNumbers.altMobiles,
                     status: 'Pending Confirmation',
                     category: cartItem.product.category,
                 })
@@ -189,16 +213,34 @@ export default function CheckoutPage() {
 
     try {
       await Promise.all(orderCreationPromises);
-      // Clear purchased items from cart
       cartItems.forEach(item => removeItem(item.product.id));
-
       setOrderPlaced(true);
-      setTimeout(() => {
-        router.push('/orders');
-      }, 2000); // Wait 2 seconds before redirecting
+      setTimeout(() => { router.push('/orders'); }, 2000);
     } catch (error: any) {
         toast({ variant: "destructive", title: 'Order Failed', description: `An error occurred while placing your order: ${error.message}` });
         setIsPlacingOrder(false);
+    }
+  }
+  
+  async function onMobileSubmit(values: z.infer<typeof mobileSchema>) {
+    if (!user) return;
+    try {
+        await updateUserProfile(user.uid, { mobile: values.mobile, altMobiles: values.altMobiles });
+        toast({ title: "Mobile Number Saved" });
+        setIsMobileDialogOpen(false);
+        await handlePlaceOrder();
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to save mobile number. " + error.message });
+    }
+  }
+
+  async function onCheckoutSubmit() {
+    if (!user) return;
+    
+    if (!user.mobile) {
+        setIsMobileDialogOpen(true);
+    } else {
+        await handlePlaceOrder();
     }
   }
   
@@ -351,6 +393,47 @@ export default function CheckoutPage() {
             </div>
         </DialogContent>
     </Dialog>
+    
+     <Dialog open={isMobileDialogOpen} onOpenChange={setIsMobileDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Contact Information</DialogTitle>
+            <CardDescription>Please provide your mobile number to complete the order.</CardDescription>
+          </DialogHeader>
+          <Form {...mobileForm}>
+            <form onSubmit={mobileForm.handleSubmit(onMobileSubmit)} className="space-y-4">
+              <FormField
+                control={mobileForm.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Primary Mobile Number</FormLabel>
+                    <FormControl><Input {...field} type="tel" placeholder="10-digit mobile number" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={mobileForm.control}
+                name="altMobiles.0.value"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Alternate Mobile Number (Optional)</FormLabel>
+                    <FormControl><Input {...field} type="tel" placeholder="Another 10-digit number" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                <Button type="submit" disabled={mobileForm.formState.isSubmitting}>
+                  {mobileForm.formState.isSubmitting ? 'Saving...' : 'Save and Continue'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
