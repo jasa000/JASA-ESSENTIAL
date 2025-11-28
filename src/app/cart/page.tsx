@@ -177,8 +177,8 @@ export default function CartPage() {
           <div className="space-y-2">
             {selectedCartItems.map(item => (
               <div key={item.product.id} className="flex justify-between text-sm">
-                  <span className="truncate pr-4">{item.product.name} (x{item.quantity})</span>
-                  <span className="flex-shrink-0">Rs {((item.product.discountPrice ?? item.product.price) * item.quantity).toFixed(2)}</span>
+                  <span className="truncate pr-4">{item.product.name}</span>
+                  <span className="flex-shrink-0">{item.quantity} x Rs {(item.product.discountPrice ?? item.product.price).toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -348,3 +348,5 @@ export default function CartPage() {
     </div>
   );
 }
+
+    
