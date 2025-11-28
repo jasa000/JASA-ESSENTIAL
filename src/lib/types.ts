@@ -50,7 +50,7 @@ export type UserProfile = {
   canManageProducts?: boolean; // New permission for employees
   mobile?: string;
   altMobiles?: { value: string }[];
-  altEmails?: { value: string().email("Invalid email address") }[];
+  altEmails?: { value: string }[];
   addresses?: {
     type: 'Home' | 'Work';
     line1: string;
