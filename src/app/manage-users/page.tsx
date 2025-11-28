@@ -37,8 +37,8 @@ import { Search, UserCog, Copy, CheckCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-// Construct the secret code from environment variables
-const SECRET_CODE = `${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET || ''}`;
+// Set the secret code to a static value
+const SECRET_CODE = "JASA642531";
 
 export default function ManageUsersPage() {
   const { user, loading: authLoading } = useAuth();
