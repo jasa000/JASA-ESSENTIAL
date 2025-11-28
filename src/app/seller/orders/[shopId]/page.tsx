@@ -176,11 +176,34 @@ export default function ManageShopOrdersPage() {
                             <Button size="sm" onClick={() => handleConfirmOrder(order.id)}>
                                 <Check className="mr-2 h-4 w-4"/> Confirm
                             </Button>
-                            <DialogTrigger asChild>
-                                <Button size="sm" variant="destructive" onClick={() => setRejectingOrder(order)}>
-                                    <X className="mr-2 h-4 w-4"/> Reject
-                                </Button>
-                            </DialogTrigger>
+                            <Dialog onOpenChange={(open) => {if (!open) setRejectingOrder(null)}}>
+                                <DialogTrigger asChild>
+                                    <Button size="sm" variant="destructive" onClick={() => setRejectingOrder(order)}>
+                                        <X className="mr-2 h-4 w-4"/> Reject
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Reject Order: {rejectingOrder?.productName}</DialogTitle>
+                                        <DialogDescription>
+                                            Please provide a reason for rejecting this order. This will be shown to the customer.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4">
+                                        <Textarea 
+                                            placeholder="e.g., Item is out of stock, Unable to deliver to the provided address, etc."
+                                            value={rejectionReason}
+                                            onChange={(e) => setRejectionReason(e.target.value)}
+                                        />
+                                    </div>
+                                    <DialogFooter>
+                                        <DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose>
+                                        <DialogClose asChild>
+                                            <Button variant="destructive" onClick={handleRejectOrder}>Confirm Rejection</Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     </div>
                 ))}
@@ -189,27 +212,6 @@ export default function ManageShopOrdersPage() {
           ))}
         </div>
       )}
-      <Dialog open={!!rejectingOrder} onOpenChange={(open) => !open && setRejectingOrder(null)}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Reject Order: {rejectingOrder?.productName}</DialogTitle>
-                <DialogDescription>
-                    Please provide a reason for rejecting this order. This will be shown to the customer.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-                <Textarea 
-                    placeholder="e.g., Item is out of stock, Unable to deliver to the provided address, etc."
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                />
-            </div>
-            <DialogFooter>
-                <DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose>
-                <Button variant="destructive" onClick={handleRejectOrder}>Confirm Rejection</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
