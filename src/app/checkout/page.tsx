@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store, Info, MapPin } from 'lucide-react';
+import { PlusCircle, Store, Info, MapPin, ArrowLeft } from 'lucide-react';
 import type { UserProfile, Shop, OrderSettings, Product, ShopService } from '@/lib/types';
 
 
@@ -291,7 +291,15 @@ export default function CheckoutPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Checkout</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Checkout</h1>
+        <Button variant="outline" asChild>
+          <Link href="/cart">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Cart
+          </Link>
+        </Button>
+      </div>
       <Form {...checkoutForm}>
       <form onSubmit={checkoutForm.handleSubmit(onCheckoutSubmit)} className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
@@ -366,5 +374,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
