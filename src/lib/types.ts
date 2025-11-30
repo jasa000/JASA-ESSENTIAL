@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   name: string;
@@ -87,7 +88,6 @@ export type Shop = {
   ownerNames?: string[];
   employeeNames?: string[];
   services: ShopService[];
-  pincodeIds?: string[]; // E.g., ["chennai-600001", "coimbatore-641004"]
   locations?: string[];
   notes?: string;
   createdAt: any;

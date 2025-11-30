@@ -10,8 +10,7 @@ import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
 import { addShop, getShops, updateShop, deleteShop } from "@/lib/shops";
 import { getSellers, getEmployees } from "@/lib/users";
-import { getActivePincodeDistricts } from "@/lib/pincodes";
-import { SHOP_SERVICES, type Shop, type UserProfile, type ShopService, type PincodeDistrict, type Pincode } from "@/lib/types";
+import { SHOP_SERVICES, type Shop, type UserProfile, type ShopService } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +37,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -52,14 +50,14 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Pencil, Check, ChevronsUpDown, PlusCircle, MapPin } from "lucide-react";
+import { Trash2, Pencil, Check, ChevronsUpDown, PlusCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const shopSchema = z.object({
@@ -73,7 +71,8 @@ const shopSchema = z.object({
   ownerIds: z.array(z.string()).min(1, "At least one shop owner is required."),
   employeeIds: z.array(z.string()).optional(),
   services: z.array(z.string()).min(1, "At least one service must be selected."),
-  pincodeIds: z.array(z.string()).optional(), // Will store "<districtId>_<pincode>"
+  locations: z.array(z.object({ value: z.string() })).optional(),
+  notes: z.string().optional(),
 });
 
 export default function ManageShopsPage() {
@@ -83,7 +82,6 @@ export default function ManageShopsPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [sellers, setSellers] = useState<UserProfile[]>([]);
   const [employees, setEmployees] = useState<UserProfile[]>([]);
-  const [pincodeDistricts, setPincodeDistricts] = useState<PincodeDistrict[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -97,7 +95,8 @@ export default function ManageShopsPage() {
       ownerIds: [],
       employeeIds: [],
       services: [],
-      pincodeIds: [],
+      locations: [],
+      notes: "",
     },
   });
   
@@ -117,11 +116,10 @@ export default function ManageShopsPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [fetchedShops, fetchedSellers, fetchedEmployees, fetchedPincodes] = await Promise.all([
+      const [fetchedShops, fetchedSellers, fetchedEmployees] = await Promise.all([
         getShops(), 
         getSellers(), 
         getEmployees(),
-        getActivePincodeDistricts(),
       ]);
       
       const shopsWithNames = fetchedShops.map(shop => {
@@ -133,7 +131,6 @@ export default function ManageShopsPage() {
       setShops(shopsWithNames);
       setSellers(fetchedSellers);
       setEmployees(fetchedEmployees);
-      setPincodeDistricts(fetchedPincodes);
 
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to fetch data." });
@@ -157,7 +154,8 @@ export default function ManageShopsPage() {
           ownerIds: editingShop.ownerIds,
           employeeIds: editingShop.employeeIds || [],
           services: editingShop.services,
-          pincodeIds: editingShop.pincodeIds || [],
+          locations: editingShop.locations?.map(loc => ({ value: loc })) || [],
+          notes: editingShop.notes || "",
       });
     }
   }, [editingShop, editForm]);
@@ -168,6 +166,7 @@ export default function ManageShopsPage() {
       const shopData = {
         ...values,
         mobileNumbers: values.mobileNumbers?.map(m => m.value) || [],
+        locations: values.locations?.map(l => l.value) || [],
       };
       await addShop(shopData as Omit<Shop, 'id' | 'createdAt' | 'ownerNames' | 'employeeNames'>);
       toast({ title: "Shop Created", description: "The new shop has been added." });
@@ -184,6 +183,7 @@ export default function ManageShopsPage() {
       const shopData = {
         ...values,
         mobileNumbers: values.mobileNumbers?.map(m => m.value) || [],
+        locations: values.locations?.map(l => l.value) || [],
       };
       await updateShop(editingShop.id, shopData);
       toast({ title: "Shop Updated", description: "The shop details have been saved." });
@@ -243,6 +243,44 @@ export default function ManageShopsPage() {
             <PlusCircle className="mr-2 h-4 w-4" /> Add Mobile Number
             </Button>
         )}
+      </div>
+    );
+  };
+  
+  const LocationsInput = ({ form }: { form: any }) => {
+    const { fields, append, remove } = useFieldArray({
+      control: form.control,
+      name: "locations",
+    });
+
+    return (
+      <div className="space-y-2">
+        <FormLabel>Available Areas (Bullet Points)</FormLabel>
+        {fields.map((field, index) => (
+          <FormField
+            key={field.id}
+            control={form.control}
+            name={`locations.${index}.value`}
+            render={({ field }) => (
+              <FormItem className="flex items-center gap-2">
+                <FormControl>
+                  <Input {...field} placeholder={`Area ${index + 1}`} />
+                </FormControl>
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </FormItem>
+            )}
+          />
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => append({ value: "" })}
+        >
+          <PlusCircle className="mr-2 h-4 w-4" /> Add Area
+        </Button>
       </div>
     );
   };
@@ -374,106 +412,70 @@ export default function ManageShopsPage() {
       )}
     />
   );
-  
-  const PincodeSelector = ({ form }: { form: any }) => {
-    const [selectedDistrict, setSelectedDistrict] = useState<string>('');
-    const pincodesForDistrict = pincodeDistricts.find(d => d.id === selectedDistrict)?.pincodes || [];
-
-    return (
-        <div className="space-y-4 rounded-md border p-4">
-            <h3 className="font-medium">Serviceable Pincodes</h3>
-             <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a District" />
-                </SelectTrigger>
-                <SelectContent>
-                    {pincodeDistricts.map(d => (
-                        <SelectItem key={d.id} value={d.id}>{d.districtName}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            {selectedDistrict && (
-                 <FormField
-                    control={form.control}
-                    name="pincodeIds"
-                    render={({ field }) => (
-                        <FormItem>
-                             <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            className={cn("w-full justify-between h-auto", !field.value?.length && "text-muted-foreground")}
-                                        >
-                                            <div className="flex gap-1 flex-wrap">
-                                                {field.value?.length > 0 ? (
-                                                     pincodeDistricts.flatMap(d => d.pincodes.map(p => ({ ...p, districtId: d.id })))
-                                                        .filter(p => field.value.includes(`${p.districtId}_${p.pincode}`))
-                                                        .map(p => (
-                                                            <Badge variant="secondary" key={`${p.districtId}_${p.pincode}`} className="mr-1">
-                                                                {p.pincode} - {p.areaName}
-                                                            </Badge>
-                                                        ))
-                                                ) : (
-                                                    "Select Pincodes..."
-                                                )}
-                                            </div>
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Search pincodes..." />
-                                        <CommandList>
-                                            <CommandEmpty>No pincodes found for this district.</CommandEmpty>
-                                            <CommandGroup>
-                                                {pincodesForDistrict.map((pincode) => (
-                                                    <CommandItem
-                                                        value={`${pincode.pincode} ${pincode.areaName}`}
-                                                        key={`${selectedDistrict}_${pincode.pincode}`}
-                                                        onSelect={() => {
-                                                            const value = `${selectedDistrict}_${pincode.pincode}`;
-                                                            const currentIds = field.value || [];
-                                                            const newIds = currentIds.includes(value)
-                                                                ? currentIds.filter((id: string) => id !== value)
-                                                                : [...currentIds, value];
-                                                            form.setValue("pincodeIds", newIds);
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={cn("mr-2 h-4 w-4", (field.value || []).includes(`${selectedDistrict}_${pincode.pincode}`) ? "opacity-100" : "opacity-0")}
-                                                        />
-                                                        {pincode.pincode} - {pincode.areaName}
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-            )}
-        </div>
-    )
-  }
 
 
   if (loading || !user?.roles.includes('admin')) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }
-  
-  const allPincodesMap = new Map<string, Pincode & { districtId: string }>();
-  pincodeDistricts.forEach(d => {
-      d.pincodes.forEach(p => {
-          allPincodesMap.set(`${d.id}_${p.pincode}`, { ...p, districtId: d.id });
-      });
-  });
+
+  const renderForm = (currentForm: any, submitHandler: (values: any) => void) => (
+    <Form {...currentForm}>
+        <form onSubmit={currentForm.handleSubmit(submitHandler)} className="space-y-4">
+            <FormField
+                control={currentForm.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Shop Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g., Jasa Books & Stationary" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={currentForm.control}
+                name="address"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                            <Input placeholder="123 Main St, Anytown, USA" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <MobileNumbersInput form={currentForm} />
+            <MultiUserSelect form={currentForm} fieldName="ownerIds" users={sellers} label="Shop Owners" placeholder="Select sellers" />
+            <MultiUserSelect form={currentForm} fieldName="employeeIds" users={employees} label="Shop Employees" placeholder="Select employees" />
+            <ServicesCheckboxes form={currentForm} fieldName="services" />
+            <LocationsInput form={currentForm} />
+             <FormField
+                control={currentForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="e.g., Delivery between 10 AM and 6 PM" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+             <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">Cancel</Button>
+                </DialogClose>
+                <Button type="submit" disabled={currentForm.formState.isSubmitting}>
+                  {currentForm.formState.isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
+            </DialogFooter>
+        </form>
+    </Form>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -520,7 +522,20 @@ export default function ManageShopsPage() {
                   <MultiUserSelect form={form} fieldName="ownerIds" users={sellers} label="Shop Owners" placeholder="Select sellers" />
                   <MultiUserSelect form={form} fieldName="employeeIds" users={employees} label="Shop Employees" placeholder="Select employees" />
                   <ServicesCheckboxes form={form} fieldName="services" />
-                  <PincodeSelector form={form} />
+                  <LocationsInput form={form} />
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="e.g., Delivery between 10 AM and 6 PM" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <Button type="submit" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting ? "Creating..." : "Create Shop"}
                   </Button>
@@ -580,49 +595,7 @@ export default function ManageShopsPage() {
                                             Make changes to the shop details.
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <Form {...editForm}>
-                                        <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-                                            <FormField
-                                                control={editForm.control}
-                                                name="name"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Shop Name</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={editForm.control}
-                                                name="address"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Address</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <MobileNumbersInput form={editForm} />
-                                            <MultiUserSelect form={editForm} fieldName="ownerIds" users={sellers} label="Shop Owners" placeholder="Select sellers" />
-                                            <MultiUserSelect form={editForm} fieldName="employeeIds" users={employees} label="Shop Employees" placeholder="Select employees" />
-                                            <ServicesCheckboxes form={editForm} fieldName="services" />
-                                            <PincodeSelector form={editForm} />
-                                             <DialogFooter>
-                                                <DialogClose asChild>
-                                                  <Button type="button" variant="secondary">Cancel</Button>
-                                                </DialogClose>
-                                                <Button type="submit" disabled={editForm.formState.isSubmitting}>
-                                                  {editForm.formState.isSubmitting ? "Saving..." : "Save Changes"}
-                                                </Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
+                                    {renderForm(editForm, onEditSubmit)}
                                 </DialogContent>
                                </Dialog>
 
