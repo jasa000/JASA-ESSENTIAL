@@ -31,14 +31,13 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
     { id: "delivered", label: "Delivered", icon: Home, date: trackingInfo.delivered },
   ];
 
-  let activeStepIndex = steps.findIndex(step => !step.date) -1;
-  if (activeStepIndex < 0 && steps.every(s => s.date)) {
-      activeStepIndex = steps.length - 1;
+  let activeStepIndex = -1;
+  for (let i = steps.length - 1; i >= 0; i--) {
+      if (steps[i].date) {
+          activeStepIndex = i;
+          break;
+      }
   }
-  if (trackingInfo.confirmed && !trackingInfo.packed) {
-    activeStepIndex = 0;
-  }
-  
 
   return (
     <div className="py-4 px-2">
@@ -54,7 +53,7 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
       <div className="relative flex items-center justify-between">
         <div className="absolute left-0 top-1/2 h-1 w-full -translate-y-1/2 bg-muted"></div>
         <div 
-          className="absolute left-0 top-1/2 h-1 -translate-y-1/2 bg-primary transition-all duration-500"
+          className="absolute left-0 top-1/2 h-1 -translate-y-1/2 bg-green-600 transition-all duration-500"
           style={{ width: activeStepIndex >= 0 ? `${(activeStepIndex / (steps.length - 1)) * 100}%` : "0%" }}
         ></div>
 
@@ -65,12 +64,12 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
               <div
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
-                  isCompleted ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground bg-background text-muted-foreground"
+                  isCompleted ? "border-green-600 bg-green-600 text-white" : "border-muted-foreground bg-background text-muted-foreground"
                 )}
               >
                 <step.icon className="h-5 w-5" />
               </div>
-              <p className={cn("mt-2 text-center text-xs font-semibold", isCompleted ? "text-primary" : "text-muted-foreground")}>
+              <p className={cn("mt-2 text-center text-xs font-semibold", isCompleted ? "text-green-600" : "text-muted-foreground")}>
                 {step.label}
               </p>
                {step.date ? (
