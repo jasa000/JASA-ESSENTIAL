@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from 'next/link';
@@ -89,7 +90,7 @@ export default function CheckoutPage() {
     resolver: zodResolver(mobileSchema),
     defaultValues: {
         mobile: user?.mobile || '',
-        altMobiles: user?.altMobiles || [],
+        altMobiles: user?.altMobiles?.map(alt => ({ value: alt.value || '' })) || [],
     }
   });
 
@@ -106,7 +107,7 @@ export default function CheckoutPage() {
     if (user) {
         mobileForm.reset({
             mobile: user.mobile || '',
-            altMobiles: user.altMobiles || [],
+            altMobiles: user.altMobiles?.map(alt => ({ value: alt.value || '' })) || [],
         });
     }
     
@@ -419,7 +420,7 @@ export default function CheckoutPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Alternate Mobile Number (Optional)</FormLabel>
-                    <FormControl><Input {...field} type="tel" placeholder="Another 10-digit number" /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} type="tel" placeholder="Another 10-digit number" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
