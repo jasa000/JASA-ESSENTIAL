@@ -157,6 +157,17 @@ export type Order = {
   createdAt: any;
 };
 
+export type Notification = {
+  id: string;
+  userId: string;
+  orderId: string;
+  title: string;
+  message: string;
+  sellerMobileNumbers: string[];
+  isRead: boolean;
+  createdAt: any;
+}
+
 export type Banner = {
   id: string;
   title: string;

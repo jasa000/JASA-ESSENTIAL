@@ -1,7 +1,8 @@
 
-import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus, Notification } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
+import { getShops } from './shops';
 
 export const categories: Category[] = [
     {
@@ -42,6 +43,7 @@ const homepageContentCollection = collection(db, 'homepageContent');
 const xeroxServicesCollection = collection(db, 'xeroxServices');
 const orderSettingsCollection = collection(db, 'orderSettings');
 const ordersCollection = collection(db, 'orders');
+const notificationsCollection = collection(db, 'notifications');
 
 
 // --- Xerox Form Option Collections ---
@@ -516,20 +518,46 @@ export const getOrdersBySeller = async (sellerId: string): Promise<Order[]> => {
 
 export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<void> => {
     try {
-        const orderDoc = doc(db, 'orders', orderId);
-        const updates: { [key: string]: any } = { status };
-        const now = new Date().toISOString();
+        const orderDocRef = doc(db, 'orders', orderId);
         
-        switch(status) {
-          case 'Processing': updates['tracking.confirmed'] = now; break;
-          case 'Packed': updates['tracking.packed'] = now; break;
-          case 'Shipped': updates['tracking.shipped'] = now; break;
-          case 'Out for Delivery': updates['tracking.outForDelivery'] = now; break;
-          case 'Delivered': updates['tracking.delivered'] = now; break;
-          // No tracking update for cancelled or rejected
-        }
+        await runTransaction(db, async (transaction) => {
+            const orderDoc = await transaction.get(orderDocRef);
+            if (!orderDoc.exists()) {
+                throw new Error("Order not found!");
+            }
+            
+            const orderData = orderDoc.data() as Order;
+            const shopDocRef = doc(db, 'shops', orderData.sellerId);
+            const shopDoc = await transaction.get(shopDocRef);
+            const shopData = shopDoc.exists() ? shopDoc.data() : null;
 
-        await updateDoc(orderDoc, updates);
+            const updates: { [key: string]: any } = { status };
+            const now = new Date().toISOString();
+            
+            switch(status) {
+              case 'Processing': updates['tracking.confirmed'] = now; break;
+              case 'Packed': updates['tracking.packed'] = now; break;
+              case 'Shipped': updates['tracking.shipped'] = now; break;
+              case 'Out for Delivery': updates['tracking.outForDelivery'] = now; break;
+              case 'Delivered': updates['tracking.delivered'] = now; break;
+            }
+
+            transaction.update(orderDocRef, updates);
+            
+            // Create notification
+            const notificationDocRef = doc(notificationsCollection);
+            const notification: Omit<Notification, 'id'> = {
+                userId: orderData.userId,
+                orderId: orderId,
+                title: `Order Status Updated: ${status}`,
+                message: `Your order for "${orderData.productName}" is now ${status}.`,
+                sellerMobileNumbers: shopData?.mobileNumbers || [],
+                isRead: false,
+                createdAt: serverTimestamp(),
+            };
+            transaction.set(notificationDocRef, notification);
+        });
+
     } catch (error) {
         console.error("Error updating order status:", error);
         throw new Error("Failed to update order status.");
@@ -538,10 +566,60 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
 
 export const updateOrderRejectionReason = async (orderId: string, reason: string): Promise<void> => {
     try {
-        const orderDoc = doc(db, 'orders', orderId);
-        await updateDoc(orderDoc, { status: 'Rejected', rejectionReason: reason });
+        const orderDocRef = doc(db, 'orders', orderId);
+
+        await runTransaction(db, async (transaction) => {
+            const orderDoc = await transaction.get(orderDocRef);
+            if (!orderDoc.exists()) {
+                throw new Error("Order not found!");
+            }
+            
+            const orderData = orderDoc.data() as Order;
+            const shopDocRef = doc(db, 'shops', orderData.sellerId);
+            const shopDoc = await transaction.get(shopDocRef);
+            const shopData = shopDoc.exists() ? shopDoc.data() : null;
+
+            transaction.update(orderDocRef, { status: 'Rejected', rejectionReason: reason });
+
+            // Create notification
+            const notificationDocRef = doc(notificationsCollection);
+            const notification: Omit<Notification, 'id'> = {
+                userId: orderData.userId,
+                orderId: orderId,
+                title: `Order Rejected`,
+                message: `Your order for "${orderData.productName}" was rejected. Reason: ${reason}`,
+                sellerMobileNumbers: shopData?.mobileNumbers || [],
+                isRead: false,
+                createdAt: serverTimestamp(),
+            };
+            transaction.set(notificationDocRef, notification);
+        });
+
     } catch (error) {
         console.error("Error updating rejection reason:", error);
         throw new Error("Failed to update order.");
+    }
+};
+
+
+// --- Notification Functions ---
+export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
+    try {
+        const q = query(notificationsCollection, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+    } catch (error) {
+        console.error("Error getting notifications:", error);
+        throw new Error("Failed to fetch notifications.");
+    }
+};
+
+export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
+    try {
+        const notificationDoc = doc(db, 'notifications', notificationId);
+        await updateDoc(notificationDoc, { isRead: true });
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+        // We don't throw here, as it's not a critical failure if this fails silently.
     }
 };
