@@ -245,11 +245,11 @@ export default function OrdersPage() {
         ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
                 <div className="sticky top-[80px] z-40 bg-background py-2">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                    <TabsList className="w-full flex-nowrap overflow-x-auto justify-start">
                         <TabsTrigger value="all">All</TabsTrigger>
                         <TabsTrigger value="processing">Processing</TabsTrigger>
                         <TabsTrigger value="delivered">Delivered</TabsTrigger>
-                        <TabsTrigger value="cancelled">Cancelled/Rejected</TabsTrigger>
+                        <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
                     </TabsList>
                 </div>
                 <div className="mt-4">
@@ -260,3 +260,5 @@ export default function OrdersPage() {
     </div>
   );
 }
+
+    
