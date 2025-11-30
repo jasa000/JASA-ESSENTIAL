@@ -117,7 +117,25 @@ export type ProductType = {
   createdAt: any;
 };
 
-export type OrderStatus = "Pending Confirmation" | "Processing" | "Shipped" | "Delivered" | "Cancelled" | "Rejected";
+export type OrderStatus = 
+  | "Pending Confirmation" 
+  | "Processing" 
+  | "Packed"
+  | "Shipped" 
+  | "Out for Delivery"
+  | "Delivered" 
+  | "Cancelled" 
+  | "Rejected";
+
+export type OrderTracking = {
+  ordered: string; // ISO date string
+  confirmed: string | null;
+  packed: string | null;
+  shipped: string | null;
+  outForDelivery: string | null;
+  delivered: string | null;
+  expectedDelivery: string | null;
+}
 
 export type Order = {
   id: string;
@@ -134,6 +152,7 @@ export type Order = {
   status: OrderStatus;
   category: "stationary" | "books" | "electronics" | "xerox";
   rejectionReason?: string;
+  tracking: OrderTracking;
   createdAt: any;
 };
 

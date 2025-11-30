@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, PackageOpen, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone } from "lucide-react";
+import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,22 +20,25 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import Link from "next/link";
 import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
+import OrderTracker from "@/components/order-tracker";
 
-const statusConfig = {
-  "Pending Confirmation": { icon: Clock, color: "bg-yellow-500", label: "Pending" },
-  "Processing": { icon: Package, color: "bg-blue-500", label: "Processing" },
-  "Shipped": { icon: Truck, color: "bg-blue-500", label: "Shipped" },
-  "Delivered": { icon: CheckCircle, color: "bg-green-500", label: "Delivered" },
-  "Cancelled": { icon: XCircle, color: "bg-gray-500", label: "Cancelled" },
-  "Rejected": { icon: AlertTriangle, color: "bg-red-500", label: "Rejected" },
+const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string } } = {
+  "Pending Confirmation": { icon: Clock, label: "Pending" },
+  "Processing": { icon: Package, label: "Processing" },
+  "Packed": { icon: Package, label: "Packed" },
+  "Shipped": { icon: Truck, label: "Shipped" },
+  "Out for Delivery": { icon: Truck, label: "Out for Delivery" },
+  "Delivered": { icon: CheckCircle, label: "Delivered" },
+  "Cancelled": { icon: XCircle, label: "Cancelled" },
+  "Rejected": { icon: AlertTriangle, label: "Rejected" },
 };
+
 
 const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: string) => void }) => {
   const { toast } = useToast();
@@ -79,6 +82,14 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
                 <p className="font-bold"><span className="font-medium">Total:</span> Rs {(itemPrice * itemQuantity).toFixed(2)}</p>
             </div>
         </div>
+
+        {(order.status !== 'Pending Confirmation' && order.status !== 'Cancelled' && order.status !== 'Rejected') && (
+          <>
+            <Separator className="my-4" />
+            <OrderTracker trackingInfo={order.tracking} />
+          </>
+        )}
+
         <Separator className="my-4" />
         <div>
             <h4 className="font-medium mb-2">Shipping Address & Contact</h4>
@@ -192,7 +203,7 @@ export default function OrdersPage() {
             </div>
         ) : (
              <div className="py-16 text-center">
-                <PackageOpen className="mx-auto h-24 w-24 text-muted-foreground" />
+                <ShoppingCart className="mx-auto h-24 w-24 text-muted-foreground" />
                 <h2 className="mt-4 text-xl font-semibold">No Orders Found</h2>
                 <p className="text-muted-foreground">You haven't placed any orders yet.</p>
                 <Button asChild className="mt-6">

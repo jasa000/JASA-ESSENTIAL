@@ -12,7 +12,7 @@ type OrderTrackerProps = {
 const formatDate = (dateString?: string) => {
   if (!dateString) return "";
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
 const formatTime = (dateString?: string) => {
@@ -22,17 +22,18 @@ const formatTime = (dateString?: string) => {
 }
 
 export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
+  if (!trackingInfo) return null;
+
   const steps = [
-    { id: "ordered", label: "Order Placed", icon: Package, date: trackingInfo.ordered },
-    { id: "confirmed", label: "Confirmed", icon: ShieldCheck, date: trackingInfo.confirmed },
+    { id: "ordered", label: "Confirmed", icon: ShieldCheck, date: trackingInfo.confirmed },
+    { id: "packed", label: "Packed", icon: Package, date: trackingInfo.packed },
     { id: "shipped", label: "Shipped", icon: Truck, date: trackingInfo.shipped },
     { id: "delivered", label: "Delivered", icon: Home, date: trackingInfo.delivered },
   ];
 
   let activeStepIndex = steps.findIndex(step => !step.date) -1;
-  if(activeStepIndex < 0) {
-    activeStepIndex = trackingInfo.delivered ? 3 : steps.findIndex(step => !step.date) -1;
-    if(activeStepIndex < 0 && !trackingInfo.delivered) activeStepIndex = 3;
+  if (activeStepIndex < 0 && steps.every(s => s.date)) {
+      activeStepIndex = steps.length - 1;
   }
   
 
@@ -56,7 +57,6 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
 
         {steps.map((step, index) => {
           const isCompleted = index <= activeStepIndex;
-          const isActive = index === activeStepIndex;
           return (
             <div key={step.id} className="relative z-10 flex flex-col items-center">
               <div

@@ -1,5 +1,5 @@
 
-import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
 
@@ -470,11 +470,20 @@ export const updateOrderSettings = async (settings: OrderSettings): Promise<void
 };
 
 // --- Order Functions ---
-export const createOrder = async (orderData: Omit<Order, 'id' | 'createdAt'>): Promise<string> => {
+export const createOrder = async (orderData: Omit<Order, 'id' | 'createdAt' | 'tracking'>): Promise<string> => {
     try {
+        const now = new Date().toISOString();
         const docRef = await addDoc(ordersCollection, {
             ...orderData,
             createdAt: serverTimestamp(),
+            tracking: {
+              ordered: now,
+              confirmed: null,
+              packed: null,
+              shipped: null,
+              delivered: null,
+              expectedDelivery: null
+            }
         });
         return docRef.id;
     } catch (error) {
@@ -505,10 +514,22 @@ export const getOrdersBySeller = async (sellerId: string): Promise<Order[]> => {
     }
 };
 
-export const updateOrderStatus = async (orderId: string, status: Order['status']): Promise<void> => {
+export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<void> => {
     try {
         const orderDoc = doc(db, 'orders', orderId);
-        await updateDoc(orderDoc, { status });
+        const updates: { [key: string]: any } = { status };
+        const now = new Date().toISOString();
+        
+        switch(status) {
+          case 'Processing': updates['tracking.confirmed'] = now; break;
+          case 'Packed': updates['tracking.packed'] = now; break;
+          case 'Shipped': updates['tracking.shipped'] = now; break;
+          case 'Out for Delivery': updates['tracking.outForDelivery'] = now; break;
+          case 'Delivered': updates['tracking.delivered'] = now; break;
+          // No tracking update for cancelled or rejected
+        }
+
+        await updateDoc(orderDoc, updates);
     } catch (error) {
         console.error("Error updating order status:", error);
         throw new Error("Failed to update order status.");
