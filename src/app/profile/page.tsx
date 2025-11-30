@@ -75,6 +75,7 @@ export default function ProfilePage() {
 
   const addressForm = useForm<Address>({
     resolver: zodResolver(addressSchema),
+    defaultValues: { type: 'Home', line1: '', line2: '', city: '', state: '', postalCode: '' }
   });
 
   const { fields: altMobiles, append: appendAltMobile, remove: removeAltMobile } = useFieldArray({
@@ -105,9 +106,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (editingAddress) {
-      addressForm.reset(editingAddress.address);
+      addressForm.reset({
+        ...editingAddress.address,
+        line2: editingAddress.address.line2 || '', // Ensure line2 is a string
+      });
     } else {
-      addressForm.reset({ type: 'Home', line1: '', city: '', state: '', postalCode: '' });
+      addressForm.reset({ type: 'Home', line1: '', line2: '', city: '', state: '', postalCode: '' });
     }
   }, [editingAddress, addressForm]);
 

@@ -164,14 +164,14 @@ export default function CheckoutPage() {
       const newAddresses = [...(user.addresses || []), values];
       await updateUserProfile(user.uid, { addresses: newAddresses });
       toast({ title: "Address Saved", description: "Your new address has been added." });
-      addressForm.reset();
+      addressForm.reset({ type: 'Home', line1: '', line2: '', city: '', state: '', postalCode: '' });
       setIsAddressDialogOpen(false);
     } catch (error: any) {
        toast({ variant: "destructive", title: "Error", description: "Failed to save address. " + error.message });
     }
   }
 
-  const handlePlaceOrder = async () => {
+  async function handlePlaceOrder() {
     const values = checkoutForm.getValues();
     if (!user || !user.addresses) return;
     setIsPlacingOrder(true);
