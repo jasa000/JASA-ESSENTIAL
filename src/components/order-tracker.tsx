@@ -35,6 +35,9 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
   if (activeStepIndex < 0 && steps.every(s => s.date)) {
       activeStepIndex = steps.length - 1;
   }
+  if (trackingInfo.confirmed && !trackingInfo.packed) {
+    activeStepIndex = 0;
+  }
   
 
   return (
@@ -52,7 +55,7 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
         <div className="absolute left-0 top-1/2 h-1 w-full -translate-y-1/2 bg-muted"></div>
         <div 
           className="absolute left-0 top-1/2 h-1 -translate-y-1/2 bg-primary transition-all duration-500"
-          style={{ width: `${(activeStepIndex / (steps.length - 1)) * 100}%` }}
+          style={{ width: activeStepIndex >= 0 ? `${(activeStepIndex / (steps.length - 1)) * 100}%` : "0%" }}
         ></div>
 
         {steps.map((step, index) => {
