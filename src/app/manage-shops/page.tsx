@@ -65,6 +65,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const shopSchema = z.object({
   name: z.string().min(2, "Shop name must be at least 2 characters."),
   address: z.string().min(5, "Address is required."),
+  mobileNumbers: z.array(
+    z.object({
+        value: z.string().regex(/^\d{10}$/, "Must be a 10-digit number."),
+    })
+  ).optional(),
   ownerIds: z.array(z.string()).min(1, "At least one shop owner is required."),
   employeeIds: z.array(z.string()).optional(),
   services: z.array(z.string()).min(1, "At least one service must be selected."),
@@ -88,6 +93,7 @@ export default function ManageShopsPage() {
     defaultValues: {
       name: "",
       address: "",
+      mobileNumbers: [],
       ownerIds: [],
       employeeIds: [],
       services: [],
@@ -147,6 +153,7 @@ export default function ManageShopsPage() {
       editForm.reset({
           name: editingShop.name,
           address: editingShop.address,
+          mobileNumbers: editingShop.mobileNumbers?.map(num => ({ value: num })) || [],
           ownerIds: editingShop.ownerIds,
           employeeIds: editingShop.employeeIds || [],
           services: editingShop.services,
@@ -158,7 +165,11 @@ export default function ManageShopsPage() {
 
   async function onSubmit(values: z.infer<typeof shopSchema>) {
     try {
-      await addShop(values as Omit<Shop, 'id' | 'createdAt' | 'ownerNames'>);
+      const shopData = {
+        ...values,
+        mobileNumbers: values.mobileNumbers?.map(m => m.value) || [],
+      };
+      await addShop(shopData as Omit<Shop, 'id' | 'createdAt' | 'ownerNames' | 'employeeNames'>);
       toast({ title: "Shop Created", description: "The new shop has been added." });
       form.reset();
       fetchData();
@@ -170,7 +181,11 @@ export default function ManageShopsPage() {
   async function onEditSubmit(values: z.infer<typeof shopSchema>) {
     if (!editingShop) return;
     try {
-      await updateShop(editingShop.id, values);
+      const shopData = {
+        ...values,
+        mobileNumbers: values.mobileNumbers?.map(m => m.value) || [],
+      };
+      await updateShop(editingShop.id, shopData);
       toast({ title: "Shop Updated", description: "The shop details have been saved." });
       fetchData();
       setIsEditDialogOpen(false);
@@ -188,6 +203,48 @@ export default function ManageShopsPage() {
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     }
+  };
+
+  const MobileNumbersInput = ({ form }: { form: any }) => {
+    const { fields, append, remove } = useFieldArray({
+      control: form.control,
+      name: "mobileNumbers",
+    });
+
+    return (
+      <div>
+        <FormLabel>Mobile Numbers</FormLabel>
+        {fields.map((field, index) => (
+          <FormField
+            key={field.id}
+            control={form.control}
+            name={`mobileNumbers.${index}.value`}
+            render={({ field }) => (
+              <FormItem className="mt-2 flex items-center gap-2">
+                <FormControl>
+                  <Input {...field} placeholder={`Mobile Number ${index + 1}`} />
+                </FormControl>
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ))}
+        {fields.length < 3 && (
+            <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => append({ value: "" })}
+            >
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Mobile Number
+            </Button>
+        )}
+      </div>
+    );
   };
 
   const MultiUserSelect = ({ form, fieldName, users, label, placeholder }: { form: any, fieldName: "ownerIds" | "employeeIds", users: UserProfile[], label: string, placeholder: string }) => {
@@ -459,6 +516,7 @@ export default function ManageShopsPage() {
                       </FormItem>
                     )}
                   />
+                  <MobileNumbersInput form={form} />
                   <MultiUserSelect form={form} fieldName="ownerIds" users={sellers} label="Shop Owners" placeholder="Select sellers" />
                   <MultiUserSelect form={form} fieldName="employeeIds" users={employees} label="Shop Employees" placeholder="Select employees" />
                   <ServicesCheckboxes form={form} fieldName="services" />
@@ -484,7 +542,7 @@ export default function ManageShopsPage() {
                     <TableRow>
                       <TableHead>Shop Name</TableHead>
                       <TableHead>Owners</TableHead>
-                      <TableHead>Employees</TableHead>
+                      <TableHead>Mobile</TableHead>
                       <TableHead>Date Added</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -499,7 +557,7 @@ export default function ManageShopsPage() {
                         <TableRow key={shop.id}>
                           <TableCell className="font-medium">{shop.name}</TableCell>
                           <TableCell>{shop.ownerNames?.join(', ')}</TableCell>
-                          <TableCell>{shop.employeeNames?.join(', ')}</TableCell>
+                          <TableCell>{shop.mobileNumbers?.join(', ')}</TableCell>
                           <TableCell>{new Date(shop.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -550,6 +608,7 @@ export default function ManageShopsPage() {
                                                     </FormItem>
                                                 )}
                                             />
+                                            <MobileNumbersInput form={editForm} />
                                             <MultiUserSelect form={editForm} fieldName="ownerIds" users={sellers} label="Shop Owners" placeholder="Select sellers" />
                                             <MultiUserSelect form={editForm} fieldName="employeeIds" users={employees} label="Shop Employees" placeholder="Select employees" />
                                             <ServicesCheckboxes form={editForm} fieldName="services" />
@@ -601,5 +660,3 @@ export default function ManageShopsPage() {
     </div>
   );
 }
-
-    

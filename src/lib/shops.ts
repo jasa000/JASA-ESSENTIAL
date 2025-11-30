@@ -53,5 +53,3 @@ export const deleteShop = async (id: string): Promise<void> => {
     throw new Error("Failed to delete shop.");
   }
 };
-
-    

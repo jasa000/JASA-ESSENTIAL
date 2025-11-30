@@ -81,6 +81,7 @@ export type Shop = {
   id:string;
   name: string;
   address: string;
+  mobileNumbers?: string[];
   ownerIds: string[];
   employeeIds?: string[];
   ownerNames?: string[];
