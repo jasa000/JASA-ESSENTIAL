@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -324,7 +323,7 @@ export default function AppSidebar() {
                     <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/orders')}>
                         <Link href="/orders">
                             <History />
-                            <span>Order History</span>
+                            <span>Track orders & History</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
