@@ -20,6 +20,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -78,7 +79,7 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
             </div>
             <div className="space-y-2 text-sm">
                 <p><span className="font-medium">Quantity:</span> {itemQuantity}</p>
-                <p><span className="font-medium">Price per item:</span> Rs {itemPrice.toFixed(2)}</p>
+                <p><span className="font-medium">Price per item:</span> Rs {(itemPrice).toFixed(2)}</p>
                 <p className="font-bold"><span className="font-medium">Total:</span> Rs {(itemPrice * itemQuantity).toFixed(2)}</p>
             </div>
         </div>
