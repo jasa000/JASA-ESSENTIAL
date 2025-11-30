@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
 import { getMyOrders, updateOrderStatus } from "@/lib/data";
@@ -28,6 +28,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
 import OrderTracker from "@/components/order-tracker";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string } } = {
   "Pending Confirmation": { icon: Clock, label: "Pending" },
@@ -134,12 +136,22 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
   )
 };
 
+const filterConfig = {
+    all: (orders: Order[]) => orders,
+    processing: (orders: Order[]) => orders.filter(o => 
+        ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery"].includes(o.status)
+    ),
+    delivered: (orders: Order[]) => orders.filter(o => o.status === "Delivered"),
+    cancelled: (orders: Order[]) => orders.filter(o => ["Cancelled", "Rejected"].includes(o.status)),
+};
+
 export default function OrdersPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('all');
 
     const fetchOrders = async (userId: string) => {
         setIsLoading(true);
@@ -175,8 +187,13 @@ export default function OrdersPage() {
              toast({ variant: 'destructive', title: 'Cancellation Failed', description: error.message });
         }
     };
+    
+    const filteredOrders = useMemo(() => {
+        const filterFn = filterConfig[activeTab as keyof typeof filterConfig] || filterConfig.all;
+        return filterFn(orders);
+    }, [orders, activeTab]);
 
-    if (authLoading || isLoading) {
+    if (authLoading || (isLoading && orders.length === 0)) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Order Status & History</h1>
@@ -189,21 +206,35 @@ export default function OrdersPage() {
             </div>
         )
     }
+    
+    const renderOrderGrid = (ordersToRender: Order[]) => {
+      if (ordersToRender.length === 0) {
+        return (
+          <div className="py-16 text-center">
+            <ShoppingCart className="mx-auto h-24 w-24 text-muted-foreground" />
+            <h2 className="mt-4 text-xl font-semibold">No Orders in this Category</h2>
+            <p className="text-muted-foreground">You don't have any orders with this status.</p>
+          </div>
+        )
+      }
+
+      return (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {ordersToRender.map(order => (
+                <OrderCard key={order.id} order={order} onCancel={handleCancelOrder} />
+            ))}
+        </div>
+      );
+    }
+
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Order Status & History</h1>
       <p className="mt-2 text-muted-foreground">View the status of your current orders and your order history.</p>
       
-      <div className="mt-8">
-        {orders.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {orders.map(order => (
-                    <OrderCard key={order.id} order={order} onCancel={handleCancelOrder} />
-                ))}
-            </div>
-        ) : (
-             <div className="py-16 text-center">
+      {orders.length === 0 && !isLoading ? (
+            <div className="py-16 text-center">
                 <ShoppingCart className="mx-auto h-24 w-24 text-muted-foreground" />
                 <h2 className="mt-4 text-xl font-semibold">No Orders Found</h2>
                 <p className="text-muted-foreground">You haven't placed any orders yet.</p>
@@ -211,8 +242,21 @@ export default function OrdersPage() {
                     <Link href="/">Start Shopping</Link>
                 </Button>
             </div>
+        ) : (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
+                <div className="sticky top-[80px] z-40 bg-background py-2">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                        <TabsTrigger value="all">All</TabsTrigger>
+                        <TabsTrigger value="processing">Processing</TabsTrigger>
+                        <TabsTrigger value="delivered">Delivered</TabsTrigger>
+                        <TabsTrigger value="cancelled">Cancelled/Rejected</TabsTrigger>
+                    </TabsList>
+                </div>
+                <div className="mt-4">
+                    {renderOrderGrid(filteredOrders)}
+                </div>
+            </Tabs>
         )}
-      </div>
     </div>
   );
 }
