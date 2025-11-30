@@ -81,7 +81,7 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
             </div>
             <div className="space-y-2 text-sm">
                 <p><span className="font-medium">Quantity:</span> {itemQuantity}</p>
-                <p><span className="font-medium">Price per item:</span> Rs {(itemPrice).toFixed(2)}</p>
+                <p><span className="font-medium">Price per item:</span> Rs {itemPrice.toFixed(2)}</p>
                 <p className="font-bold"><span className="font-medium">Total:</span> Rs {(itemPrice * itemQuantity).toFixed(2)}</p>
             </div>
         </div>
@@ -245,7 +245,7 @@ export default function OrdersPage() {
         ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
                 <div className="sticky top-[80px] z-40 bg-background py-2">
-                    <TabsList className="w-full flex-nowrap overflow-x-auto justify-start">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="all">All</TabsTrigger>
                         <TabsTrigger value="processing">Processing</TabsTrigger>
                         <TabsTrigger value="delivered">Delivered</TabsTrigger>
@@ -260,5 +260,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-
-    
