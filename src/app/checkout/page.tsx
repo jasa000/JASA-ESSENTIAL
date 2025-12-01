@@ -339,7 +339,7 @@ export default function CheckoutPage() {
         </CardHeader>
         <CardContent>
           <Form {...mobileForm}>
-            <form onSubmit={e => e.preventDefault()} className="space-y-4">
+            <div className="space-y-4">
               <FormField
                 control={mobileForm.control}
                 name="mobile"
@@ -376,7 +376,7 @@ export default function CheckoutPage() {
               >
                 Save Contact Info
               </Button>
-            </form>
+            </div>
           </Form>
         </CardContent>
       </Card>
