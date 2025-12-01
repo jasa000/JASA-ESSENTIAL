@@ -60,13 +60,13 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
         )}
         {imageUrl && <div className="absolute inset-0 bg-black/30 rounded-2xl -z-10"></div>}
         <CardHeader className="text-center">
-          <CardTitle className="font-headline text-3xl md:text-4xl text-black dark:text-white" style={{ textShadow: '0 0 2px #000, 0 0 2px #000, 0 0 2px #000' }}>
+          <CardTitle className="font-headline text-3xl md:text-4xl text-black dark:text-white">
             <span className="inline-block h-[45px]">
               {typedText}
               <span className="animate-blink border-r-2 border-black dark:border-white"></span>
             </span>
           </CardTitle>
-          <CardDescription className="text-base text-gray-800 dark:text-gray-200" style={{ textShadow: '0 0 2px #000' }}>Your one-stop destination for all creative and academic needs.</CardDescription>
+          <CardDescription className="text-base text-gray-800 dark:text-gray-200">Your one-stop destination for all creative and academic needs.</CardDescription>
         </CardHeader>
         <CardContent>
         </CardContent>
