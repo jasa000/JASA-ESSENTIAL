@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         
         // Use a promise to wait for the stream to finish writing
         await new Promise((resolve, reject) => {
-            readableStream.pipe(writeStream)
+            Readable.fromWeb(readableStream as any).pipe(writeStream)
                 .on('finish', resolve)
                 .on('error', reject);
         });
@@ -76,7 +76,9 @@ export async function POST(req: NextRequest) {
     } finally {
         // Clean up the temporary file
         try {
-            await fs.promises.unlink(tempFilePath);
+            if (fs.existsSync(tempFilePath)) {
+                await fs.promises.unlink(tempFilePath);
+            }
         } catch (unlinkError) {
             console.error("Failed to delete temporary file:", tempFilePath, unlinkError);
         }
