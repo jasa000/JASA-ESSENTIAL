@@ -3,11 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import formidable from "formidable";
 import fs from "fs";
 import { getDriveClient } from "../../../lib/googleDrive";
+import { tmpdir } from 'os';
 
 // Helper to parse the form data
 const parseForm = (req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> => {
     return new Promise((resolve, reject) => {
-        const form = formidable();
+        const form = formidable({ 
+            uploadDir: tmpdir(), 
+            keepExtensions: true,
+            maxFiles: 1,
+            maxFileSize: 100 * 1024 * 1024, // 100MB
+        });
         form.parse(req as any, (err, fields, files) => {
             if (err) reject(err);
             resolve({ fields, files });
@@ -16,6 +22,8 @@ const parseForm = (req: NextRequest): Promise<{ fields: formidable.Fields; files
 };
 
 export async function POST(req: NextRequest) {
+    let tempFilePath: string | undefined;
+
     try {
         const { files } = await parseForm(req);
         
@@ -24,6 +32,8 @@ export async function POST(req: NextRequest) {
         if (!file) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
         }
+        
+        tempFilePath = file.filepath;
 
         const drive = getDriveClient();
 
@@ -35,7 +45,7 @@ export async function POST(req: NextRequest) {
 
         const media = {
             mimeType: file.mimetype || "application/octet-stream",
-            body: fs.createReadStream(file.filepath),
+            body: fs.createReadStream(tempFilePath),
         };
 
         const uploadResponse = await drive.files.create({
@@ -66,5 +76,12 @@ export async function POST(req: NextRequest) {
     } catch (e: any) {
         console.error(e);
         return NextResponse.json({ error: "Upload failed", details: e.message }, { status: 500 });
+    } finally {
+        // Clean up the temporary file
+        if (tempFilePath) {
+            fs.unlink(tempFilePath, (err) => {
+                if (err) console.error("Failed to delete temporary file:", err);
+            });
+        }
     }
 }
