@@ -46,6 +46,7 @@ export default function Home() {
   const [displayCategories, setDisplayCategories] = React.useState<Category[]>(defaultCategories);
   
   const [emblaApi, setEmblaApi] = React.useState<EmblaCarouselType | null>(null);
+  const [currentSlide, setCurrentSlide] = React.useState(0);
   const [progress, setProgress] = React.useState(0);
   
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -117,30 +118,17 @@ export default function Home() {
     if (!emblaApi) return;
   
     const onSelect = () => {
-      setProgress(0); // Reset progress on slide change
+      setCurrentSlide(emblaApi.selectedScrollSnap());
+      setProgress(0); // Reset progress on manual slide change
     };
-  
-    const onScroll = () => {
-      const scrollProgress = emblaApi.scrollProgress();
-      // We can't directly use scrollProgress for a filling bar on autoplay.
-      // Instead, we will use a timer.
-    };
-  
-    const onAutoplay = () => {
-      setProgress(0);
-      const timer = setInterval(() => {
-        setProgress(p => p + 100 / (AUTOPLAY_DELAY / 100));
-      }, 100);
-      return () => clearInterval(timer);
-    };
-
-    let stopAutoplay: (() => void) | undefined;
   
     const onSettle = () => {
-        if(stopAutoplay) stopAutoplay();
-        stopAutoplay = onAutoplay();
+      // This is triggered after the carousel settles on a new slide.
+      // We restart the progress animation here.
+      setProgress(0); // Ensure it's reset
+       setTimeout(() => setProgress(100), 50); // Start the animation
     };
-
+    
     emblaApi.on("select", onSelect);
     emblaApi.on("settle", onSettle);
     onSettle(); // Initial call
@@ -148,7 +136,6 @@ export default function Home() {
     return () => {
       emblaApi.off("select", onSelect);
       emblaApi.off("settle", onSettle);
-      if(stopAutoplay) stopAutoplay();
     };
   }, [emblaApi]);
 
@@ -357,13 +344,31 @@ export default function Home() {
           </CarouselContent>
         </Carousel>
         {carouselItems.length > 1 && (
-            <div className="container mx-auto px-4 mt-2">
-                <div className="h-1 bg-muted rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-primary rounded-full"
-                        style={{ width: `${progress}%`, transition: progress > 1 ? 'width 0.1s linear' : 'none' }}
-                    ></div>
-                </div>
+            <div className="container mx-auto mt-2 flex justify-center gap-2 px-4">
+                {carouselItems.map((_, index) => {
+                    const isActive = index === currentSlide;
+                    return (
+                        <button
+                            key={index}
+                            className={cn(
+                                "h-2 rounded-full bg-muted transition-all duration-300",
+                                isActive ? "w-6" : "w-2 hover:bg-muted-foreground"
+                            )}
+                            onClick={() => emblaApi?.scrollTo(index)}
+                        >
+                            {isActive && (
+                                <div
+                                    className="h-full rounded-full bg-primary"
+                                    style={{
+                                      width: `${progress}%`,
+                                      transition: progress > 1 ? `width ${AUTOPLAY_DELAY}ms linear` : 'none',
+                                    }}
+                                />
+                            )}
+                            <span className="sr-only">Go to slide {index + 1}</span>
+                        </button>
+                    );
+                })}
             </div>
         )}
       </div>
