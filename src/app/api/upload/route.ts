@@ -1,27 +1,32 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDriveClient } from "@/lib/googleDrive";
-import fs from "fs/promises";
+import fs from "fs";
 import path from "path";
 import os from "os";
+import { Readable } from "stream";
 
 export async function POST(req: NextRequest) {
-    let tempFilePath: string | undefined;
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
+
+    if (!file) {
+        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    }
+
+    const tempFilePath = path.join(os.tmpdir(), file.name);
 
     try {
-        const formData = await req.formData();
-        const file = formData.get("file") as File | null;
-
-        if (!file) {
-            return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-        }
-
-        // Create a temporary file path
-        tempFilePath = path.join(os.tmpdir(), file.name);
-
-        // Write the file to the temporary location
-        const fileBuffer = Buffer.from(await file.arrayBuffer());
-        await fs.writeFile(tempFilePath, fileBuffer);
+        // Stream the file to a temporary location to avoid loading it all into memory
+        const readableStream = file.stream();
+        const writeStream = fs.createWriteStream(tempFilePath);
+        
+        // Use a promise to wait for the stream to finish writing
+        await new Promise((resolve, reject) => {
+            readableStream.pipe(writeStream)
+                .on('finish', resolve)
+                .on('error', reject);
+        });
 
         const drive = getDriveClient();
         const folderId = process.env.GOOGLE_FOLDER_ID || undefined;
@@ -33,13 +38,13 @@ export async function POST(req: NextRequest) {
 
         const media = {
             mimeType: file.type,
-            body: require('fs').createReadStream(tempFilePath),
+            body: fs.createReadStream(tempFilePath),
         };
 
         const uploadResponse = await drive.files.create({
             requestBody: fileMetadata,
             media: media,
-            fields: "id",
+            fields: "id, webViewLink",
         });
 
         const fileId = uploadResponse.data.id;
@@ -70,12 +75,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Upload failed", details: e.message }, { status: 500 });
     } finally {
         // Clean up the temporary file
-        if (tempFilePath) {
-            try {
-                await fs.unlink(tempFilePath);
-            } catch (unlinkError) {
-                console.error("Failed to delete temporary file:", tempFilePath, unlinkError);
-            }
+        try {
+            await fs.promises.unlink(tempFilePath);
+        } catch (unlinkError) {
+            console.error("Failed to delete temporary file:", tempFilePath, unlinkError);
         }
     }
 }
