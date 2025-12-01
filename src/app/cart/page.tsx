@@ -75,6 +75,18 @@ export default function CartPage() {
       }
   }
 
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return; // Prevent quantity from going below 1
+    updateQuantity(productId, newQuantity);
+    if (selectedItems.length > 0) {
+      setSelectedItems([]); // Deselect all items if quantity changes
+      toast({
+        title: "Selection Cleared",
+        description: "Item selection has been cleared due to a quantity change. Please review your order and select items again."
+      });
+    }
+  };
+
   const getCategoryItems = (category: string) => {
     if (category === 'all') return items;
     return items.filter(item => item.product.category === category);
@@ -305,7 +317,8 @@ export default function CartPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-9 w-9"
-                                            onClick={() => updateQuantity(product.id, quantity - 1)}
+                                            onClick={() => handleQuantityChange(product.id, quantity - 1)}
+                                            disabled={quantity <= 1}
                                         >
                                             <Minus className="h-4 w-4" />
                                         </Button>
@@ -315,7 +328,9 @@ export default function CartPage() {
                                             value={quantity}
                                             onChange={(e) => {
                                                 const newQuantity = parseInt(e.target.value, 10);
-                                                updateQuantity(product.id, isNaN(newQuantity) ? 0 : newQuantity);
+                                                if (!isNaN(newQuantity)) {
+                                                    handleQuantityChange(product.id, newQuantity);
+                                                }
                                             }}
                                             className="h-9 w-12 border-0 text-center text-base font-medium focus-visible:ring-0"
                                             aria-label={`Quantity for ${product.name}`}
@@ -324,7 +339,7 @@ export default function CartPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-9 w-9"
-                                            onClick={() => updateQuantity(product.id, quantity + 1)}
+                                            onClick={() => handleQuantityChange(product.id, quantity + 1)}
                                         >
                                             <Plus className="h-4 w-4" />
                                         </Button>
@@ -358,3 +373,5 @@ export default function CartPage() {
     </div>
   );
 }
+
+    
