@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, User, Package, FileText, Phone, Truck, MapPin } from 'lucide-react';
+import { Check, X, User, Package, FileText, Phone, Truck, MapPin, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -52,6 +52,22 @@ const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label
   "Rejected": { icon: X, label: "Rejected" },
 };
 
+const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: number, icon: React.ElementType, loading: boolean }) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <div className="text-2xl font-bold">{value}</div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
 export default function ManageShopOrdersPage() {
   const params = useParams();
   const shopId = params.shopId as string;
@@ -59,7 +75,8 @@ export default function ManageShopOrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const [orders, setOrders] = useState<GroupedOrders>({});
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [groupedOrders, setGroupedOrders] = useState<GroupedOrders>({});
   const [isLoading, setIsLoading] = useState(true);
   const [rejectingOrder, setRejectingOrder] = useState<Order | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -73,6 +90,7 @@ export default function ManageShopOrdersPage() {
         getOrdersBySeller(shopId),
         getAllUsers()
       ]);
+      setOrders(shopOrders);
 
       const usersMap = new Map(allUsers.map(u => [u.uid, u]));
 
@@ -89,7 +107,7 @@ export default function ManageShopOrdersPage() {
         return acc;
       }, {} as GroupedOrders);
 
-      setOrders(grouped);
+      setGroupedOrders(grouped);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
@@ -151,9 +169,9 @@ export default function ManageShopOrdersPage() {
     const active: GroupedOrders = {};
     const completed: GroupedOrders = {};
 
-    Object.entries(orders).forEach(([userId, group]) => {
+    Object.entries(groupedOrders).forEach(([userId, group]) => {
       const pendingOrders = group.orders.filter(o => o.status === 'Pending Confirmation');
-      const activeOrders = group.orders.filter(o => o.status !== 'Pending Confirmation' && o.status !== 'Delivered' && o.status !== 'Cancelled' && o.status !== 'Rejected');
+      const activeOrders = group.orders.filter(o => ['Processing', 'Packed', 'Shipped', 'Out for Delivery'].includes(o.status));
       const completedOrders = group.orders.filter(o => ['Delivered', 'Cancelled', 'Rejected'].includes(o.status));
       
       if (pendingOrders.length > 0) {
@@ -167,10 +185,19 @@ export default function ManageShopOrdersPage() {
       }
     });
     return { pending, active, completed };
+  }, [groupedOrders]);
+
+  const orderStats = useMemo(() => {
+    return {
+        pending: orders.filter(o => o.status === 'Pending Confirmation').length,
+        completed: orders.filter(o => o.status === 'Delivered').length,
+        sellerRejected: orders.filter(o => o.status === 'Rejected').length,
+        userCancelled: orders.filter(o => o.status === 'Cancelled').length
+    };
   }, [orders]);
 
 
-  const renderOrderList = (groupedOrders: GroupedOrders, listType: 'pending' | 'active' | 'completed') => {
+  const renderOrderList = (filteredGroupedOrders: GroupedOrders, listType: 'pending' | 'active' | 'completed') => {
     if (isLoading) {
       return (
          <div className="mt-8 space-y-6">
@@ -180,15 +207,15 @@ export default function ManageShopOrdersPage() {
       );
     }
 
-    const orderGroups = Object.values(groupedOrders);
+    const orderGroups = Object.values(filteredGroupedOrders);
 
     if (orderGroups.length === 0) {
       return (
         <Card className="mt-8 text-center py-12">
             <CardHeader>
                 <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-                <CardTitle>No {listType} Orders</CardTitle>
-                <CardDescription>There are no new orders to process at this time.</CardDescription>
+                <CardTitle>No orders in this category</CardTitle>
+                <CardDescription>There are currently no orders with this status.</CardDescription>
             </CardHeader>
         </Card>
       );
@@ -318,11 +345,18 @@ export default function ManageShopOrdersPage() {
         Review and process incoming orders for your shop.
       </p>
 
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Pending Confirmation" value={orderStats.pending} icon={Clock} loading={isLoading} />
+            <StatCard title="Orders Completed" value={orderStats.completed} icon={CheckCircle} loading={isLoading} />
+            <StatCard title="Rejected by You" value={orderStats.sellerRejected} icon={AlertTriangle} loading={isLoading} />
+            <StatCard title="Cancelled by User" value={orderStats.userCancelled} icon={X} loading={isLoading} />
+        </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
         <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="pending">Pending ({Object.values(ordersByStatus.pending).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
             <TabsTrigger value="active">Active ({Object.values(ordersByStatus.active).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
-            <TabsTrigger value="completed">Completed ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+            <TabsTrigger value="completed">History ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
         </TabsList>
         <TabsContent value="pending">
           {renderOrderList(ordersByStatus.pending, 'pending')}
@@ -338,3 +372,5 @@ export default function ManageShopOrdersPage() {
     </>
   );
 }
+
+    
