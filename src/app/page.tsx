@@ -28,9 +28,10 @@ import { useDebounce } from "@/hooks/use-debounce";
 
 
 export default function Home() {
+  const AUTOPLAY_DELAY = 5000;
   const plugin = React.useRef(
     Autoplay({ 
-      delay: 5000, 
+      delay: AUTOPLAY_DELAY, 
       stopOnInteraction: false,
       stopOnLastSnap: false,
     })
@@ -45,8 +46,7 @@ export default function Home() {
   const [displayCategories, setDisplayCategories] = React.useState<Category[]>(defaultCategories);
   
   const [emblaApi, setEmblaApi] = React.useState<EmblaCarouselType | null>(null);
-  const [currentSlide, setCurrentSlide] = React.useState(0);
-  const [scrollSnaps, setScrollSnaps] = React.useState<number[]>([]);
+  const [progress, setProgress] = React.useState(0);
   
   const [searchQuery, setSearchQuery] = React.useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -112,26 +112,44 @@ export default function Home() {
       setIsSearchOpen(false);
     }
   }, [debouncedSearchQuery, allProducts]);
-
+  
   React.useEffect(() => {
     if (!emblaApi) return;
-    
-    const onSelect = (api: EmblaCarouselType) => {
-      setCurrentSlide(api.selectedScrollSnap());
+  
+    const onSelect = () => {
+      setProgress(0); // Reset progress on slide change
+    };
+  
+    const onScroll = () => {
+      const scrollProgress = emblaApi.scrollProgress();
+      // We can't directly use scrollProgress for a filling bar on autoplay.
+      // Instead, we will use a timer.
+    };
+  
+    const onAutoplay = () => {
+      setProgress(0);
+      const timer = setInterval(() => {
+        setProgress(p => p + 100 / (AUTOPLAY_DELAY / 100));
+      }, 100);
+      return () => clearInterval(timer);
     };
 
-    const onInit = (api: EmblaCarouselType) => {
-      setScrollSnaps(api.scrollSnapList());
-    }
+    let stopAutoplay: (() => void) | undefined;
+  
+    const onSettle = () => {
+        if(stopAutoplay) stopAutoplay();
+        stopAutoplay = onAutoplay();
+    };
 
-    onInit(emblaApi);
     emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onInit);
-
+    emblaApi.on("settle", onSettle);
+    onSettle(); // Initial call
+  
     return () => {
-        emblaApi.off("select", onSelect);
-        emblaApi.off("reInit", onInit);
-    }
+      emblaApi.off("select", onSelect);
+      emblaApi.off("settle", onSettle);
+      if(stopAutoplay) stopAutoplay();
+    };
   }, [emblaApi]);
 
   const isWelcomeVisible = homepageContent?.isWelcomeVisible ?? true;
@@ -300,10 +318,11 @@ export default function Home() {
                     </div>
                  </CarouselItem>
             ) : carouselItems.map((item, index) => {
+              const cardHeight = "h-64 md:h-80 lg:h-[23rem]";
               if (item.type === 'welcome') {
                 return (
                   <CarouselItem key="welcome" className="pl-4">
-                    <WelcomeCard imageUrl={homepageContent?.welcomeImageUrl} />
+                    <WelcomeCard imageUrl={homepageContent?.welcomeImageUrl} className={cardHeight}/>
                   </CarouselItem>
                 );
               }
@@ -317,6 +336,7 @@ export default function Home() {
                       cta={banner.cta}
                       imageSrc={banner.imageUrl}
                       imageAlt={banner.title}
+                      className={cardHeight}
                     />
                   </CarouselItem>
                 );
@@ -336,21 +356,14 @@ export default function Home() {
             }
           </CarouselContent>
         </Carousel>
-        {scrollSnaps.length > 1 && (
-            <div className="mt-4 flex justify-center">
-              <div className="bg-background/50 backdrop-blur-sm p-1 rounded-full flex items-center gap-1.5 shadow-md">
-                {scrollSnaps.map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => emblaApi?.scrollTo(index)}
-                        className={cn(
-                            "h-2 w-2 rounded-full transition-all duration-300",
-                            currentSlide === index ? "w-4 bg-primary" : "bg-muted-foreground/50 hover:bg-muted-foreground"
-                        )}
-                        aria-label={`Go to slide ${index + 1}`}
-                    />
-                ))}
-              </div>
+        {carouselItems.length > 1 && (
+            <div className="container mx-auto px-4 mt-2">
+                <div className="h-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-primary rounded-full"
+                        style={{ width: `${progress}%`, transition: progress > 1 ? 'width 0.1s linear' : 'none' }}
+                    ></div>
+                </div>
             </div>
         )}
       </div>
@@ -394,5 +407,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

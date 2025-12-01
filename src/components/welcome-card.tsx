@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 
 type WelcomeCardProps = {
     imageUrl?: string;
+    className?: string;
 }
 
-export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
+export default function WelcomeCard({ imageUrl, className }: WelcomeCardProps) {
   const [typedText, setTypedText] = useState("");
   const fullText = "Welcome to Jasa Essentials";
 
@@ -47,8 +48,9 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
         <div className="absolute inset-0 bg-gradient-to-br from-sky-300 via-sky-100 to-white dark:from-sky-800 dark:via-sky-900 dark:to-black"></div>
       )}
       <Card className={cn(
-        "relative z-10 w-full h-64 md:h-80 lg:h-[23rem] flex flex-col justify-center rounded-2xl",
-        imageUrl ? "bg-transparent" : "bg-transparent border-0"
+        "relative z-10 w-full flex flex-col justify-center rounded-2xl",
+        imageUrl ? "bg-transparent" : "bg-transparent border-0",
+        className
       )}>
         {imageUrl && (
             <Image 

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type BannerCardProps = {
   href: string;
@@ -11,12 +12,13 @@ type BannerCardProps = {
   cta: string;
   imageSrc: string;
   imageAlt: string;
+  className?: string;
 };
 
-export default function BannerCard({ href, title, cta, imageSrc, imageAlt }: BannerCardProps) {
+export default function BannerCard({ href, title, cta, imageSrc, imageAlt, className }: BannerCardProps) {
   return (
     <div className="relative w-full overflow-hidden">
-        <Card className="relative h-64 w-full overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-xl md:h-80 lg:h-[23rem]">
+        <Card className={cn("relative w-full overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-xl", className)}>
         <Link href={href} className="absolute inset-0 z-10">
             <span className="sr-only">{title}</span>
         </Link>
