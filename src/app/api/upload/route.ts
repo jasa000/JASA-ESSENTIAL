@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import formidable from "formidable";
+import formidable, { File } from "formidable";
 import fs from "fs";
 import { getDriveClient } from "@/lib/googleDrive";
 
@@ -11,19 +11,30 @@ export const config = {
     },
 };
 
+// Helper function to parse the form data from a NextRequest
 const parseForm = async (req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> => {
-    return new Promise((resolve, reject) => {
-        // The 'req' object in App Router is not a standard IncomingMessage, so we pass it as 'any'
-        // formidable is equipped to handle this and parse the multipart data.
-        formidable({}).parse(req as any, (err, fields, files) => {
+    return new Promise(async (resolve, reject) => {
+        const chunks: any[] = [];
+        const reader = req.body!.getReader();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+        }
+
+        const buffer = Buffer.concat(chunks);
+        const form = formidable({});
+
+        form.parse(buffer, (err, fields, files) => {
             if (err) {
-                console.error('[API/UPLOAD] Formidable parsing error:', err);
                 return reject(err);
             }
             resolve({ fields, files });
         });
     });
 };
+
 
 export async function POST(req: NextRequest) {
     let tempFilePath: string | undefined;
