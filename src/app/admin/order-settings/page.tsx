@@ -41,6 +41,16 @@ const settingsSchema = z.object({
   xeroxDeliveryCharge: z.coerce.number().min(0, "Must be a positive number."),
 });
 
+const defaultSettings = {
+  itemChargeTier1: 0,
+  itemChargeTier2: 0,
+  itemChargeTier3: 0,
+  itemChargeTier4: 0,
+  minItemOrderForFreeDelivery: 0,
+  minXeroxOrderPrice: 0,
+  xeroxDeliveryCharge: 0,
+};
+
 export default function OrderSettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -50,15 +60,7 @@ export default function OrderSettingsPage() {
 
   const form = useForm<z.infer<typeof settingsSchema>>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      itemChargeTier1: 0,
-      itemChargeTier2: 0,
-      itemChargeTier3: 0,
-      itemChargeTier4: 0,
-      minItemOrderForFreeDelivery: 0,
-      minXeroxOrderPrice: 0,
-      xeroxDeliveryCharge: 0,
-    },
+    defaultValues: defaultSettings,
   });
 
   useEffect(() => {
@@ -80,7 +82,9 @@ export default function OrderSettingsPage() {
     setIsLoading(true);
     try {
       const settings = await getOrderSettings();
-      form.reset(settings);
+      // Ensure all fields are defined before resetting the form
+      const fullSettings = { ...defaultSettings, ...settings };
+      form.reset(fullSettings);
     } catch (error: any) {
       toast({
         variant: "destructive",
