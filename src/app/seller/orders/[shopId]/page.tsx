@@ -188,8 +188,9 @@ export default function ManageShopOrdersPage() {
   }, [groupedOrders]);
 
   const orderStats = useMemo(() => {
+    const activeStatuses = ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery"];
     return {
-        pending: orders.filter(o => o.status === 'Pending Confirmation').length,
+        active: orders.filter(o => activeStatuses.includes(o.status)).length,
         completed: orders.filter(o => o.status === 'Delivered').length,
         sellerRejected: orders.filter(o => o.status === 'Rejected').length,
         userCancelled: orders.filter(o => o.status === 'Cancelled').length
@@ -349,7 +350,7 @@ export default function ManageShopOrdersPage() {
       
       <div className="sticky top-[80px] z-40 bg-background py-2 space-y-2">
         <div className="flex gap-2">
-            <StatCard title="Pending" value={orderStats.pending} icon={Clock} loading={isLoading} />
+            <StatCard title="Active" value={orderStats.active} icon={Clock} loading={isLoading} />
             <StatCard title="Completed" value={orderStats.completed} icon={CheckCircle} loading={isLoading} />
             <StatCard title="Rejected" value={orderStats.sellerRejected} icon={AlertTriangle} loading={isLoading} />
             <StatCard title="Cancelled" value={orderStats.userCancelled} icon={X} loading={isLoading} />
