@@ -44,7 +44,7 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
   return (
     <div className="relative w-full overflow-hidden">
       {!imageUrl && (
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 dark:from-blue-700 dark:via-blue-800 dark:to-blue-900"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-300 via-sky-100 to-white dark:from-sky-800 dark:via-sky-900 dark:to-black"></div>
       )}
       <Card className={cn(
         "relative z-10 w-full h-64 md:h-80 lg:h-[23rem] flex flex-col justify-center rounded-2xl",
@@ -58,16 +58,15 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
                 className="object-cover rounded-2xl -z-10"
             />
         )}
-         {/* Overlay for when image is present to ensure text readability */}
         {imageUrl && <div className="absolute inset-0 bg-black/30 rounded-2xl -z-10"></div>}
         <CardHeader className="text-center">
-          <CardTitle className="font-headline text-3xl md:text-4xl text-white drop-shadow-lg">
+          <CardTitle className="font-headline text-3xl md:text-4xl text-black dark:text-white" style={{ textShadow: '0 0 2px #000, 0 0 2px #000, 0 0 2px #000' }}>
             <span className="inline-block h-[45px]">
               {typedText}
-              <span className="animate-blink border-r-2 border-white"></span>
+              <span className="animate-blink border-r-2 border-black dark:border-white"></span>
             </span>
           </CardTitle>
-          <CardDescription className="text-base text-white/90 drop-shadow-md">Your one-stop destination for all creative and academic needs.</CardDescription>
+          <CardDescription className="text-base text-gray-800 dark:text-gray-200" style={{ textShadow: '0 0 2px #000' }}>Your one-stop destination for all creative and academic needs.</CardDescription>
         </CardHeader>
         <CardContent>
         </CardContent>
