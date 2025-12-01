@@ -158,7 +158,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           });
 
           const mergedItems = Array.from(mergedCartMap.values());
-          dispatch({ type: 'SET_STATE', payload: { items: mergedItems, selectedItems: [] } });
+          // By default, select all items in the cart
+          const allItemIds = mergedItems.map(item => item.product.id);
+          dispatch({ type: 'SET_STATE', payload: { items: mergedItems, selectedItems: allItemIds } });
           saveCartToDb(mergedItems);
           localStorage.removeItem('cart'); // Clear old local cart after merging into DB
         } else {
@@ -173,7 +175,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           const product = productMap.get(item.product.id);
           return product ? { product, quantity: item.quantity } : null;
         }).filter((item): item is CartItem => item !== null) : [];
-        dispatch({ type: 'SET_STATE', payload: { items: validatedLocalCart, selectedItems: [] } });
+         // By default, select all items in the cart
+        const allItemIds = validatedLocalCart.map(item => item.product.id);
+        dispatch({ type: 'SET_STATE', payload: { items: validatedLocalCart, selectedItems: allItemIds } });
       }
       setIsInitialized(true);
     };
