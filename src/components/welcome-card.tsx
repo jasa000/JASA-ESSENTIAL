@@ -44,11 +44,11 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
   return (
     <div className="relative w-full overflow-hidden">
       {!imageUrl && (
-        <div className="absolute inset-0 bg-gradient-to-r from-sky-100 via-teal-100 to-sky-100 dark:from-sky-900/50 dark:via-teal-900/50 dark:to-sky-900/50"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 dark:from-blue-700 dark:via-blue-800 dark:to-blue-900"></div>
       )}
       <Card className={cn(
         "relative z-10 w-full h-64 md:h-80 lg:h-[23rem] flex flex-col justify-center rounded-2xl",
-        imageUrl ? "bg-transparent" : "bg-background/80 backdrop-blur-sm dark:bg-background/60"
+        imageUrl ? "bg-transparent" : "bg-transparent border-0"
       )}>
         {imageUrl && (
             <Image 
@@ -58,6 +58,8 @@ export default function WelcomeCard({ imageUrl }: WelcomeCardProps) {
                 className="object-cover rounded-2xl -z-10"
             />
         )}
+         {/* Overlay for when image is present to ensure text readability */}
+        {imageUrl && <div className="absolute inset-0 bg-black/30 rounded-2xl -z-10"></div>}
         <CardHeader className="text-center">
           <CardTitle className="font-headline text-3xl md:text-4xl text-white drop-shadow-lg">
             <span className="inline-block h-[45px]">
