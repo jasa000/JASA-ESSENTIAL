@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import OrderTracker from '@/components/order-tracker';
+import { Badge } from '@/components/ui/badge';
 
 type GroupedOrders = {
   [userId: string]: {
@@ -38,6 +39,17 @@ const NEXT_STATUS: Record<string, OrderStatus> = {
   "Packed": "Shipped",
   "Shipped": "Out for Delivery",
   "Out for Delivery": "Delivered",
+};
+
+const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string } } = {
+  "Pending Confirmation": { icon: Phone, label: "Pending" },
+  "Processing": { icon: Package, label: "Processing" },
+  "Packed": { icon: Package, label: "Packed" },
+  "Shipped": { icon: Truck, label: "Shipped" },
+  "Out for Delivery": { icon: Truck, label: "Out for Delivery" },
+  "Delivered": { icon: Check, label: "Delivered" },
+  "Cancelled": { icon: X, label: "Cancelled" },
+  "Rejected": { icon: X, label: "Rejected" },
 };
 
 export default function ManageShopOrdersPage() {
@@ -137,10 +149,12 @@ export default function ManageShopOrdersPage() {
   const ordersByStatus = useMemo(() => {
     const pending: GroupedOrders = {};
     const active: GroupedOrders = {};
+    const completed: GroupedOrders = {};
 
     Object.entries(orders).forEach(([userId, group]) => {
       const pendingOrders = group.orders.filter(o => o.status === 'Pending Confirmation');
       const activeOrders = group.orders.filter(o => o.status !== 'Pending Confirmation' && o.status !== 'Delivered' && o.status !== 'Cancelled' && o.status !== 'Rejected');
+      const completedOrders = group.orders.filter(o => ['Delivered', 'Cancelled', 'Rejected'].includes(o.status));
       
       if (pendingOrders.length > 0) {
         pending[userId] = { user: group.user, orders: pendingOrders };
@@ -148,12 +162,15 @@ export default function ManageShopOrdersPage() {
       if (activeOrders.length > 0) {
         active[userId] = { user: group.user, orders: activeOrders };
       }
+      if (completedOrders.length > 0) {
+        completed[userId] = { user: group.user, orders: completedOrders };
+      }
     });
-    return { pending, active };
+    return { pending, active, completed };
   }, [orders]);
 
 
-  const renderOrderList = (groupedOrders: GroupedOrders, isPendingList: boolean) => {
+  const renderOrderList = (groupedOrders: GroupedOrders, listType: 'pending' | 'active' | 'completed') => {
     if (isLoading) {
       return (
          <div className="mt-8 space-y-6">
@@ -170,7 +187,7 @@ export default function ManageShopOrdersPage() {
         <Card className="mt-8 text-center py-12">
             <CardHeader>
                 <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-                <CardTitle>No {isPendingList ? 'Pending' : 'Active'} Orders</CardTitle>
+                <CardTitle>No {listType} Orders</CardTitle>
                 <CardDescription>There are no new orders to process at this time.</CardDescription>
             </CardHeader>
         </Card>
@@ -195,9 +212,11 @@ export default function ManageShopOrdersPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                {orders.map(order => (
+                {orders.map(order => {
+                  const StatusIcon = statusConfig[order.status]?.icon || Package;
+                  return (
                     <div key={order.id} className="p-4 border rounded-lg flex flex-col gap-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                           <div className="flex gap-4">
                               <div className="relative h-16 w-16 flex-shrink-0 bg-muted rounded-md overflow-hidden">
                                   {order.productImage ? (
@@ -212,34 +231,42 @@ export default function ManageShopOrdersPage() {
                                   <p className="text-sm text-muted-foreground">Total: Rs {(order.price * order.quantity).toFixed(2)}</p>
                               </div>
                           </div>
-                          {isPendingList && (
-                            <div className="flex gap-2 self-end md:self-center">
-                                <Button size="sm" onClick={() => handleConfirmOrder(order.id)}>
-                                    <Check className="mr-2 h-4 w-4"/> Confirm
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => setRejectingOrder(order)}>
-                                    <X className="mr-2 h-4 w-4"/> Reject
-                                </Button>
-                            </div>
-                          )}
+                           <div className="flex flex-col items-end gap-2 self-end md:self-start">
+                             <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2">
+                                <StatusIcon className="h-4 w-4" />
+                                {order.status}
+                             </Badge>
+                             {listType === 'pending' && (
+                                <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => handleConfirmOrder(order.id)}>
+                                        <Check className="mr-2 h-4 w-4"/> Confirm
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => setRejectingOrder(order)}>
+                                        <X className="mr-2 h-4 w-4"/> Reject
+                                    </Button>
+                                </div>
+                              )}
+                          </div>
                         </div>
-                        {!isPendingList && (
+                        {listType !== 'pending' && (
                           <>
                            <Separator />
                            <OrderTracker trackingInfo={order.tracking} />
-                           <CardFooter>
-                              <Button 
-                                className="w-full" 
-                                onClick={() => handleUpdateStatus(order)} 
-                                disabled={!NEXT_STATUS[order.status]}
-                              >
-                                {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Order Complete"}
-                              </Button>
-                           </CardFooter>
+                           {listType === 'active' && (
+                            <CardFooter className="p-0">
+                                <Button 
+                                  className="w-full" 
+                                  onClick={() => handleUpdateStatus(order)} 
+                                  disabled={!NEXT_STATUS[order.status]}
+                                >
+                                  {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Order Complete"}
+                                </Button>
+                            </CardFooter>
+                           )}
                           </>
                         )}
                     </div>
-                ))}
+                )})}
               </CardContent>
             </Card>
           ))}
@@ -279,15 +306,19 @@ export default function ManageShopOrdersPage() {
       </p>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="pending">Pending Confirmation ({Object.values(ordersByStatus.pending).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
-            <TabsTrigger value="active">Active Orders ({Object.values(ordersByStatus.active).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="pending">Pending ({Object.values(ordersByStatus.pending).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+            <TabsTrigger value="active">Active ({Object.values(ordersByStatus.active).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+            <TabsTrigger value="completed">Completed ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
         </TabsList>
         <TabsContent value="pending">
-          {renderOrderList(ordersByStatus.pending, true)}
+          {renderOrderList(ordersByStatus.pending, 'pending')}
         </TabsContent>
         <TabsContent value="active">
-          {renderOrderList(ordersByStatus.active, false)}
+          {renderOrderList(ordersByStatus.active, 'active')}
+        </TabsContent>
+        <TabsContent value="completed">
+          {renderOrderList(ordersByStatus.completed, 'completed')}
         </TabsContent>
       </Tabs>
     </div>
