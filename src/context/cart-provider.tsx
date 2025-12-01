@@ -53,13 +53,14 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           selectedItems: newSelectedItems,
         };
       }
+      const updatedItems = state.items.map((item) =>
+        item.product.id === action.payload.id
+          ? { ...item, quantity: action.payload.quantity }
+          : item
+      );
       return {
         ...state,
-        items: state.items.map((item) =>
-          item.product.id === action.payload.id
-            ? { ...item, quantity: action.payload.quantity }
-            : item
-        ),
+        items: updatedItems,
       };
     }
     case 'SET_STATE': {
