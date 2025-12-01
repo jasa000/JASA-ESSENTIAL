@@ -123,7 +123,7 @@ export type OrderStatus =
   | "Processing" 
   | "Packed"
   | "Shipped" 
-  | "Out for Delivery"
+  | "Out for Delivery" 
   | "Delivered" 
   | "Cancelled" 
   | "Rejected";
@@ -147,6 +147,7 @@ export type Order = {
   productImage: string | null;
   quantity: number;
   price: number; // Price per item at time of order
+  deliveryCharge: number; // Delivery charge applied to this specific item
   shippingAddress: Address;
   mobile: string;
   altMobiles?: { value: string }[];
@@ -222,8 +223,11 @@ export type XeroxOption = {
 };
 
 export type OrderSettings = {
-  minItemOrderPrice: number;
-  itemDeliveryCharge: number;
+  itemChargeTier1: number; // 1-5 items
+  itemChargeTier2: number; // 6-10 items
+  itemChargeTier3: number; // 11-15 items
+  itemChargeTier4: number; // 16+ items
+  minItemOrderForFreeDelivery: number; // New field for overall free delivery threshold
   minXeroxOrderPrice: number;
   xeroxDeliveryCharge: number;
 };

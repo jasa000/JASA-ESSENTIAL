@@ -254,6 +254,7 @@ export default function ManageShopOrdersPage() {
                 <CardContent className="p-4 space-y-4">
                   {orders.map(order => {
                     const StatusIcon = statusConfig[order.status]?.icon || Package;
+                    const totalItemPrice = (order.price + order.deliveryCharge) * order.quantity;
                     return (
                       <div key={order.id} className="p-4 border rounded-lg flex flex-col gap-4">
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -268,7 +269,9 @@ export default function ManageShopOrdersPage() {
                                 <div>
                                     <p className="font-semibold">{order.productName}</p>
                                     <p className="text-sm text-muted-foreground">Quantity: {order.quantity}</p>
-                                    <p className="text-sm text-muted-foreground">Total: Rs {(order.price * order.quantity).toFixed(2)}</p>
+                                    <p className="text-sm text-muted-foreground">Price: Rs {order.price.toFixed(2)}</p>
+                                    {order.deliveryCharge > 0 && <p className="text-sm text-muted-foreground">Delivery: Rs {order.deliveryCharge.toFixed(2)}</p>}
+                                    <p className="text-sm font-semibold">Total: Rs {totalItemPrice.toFixed(2)}</p>
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-2 self-end md:self-start">

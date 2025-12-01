@@ -450,8 +450,11 @@ export const getOrderSettings = async (): Promise<OrderSettings> => {
     }
     // Return default values if not set
     return {
-      minItemOrderPrice: 0,
-      itemDeliveryCharge: 0,
+      itemChargeTier1: 0,
+      itemChargeTier2: 0,
+      itemChargeTier3: 0,
+      itemChargeTier4: 0,
+      minItemOrderForFreeDelivery: 0,
       minXeroxOrderPrice: 0,
       xeroxDeliveryCharge: 0,
     };
@@ -461,7 +464,7 @@ export const getOrderSettings = async (): Promise<OrderSettings> => {
   }
 };
 
-export const updateOrderSettings = async (settings: OrderSettings): Promise<void> => {
+export const updateOrderSettings = async (settings: Partial<OrderSettings>): Promise<void> => {
   try {
     const docRef = doc(orderSettingsCollection, 'config');
     await setDoc(docRef, settings, { merge: true });

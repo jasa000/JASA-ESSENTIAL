@@ -153,26 +153,28 @@ export default function CartPage() {
         </Card>
     );
 
-    const { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings } = (() => {
+    const { total, itemsSubtotal, deliveryFee, savings } = (() => {
         const itemsGroup = selectedCartItems.filter(item => ['stationary', 'books', 'electronics'].includes(item.product.category));
-        const xeroxGroup = selectedCartItems.filter(item => item.product.category === 'xerox');
-
+        
         const itemsSubtotal = itemsGroup.reduce((acc, item) => acc + (item.product.discountPrice ?? item.product.price) * item.quantity, 0);
-        const xeroxSubtotal = xeroxGroup.reduce((acc, item) => acc + (item.product.discountPrice ?? item.product.price) * item.quantity, 0);
+        const totalItemCount = itemsGroup.reduce((acc, item) => acc + item.quantity, 0);
         
         const originalTotal = selectedCartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-        const savings = originalTotal - (itemsSubtotal + xeroxSubtotal);
+        const currentSubtotal = itemsSubtotal;
+        const savings = originalTotal - currentSubtotal;
 
-        let itemDeliveryCharge = 0;
-        if (orderSettings && itemsSubtotal > 0 && itemsSubtotal < orderSettings.minItemOrderPrice) {
-            itemDeliveryCharge = orderSettings.itemDeliveryCharge;
+        let deliveryFee = 0;
+        if (orderSettings && totalItemCount > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery) {
+            let chargePerItem = 0;
+            if (totalItemCount <= 5) chargePerItem = orderSettings.itemChargeTier1;
+            else if (totalItemCount <= 10) chargePerItem = orderSettings.itemChargeTier2;
+            else if (totalItemCount <= 15) chargePerItem = orderSettings.itemChargeTier3;
+            else chargePerItem = orderSettings.itemChargeTier4;
+            deliveryFee = chargePerItem * totalItemCount;
         }
 
-        let xeroxDeliveryCharge = 0;
-        // Xerox settings would be handled here if applicable
-        
-        const total = itemsSubtotal + xeroxSubtotal + itemDeliveryCharge + xeroxDeliveryCharge;
-        return { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings };
+        const total = itemsSubtotal + deliveryFee;
+        return { total, itemsSubtotal, deliveryFee, savings };
     })();
 
     return (
@@ -193,9 +195,9 @@ export default function CartPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Subtotal ({selectedCartItems.length} items)</span>
-              <span>Rs {(itemsSubtotal + xeroxSubtotal).toFixed(2)}</span>
+              <span>Rs {itemsSubtotal.toFixed(2)}</span>
             </div>
-            {itemDeliveryCharge > 0 && <div className="flex justify-between text-destructive"><span>Item Delivery</span><span>Rs {itemDeliveryCharge.toFixed(2)}</span></div>}
+            {deliveryFee > 0 && <div className="flex justify-between text-destructive"><span>Delivery Fee</span><span>Rs {deliveryFee.toFixed(2)}</span></div>}
             {savings > 0 && <div className="flex justify-between text-green-600"><span>You Save</span><span>Rs {savings.toFixed(2)}</span></div>}
           </div>
           <Separator />
@@ -204,12 +206,12 @@ export default function CartPage() {
             <span>Rs {total.toFixed(2)}</span>
           </div>
 
-          {itemDeliveryCharge > 0 && orderSettings && (
+          {orderSettings && itemsSubtotal > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery && (
              <Alert>
                 <Info className="h-4 w-4" />
                 <AlertTitle>Almost there!</AlertTitle>
                 <AlertDescription>
-                    Add items worth Rs {(orderSettings.minItemOrderPrice - itemsSubtotal).toFixed(2)} more for FREE delivery.
+                    Add items worth Rs {(orderSettings.minItemOrderForFreeDelivery - itemsSubtotal).toFixed(2)} more for FREE delivery.
                 </AlertDescription>
             </Alert>
           )}

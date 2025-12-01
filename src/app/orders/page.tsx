@@ -47,7 +47,10 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
   const { toast } = useToast();
   const StatusIcon = statusConfig[order.status]?.icon || Package;
   const itemPrice = order.price || 0;
+  const deliveryCharge = order.deliveryCharge || 0;
+  const totalItemPrice = itemPrice + deliveryCharge;
   const itemQuantity = order.quantity || 1;
+  const totalOrderPrice = totalItemPrice * itemQuantity;
 
   return (
     <Card className="overflow-hidden">
@@ -82,7 +85,8 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
             <div className="space-y-2 text-sm">
                 <p><span className="font-medium">Quantity:</span> {itemQuantity}</p>
                 <p><span className="font-medium">Price per item:</span> Rs {itemPrice.toFixed(2)}</p>
-                <p className="font-bold"><span className="font-medium">Total:</span> Rs {(itemPrice * itemQuantity).toFixed(2)}</p>
+                {deliveryCharge > 0 && <p><span className="font-medium text-destructive">Delivery Fee:</span> Rs {deliveryCharge.toFixed(2)} per item</p>}
+                <p className="font-bold"><span className="font-medium">Total:</span> Rs {totalOrderPrice.toFixed(2)}</p>
             </div>
         </div>
 

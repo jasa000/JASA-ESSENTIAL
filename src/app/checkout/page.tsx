@@ -135,30 +135,27 @@ export default function CheckoutPage() {
 
   const selectedSellers = checkoutForm.watch();
 
-  const { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings } = useMemo(() => {
-    const itemsSubtotal = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
-        .reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
-    const xeroxSubtotal = itemsByCategory.xerox?.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0) || 0;
-    
-    const originalItemsTotal = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
-        .reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-    const originalXeroxTotal = itemsByCategory.xerox?.reduce((acc, item) => acc + item.product.price * item.quantity, 0) || 0;
+  const { total, itemsSubtotal, deliveryFee, savings } = useMemo(() => {
+    const itemsGroup = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
+    const itemsSubtotal = itemsGroup.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
+    const totalItemCount = itemsGroup.reduce((acc, item) => acc + item.quantity, 0);
 
-    let itemDeliveryCharge = 0;
-    if (orderSettings && itemsSubtotal > 0 && itemsSubtotal < orderSettings.minItemOrderPrice) {
-        itemDeliveryCharge = orderSettings.itemDeliveryCharge;
+    const originalItemsTotal = itemsGroup.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    
+    let deliveryFee = 0;
+    if (orderSettings && totalItemCount > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery) {
+        let chargePerItem = 0;
+        if (totalItemCount <= 5) chargePerItem = orderSettings.itemChargeTier1;
+        else if (totalItemCount <= 10) chargePerItem = orderSettings.itemChargeTier2;
+        else if (totalItemCount <= 15) chargePerItem = orderSettings.itemChargeTier3;
+        else chargePerItem = orderSettings.itemChargeTier4;
+        deliveryFee = chargePerItem * totalItemCount;
     }
     
-    let xeroxDeliveryCharge = 0;
-    if (orderSettings && xeroxSubtotal > 0 && xeroxSubtotal < orderSettings.minXeroxOrderPrice) {
-        xeroxDeliveryCharge = orderSettings.xeroxDeliveryCharge;
-    }
+    const total = itemsSubtotal + deliveryFee;
+    const savings = originalItemsTotal - itemsSubtotal;
 
-    const currentSubtotal = itemsSubtotal + xeroxSubtotal;
-    const total = currentSubtotal + itemDeliveryCharge + xeroxDeliveryCharge;
-    const savings = (originalItemsTotal + originalXeroxTotal) - currentSubtotal;
-
-    return { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings };
+    return { total, itemsSubtotal, deliveryFee, savings };
   }, [itemsByCategory, orderSettings]);
 
   async function onAddressSubmit(values: z.infer<typeof addressSchema>) {
@@ -176,12 +173,24 @@ export default function CheckoutPage() {
 
   async function handlePlaceOrder(mobileData: z.infer<typeof mobileSchema>) {
     const values = checkoutForm.getValues();
-    if (!user || !user.addresses) return;
+    if (!user || !user.addresses || !orderSettings) return;
     
     const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
     const shippingAddress = user.addresses[addressIndex];
     
     const orderCreationPromises = [];
+
+    const itemsGroup = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || []);
+    const totalItemCount = itemsGroup.reduce((acc, item) => acc + item.quantity, 0);
+
+    let chargePerItem = 0;
+    if (totalItemCount > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery) {
+        if (totalItemCount <= 5) chargePerItem = orderSettings.itemChargeTier1;
+        else if (totalItemCount <= 10) chargePerItem = orderSettings.itemChargeTier2;
+        else if (totalItemCount <= 15) chargePerItem = orderSettings.itemChargeTier3;
+        else chargePerItem = orderSettings.itemChargeTier4;
+    }
+    const deliveryChargePerItem = totalItemCount > 0 ? (chargePerItem * totalItemCount) / totalItemCount : 0;
 
     for (const category of presentCategories) {
         const sellerId = values[category as keyof typeof values];
@@ -201,6 +210,7 @@ export default function CheckoutPage() {
                     productImage: cartItem.product.imageNames?.[0] || null,
                     quantity: cartItem.quantity,
                     price: cartItem.product.discountPrice ?? cartItem.product.price,
+                    deliveryCharge: deliveryChargePerItem,
                     sellerId: sellerId,
                     shippingAddress: shippingAddress,
                     mobile: mobileData.mobile,
@@ -371,7 +381,7 @@ export default function CheckoutPage() {
                 type="button"
                 variant="link"
                 className="p-0 h-auto"
-                onClick={() => mobileForm.handleSubmit(onMobileSubmit)()}
+                onClick={mobileForm.handleSubmit(onMobileSubmit)}
                 disabled={isPlacingOrder}
               >
                 Save Contact Info
@@ -519,20 +529,17 @@ export default function CheckoutPage() {
                 <Separator />
                  <div className="space-y-2">
                     {itemsSubtotal > 0 && <div className="flex justify-between text-sm"><span>Items Subtotal</span><span>Rs {itemsSubtotal.toFixed(2)}</span></div>}
-                    {xeroxSubtotal > 0 && <div className="flex justify-between text-sm"><span>Xerox Subtotal</span><span>Rs {xeroxSubtotal.toFixed(2)}</span></div>}
-                    {itemDeliveryCharge > 0 && <div className="flex justify-between text-sm text-destructive"><span>Item Delivery</span><span>Rs {itemDeliveryCharge.toFixed(2)}</span></div>}
-                    {xeroxDeliveryCharge > 0 && <div className="flex justify-between text-sm text-destructive"><span>Xerox Delivery</span><span>Rs {xeroxDeliveryCharge.toFixed(2)}</span></div>}
+                    {deliveryFee > 0 && <div className="flex justify-between text-sm text-destructive"><span>Delivery Fee</span><span>Rs {deliveryFee.toFixed(2)}</span></div>}
                     {savings > 0 && <div className="flex justify-between text-sm text-green-600"><span>You Save</span><span>Rs {savings.toFixed(2)}</span></div>}
                     <Separator />
                     <div className="flex justify-between font-bold text-lg"><span>Total</span><span>Rs {total.toFixed(2)}</span></div>
                 </div>
-                 {(itemDeliveryCharge > 0 || xeroxDeliveryCharge > 0) && orderSettings && (
+                 {orderSettings && itemsSubtotal > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery && (
                   <Alert>
                     <Info className="h-4 w-4" />
                     <AlertTitle>Delivery Charges Applied</AlertTitle>
                     <AlertDescription>
-                      {itemDeliveryCharge > 0 && `Add items worth Rs ${(orderSettings.minItemOrderPrice - itemsSubtotal).toFixed(2)} more for free delivery on items. `}
-                      {xeroxDeliveryCharge > 0 && `Add Xerox worth Rs ${(orderSettings.minXeroxOrderPrice - xeroxSubtotal).toFixed(2)} more for free delivery.`}
+                      Add items worth Rs {(orderSettings.minItemOrderForFreeDelivery - itemsSubtotal).toFixed(2)} more to get FREE delivery.
                     </AlertDescription>
                   </Alert>
                 )}
