@@ -85,10 +85,12 @@ export default function CartPage() {
     return items.filter(item => item.product.category === category);
   };
 
-  const selectedCartItems = items.filter(item => selectedItems.includes(item.product.id));
+  const selectedCartItems = useMemo(() => {
+    return items.filter(item => selectedItems.includes(item.product.id));
+  }, [items, selectedItems]);
 
   const handleCheckout = () => {
-    if (selectedItems.length === 0) {
+    if (selectedCartItems.length === 0) {
       toast({
         variant: 'destructive',
         title: 'No Items Selected',
@@ -140,7 +142,7 @@ export default function CartPage() {
         </Card>
       );
     }
-    if (selectedItems.length === 0) return (
+    if (selectedCartItems.length === 0) return (
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Order Summary</CardTitle>
@@ -190,7 +192,7 @@ export default function CartPage() {
           <Separator />
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>Subtotal ({selectedItems.length} items)</span>
+              <span>Subtotal ({selectedCartItems.length} items)</span>
               <span>Rs {(itemsSubtotal + xeroxSubtotal).toFixed(2)}</span>
             </div>
             {itemDeliveryCharge > 0 && <div className="flex justify-between text-destructive"><span>Item Delivery</span><span>Rs {itemDeliveryCharge.toFixed(2)}</span></div>}
@@ -215,7 +217,7 @@ export default function CartPage() {
         </CardContent>
         <CardFooter>
           <Button className="w-full" onClick={handleCheckout}>
-            Proceed to Checkout ({selectedItems.length} items)
+            Proceed to Checkout ({selectedCartItems.length} items)
           </Button>
         </CardFooter>
       </Card>
