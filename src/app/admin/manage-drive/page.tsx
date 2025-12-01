@@ -40,6 +40,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ExternalLink, HardDrive } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import DriveUploader from "@/components/DriveUploader";
 
 type DriveFile = {
   id: string;
@@ -127,6 +128,15 @@ export default function ManageDrivePage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
   };
+  
+  const handleUploadSuccess = () => {
+    toast({
+        title: "Upload Complete",
+        description: "Your file has been successfully uploaded.",
+    });
+    fetchData(); // Refresh file list after upload
+  }
+
 
   const renderUsageCard = () => {
     if (isLoading || !usage) {
@@ -183,68 +193,79 @@ export default function ManageDrivePage() {
           View storage usage and manage your uploaded documents.
         </p>
 
-        <div className="mt-8">
-            {renderUsageCard()}
-        </div>
+        <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div className="md:col-span-1 space-y-8">
+                {renderUsageCard()}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Upload Document</CardTitle>
+                        <CardDescription>Upload a new file to your designated Google Drive folder.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <DriveUploader onUploadSuccess={handleUploadSuccess} />
+                    </CardContent>
+                </Card>
+            </div>
 
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Uploaded Files</CardTitle>
-            <CardDescription>
-              List of all files uploaded to the designated Google Drive folder.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Date Uploaded</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-6 w-48" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : files.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center">
-                      No files found in the Drive folder.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  files.map((file) => (
-                    <TableRow key={file.id}>
-                      <TableCell className="font-medium truncate max-w-sm">{file.name}</TableCell>
-                      <TableCell>{file.size}</TableCell>
-                      <TableCell>{new Date(file.createdTime).toLocaleString()}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="icon" asChild>
-                            <a href={file.webViewLink} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                          <Button variant="destructive" size="icon" onClick={() => setDeletingFile(file)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+            <Card className="mt-8 md:mt-0 md:col-span-2">
+                <CardHeader>
+                    <CardTitle>Uploaded Files</CardTitle>
+                    <CardDescription>
+                    List of all files uploaded to the designated Google Drive folder.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>File Name</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead>Date Uploaded</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                            <TableCell><Skeleton className="h-6 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                            </TableRow>
+                        ))
+                        ) : files.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={4} className="text-center">
+                            No files found in the Drive folder.
+                            </TableCell>
+                        </TableRow>
+                        ) : (
+                        files.map((file) => (
+                            <TableRow key={file.id}>
+                            <TableCell className="font-medium truncate max-w-sm">{file.name}</TableCell>
+                            <TableCell>{file.size}</TableCell>
+                            <TableCell>{new Date(file.createdTime).toLocaleString()}</TableCell>
+                            <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                <Button variant="outline" size="icon" asChild>
+                                    <a href={file.webViewLink} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                </Button>
+                                <Button variant="destructive" size="icon" onClick={() => setDeletingFile(file)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                                </div>
+                            </TableCell>
+                            </TableRow>
+                        ))
+                        )}
+                    </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
       </div>
 
       <AlertDialog
