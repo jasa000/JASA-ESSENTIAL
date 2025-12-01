@@ -28,7 +28,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 
 
 export default function Home() {
-  const AUTOPLAY_DELAY = 5000;
+  const AUTOPLAY_DELAY = 8000;
   const plugin = React.useRef(
     Autoplay({ 
       delay: AUTOPLAY_DELAY, 
@@ -351,14 +351,14 @@ export default function Home() {
                         <button
                             key={index}
                             className={cn(
-                                "h-2 rounded-full bg-muted transition-all duration-300",
+                                "h-2 rounded-full bg-muted transition-all duration-300 relative overflow-hidden",
                                 isActive ? "w-6" : "w-2 hover:bg-muted-foreground"
                             )}
                             onClick={() => emblaApi?.scrollTo(index)}
                         >
                             {isActive && (
                                 <div
-                                    className="h-full rounded-full bg-primary"
+                                    className="absolute left-0 top-0 h-full rounded-full bg-primary"
                                     style={{
                                       width: `${progress}%`,
                                       transition: progress > 1 ? `width ${AUTOPLAY_DELAY}ms linear` : 'none',
