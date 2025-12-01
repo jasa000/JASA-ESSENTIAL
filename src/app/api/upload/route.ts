@@ -2,9 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import formidable from "formidable";
 import fs from "fs";
-import { getDriveClient } from "../../../lib/googleDrive";
-import { tmpdir } from 'os';
-import path from 'path';
+import { getDriveClient } from "@/lib/googleDrive"; // Use the centralized client
 
 // Disable the default body parser for this route
 export const config = {
@@ -14,26 +12,21 @@ export const config = {
 };
 
 // Helper to parse the form data from a NextRequest
-const parseForm = (req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> => {
+const parseForm = async (req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> => {
     return new Promise((resolve, reject) => {
-        const form = formidable({ 
-            uploadDir: tmpdir(), 
-            keepExtensions: true,
-            maxFiles: 1,
-            maxFileSize: 100 * 1024 * 1024, // 100MB
-        });
-
-        // The 'req' object in App Router route handlers is not a standard Node IncomingMessage.
-        // We need to pass it in a way that formidable can understand.
-        form.parse(req as any, (err, fields, files) => {
+        const form = formidable({});
+        // formidable can parse the request directly if you pass it in.
+        // However, with Next.js App Router, it's more stable to handle the stream manually.
+        form.parse(req, (err, fields, files) => {
             if (err) {
-                console.error('Formidable parsing error:', err);
+                console.error('[API/UPLOAD] Formidable parsing error:', err);
                 return reject(err);
             }
             resolve({ fields, files });
         });
     });
 };
+
 
 export async function POST(req: NextRequest) {
     let tempFilePath: string | undefined;
