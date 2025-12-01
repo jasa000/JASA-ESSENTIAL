@@ -1,9 +1,8 @@
 
-
 "use client";
 
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCart } from '@/hooks/use-cart';
@@ -25,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
+import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, Pencil } from 'lucide-react';
 import type { UserProfile, Shop, OrderSettings, Product, ShopService } from '@/lib/types';
 
 
@@ -40,8 +39,9 @@ const addressSchema = z.object({
 
 const mobileSchema = z.object({
     mobile: z.string().min(10, "A valid 10-digit mobile number is required.").max(10),
-    altMobiles: z.array(z.object({ value: z.string() })).optional(),
+    altMobiles: z.array(z.object({ value: z.string().min(10, "Must be 10 digits.").max(10).or(z.literal('')) })).optional(),
 });
+
 
 const checkoutFormSchema = z.object({
   selectedAddress: z.string().min(1, "Please select a shipping address."),
@@ -62,6 +62,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderItemCount, setOrderItemCount] = useState(0);
 
   const cartItems = useMemo(() => items.filter(item => selectedItems.includes(item.product.id)), [items, selectedItems]);
   
@@ -90,9 +91,15 @@ export default function CheckoutPage() {
     resolver: zodResolver(mobileSchema),
     defaultValues: {
         mobile: user?.mobile || '',
-        altMobiles: user?.altMobiles?.map(alt => ({ value: alt.value || '' })) || [],
+        altMobiles: user?.altMobiles?.map(alt => ({ value: alt.value || '' })) || [{ value: ''}],
     }
   });
+  
+  const { fields: altMobilesFields, append, remove } = useFieldArray({
+    control: mobileForm.control,
+    name: "altMobiles",
+  });
+
 
   const addressForm = useForm<z.infer<typeof addressSchema>>({
     resolver: zodResolver(addressSchema),
@@ -107,7 +114,7 @@ export default function CheckoutPage() {
     if (user) {
         mobileForm.reset({
             mobile: user.mobile || '',
-            altMobiles: user.altMobiles?.map(alt => ({ value: alt.value || '' })) || [],
+            altMobiles: user.altMobiles?.map(alt => ({ value: alt.value || '' })) || [{ value: '' }],
         });
     }
     
@@ -128,11 +135,6 @@ export default function CheckoutPage() {
 
   const selectedSellers = checkoutForm.watch();
 
-  const combinedItemSubtotal = useMemo(() => {
-    return (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
-        .reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
-  }, [itemsByCategory]);
-  
   const { total, itemsSubtotal, xeroxSubtotal, itemDeliveryCharge, xeroxDeliveryCharge, savings } = useMemo(() => {
     const itemsSubtotal = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
         .reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
@@ -172,14 +174,12 @@ export default function CheckoutPage() {
     }
   }
 
-  async function handlePlaceOrder() {
+  async function handlePlaceOrder(mobileData: z.infer<typeof mobileSchema>) {
     const values = checkoutForm.getValues();
     if (!user || !user.addresses) return;
-    setIsPlacingOrder(true);
     
     const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
     const shippingAddress = user.addresses[addressIndex];
-    const mobileNumbers = mobileForm.getValues();
     
     const orderCreationPromises = [];
 
@@ -203,8 +203,8 @@ export default function CheckoutPage() {
                     price: cartItem.product.discountPrice ?? cartItem.product.price,
                     sellerId: sellerId,
                     shippingAddress: shippingAddress,
-                    mobile: mobileNumbers.mobile,
-                    altMobiles: mobileNumbers.altMobiles,
+                    mobile: mobileData.mobile,
+                    altMobiles: mobileData.altMobiles?.filter(m => m.value),
                     status: 'Pending Confirmation',
                     category: cartItem.product.category,
                 })
@@ -214,34 +214,43 @@ export default function CheckoutPage() {
 
     try {
       await Promise.all(orderCreationPromises);
+      setOrderItemCount(cartItems.length);
       cartItems.forEach(item => removeItem(item.product.id));
       setOrderPlaced(true);
-      setTimeout(() => { router.push('/orders'); }, 2000);
+      setTimeout(() => { router.push('/orders'); }, 5000);
     } catch (error: any) {
         toast({ variant: "destructive", title: 'Order Failed', description: `An error occurred while placing your order: ${error.message}` });
+    } finally {
         setIsPlacingOrder(false);
     }
   }
   
   async function onMobileSubmit(values: z.infer<typeof mobileSchema>) {
     if (!user) return;
+    setIsPlacingOrder(true);
     try {
-        await updateUserProfile(user.uid, { mobile: values.mobile, altMobiles: values.altMobiles });
+        await updateUserProfile(user.uid, { mobile: values.mobile, altMobiles: values.altMobiles?.filter(m => m.value) });
         toast({ title: "Mobile Number Saved" });
-        setIsMobileDialogOpen(false);
-        await handlePlaceOrder();
+        await handlePlaceOrder(values);
     } catch (error: any) {
         toast({ variant: "destructive", title: "Error", description: "Failed to save mobile number. " + error.message });
+        setIsPlacingOrder(false);
     }
   }
 
   async function onCheckoutSubmit() {
-    if (!user) return;
-    
-    if (!user.mobile) {
-        setIsMobileDialogOpen(true);
+    const mobileData = mobileForm.getValues();
+    if (!mobileData.mobile) {
+      toast({ variant: 'destructive', title: 'Mobile Number Required', description: 'Please enter and save your mobile number.' });
+      mobileForm.trigger('mobile');
+      return;
+    }
+    // Trigger validation and if valid, proceed.
+    const isValid = await mobileForm.trigger();
+    if (isValid) {
+      await onMobileSubmit(mobileData);
     } else {
-        await handlePlaceOrder();
+       toast({ variant: 'destructive', title: 'Invalid Mobile Number', description: 'Please check your mobile numbers.' });
     }
   }
   
@@ -249,10 +258,10 @@ export default function CheckoutPage() {
     return <div className="container mx-auto px-4 py-8">Loading...</div>
   }
 
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 && !orderPlaced) {
     return (
        <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="font-headline text-3xl font-bold">Your have no items selected for checkout.</h1>
+        <h1 className="font-headline text-3xl font-bold">You have no items selected for checkout.</h1>
         <p className="mt-2 text-muted-foreground">Please select items from your cart to proceed.</p>
         <Button asChild className="mt-6">
           <Link href="/cart">Return to Cart</Link>
@@ -296,7 +305,7 @@ export default function CheckoutPage() {
                             <FormLabel className="font-normal">
                                 <p className="font-bold">{address.type} Address</p>
                                 <p>{address.line1}{address.line2 ? `, ${address.line2}` : ''}</p>
-                                <p>{address.city}, {address.state} {address.postalCode}</p>
+                                <p>{address.city}, {address.state} - {address.postalCode}</p>
                             </FormLabel>
                         </FormItem>
                       ))}
@@ -316,6 +325,63 @@ export default function CheckoutPage() {
       </Card>
     );
   }
+
+  const renderMobileSection = () => {
+    if (!selectedAddress) return null;
+  
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">2. Contact Information</CardTitle>
+          <CardDescription>
+            Please confirm your mobile number. This will be used for delivery updates.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...mobileForm}>
+            <form onSubmit={e => e.preventDefault()} className="space-y-4">
+              <FormField
+                control={mobileForm.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Primary Mobile Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="tel" placeholder="10-digit mobile number" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {altMobilesFields.map((field, index) => (
+                 <FormField
+                    key={field.id}
+                    control={mobileForm.control}
+                    name={`altMobiles.${index}.value`}
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Alternate Mobile Number (Optional)</FormLabel>
+                        <FormControl><Input {...field} value={field.value || ''} type="tel" placeholder="Another 10-digit number" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+              ))}
+               <Button
+                type="button"
+                variant="link"
+                className="p-0 h-auto"
+                onClick={() => mobileForm.handleSubmit(onMobileSubmit)()}
+                disabled={isPlacingOrder}
+              >
+                Save Contact Info
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    );
+  };
   
   const renderSellerSelection = (category: CategoryKey) => {
     if (!selectedAddress) return null;
@@ -389,52 +455,13 @@ export default function CheckoutPage() {
         <DialogContent hideCloseButton>
             <div className="flex flex-col items-center justify-center p-8 text-center">
                 <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                <h2 className="text-2xl font-bold">Order Placed!</h2>
-                <p className="text-muted-foreground mt-2">You will be redirected to your order history shortly.</p>
+                <h2 className="text-2xl font-bold">Order Placed Successfully!</h2>
+                <p className="text-muted-foreground mt-2">
+                    Your order for {orderItemCount} item(s) has been placed. You will be redirected to your order history shortly.
+                </p>
             </div>
         </DialogContent>
     </Dialog>
-    
-     <Dialog open={isMobileDialogOpen} onOpenChange={setIsMobileDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Contact Information</DialogTitle>
-            <CardDescription>Please provide your mobile number to complete the order.</CardDescription>
-          </DialogHeader>
-          <Form {...mobileForm}>
-            <form onSubmit={mobileForm.handleSubmit(onMobileSubmit)} className="space-y-4">
-              <FormField
-                control={mobileForm.control}
-                name="mobile"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Primary Mobile Number</FormLabel>
-                    <FormControl><Input {...field} type="tel" placeholder="10-digit mobile number" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={mobileForm.control}
-                name="altMobiles.0.value"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Alternate Mobile Number (Optional)</FormLabel>
-                    <FormControl><Input {...field} value={field.value || ''} type="tel" placeholder="Another 10-digit number" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-                <Button type="submit" disabled={mobileForm.formState.isSubmitting}>
-                  {mobileForm.formState.isSubmitting ? 'Saving...' : 'Save and Continue'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
 
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
@@ -450,9 +477,10 @@ export default function CheckoutPage() {
       <form onSubmit={checkoutForm.handleSubmit(onCheckoutSubmit)} className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
             {renderAddressSelection()}
+            {renderMobileSection()}
              {selectedAddress && (
               <Card>
-                <CardHeader><CardTitle className="font-headline">2. Select Sellers</CardTitle><CardDescription>Choose a seller for each category of items in your cart.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="font-headline">3. Select Sellers</CardTitle><CardDescription>Choose a seller for each category of items in your cart.</CardDescription></CardHeader>
                 <CardContent className="space-y-6">
                     {presentCategories.map(cat => (
                         <div key={cat}>
