@@ -53,16 +53,16 @@ const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label
 };
 
 const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: number, icon: React.ElementType, loading: boolean }) => (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+    <Card className="flex-1">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2">
+        <CardTitle className="text-xs font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2 pt-0">
         {loading ? (
-          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-6 w-10" />
         ) : (
-          <div className="text-2xl font-bold">{value}</div>
+          <div className="text-xl font-bold">{value}</div>
         )}
       </CardContent>
     </Card>
@@ -338,39 +338,44 @@ export default function ManageShopOrdersPage() {
         </DialogContent>
     </Dialog>
     <div className="container mx-auto px-4 py-8">
-      <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
-        Manage Shop Orders
-      </h1>
-      <p className="mt-2 text-muted-foreground">
-        Review and process incoming orders for your shop.
-      </p>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Pending Confirmation" value={orderStats.pending} icon={Clock} loading={isLoading} />
-            <StatCard title="Orders Completed" value={orderStats.completed} icon={CheckCircle} loading={isLoading} />
-            <StatCard title="Rejected by You" value={orderStats.sellerRejected} icon={AlertTriangle} loading={isLoading} />
-            <StatCard title="Cancelled by User" value={orderStats.userCancelled} icon={X} loading={isLoading} />
+      <div className="pb-4">
+        <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
+          Manage Shop Orders
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          Review and process incoming orders for your shop.
+        </p>
+      </div>
+      
+      <div className="sticky top-[80px] z-40 bg-background py-2 space-y-2">
+        <div className="flex gap-2">
+            <StatCard title="Pending" value={orderStats.pending} icon={Clock} loading={isLoading} />
+            <StatCard title="Completed" value={orderStats.completed} icon={CheckCircle} loading={isLoading} />
+            <StatCard title="Rejected" value={orderStats.sellerRejected} icon={AlertTriangle} loading={isLoading} />
+            <StatCard title="Cancelled" value={orderStats.userCancelled} icon={X} loading={isLoading} />
         </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-        <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pending">Pending ({Object.values(ordersByStatus.pending).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
-            <TabsTrigger value="active">Active ({Object.values(ordersByStatus.active).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
-            <TabsTrigger value="completed">History ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
-        </TabsList>
-        <TabsContent value="pending">
-          {renderOrderList(ordersByStatus.pending, 'pending')}
-        </TabsContent>
-        <TabsContent value="active">
-          {renderOrderList(ordersByStatus.active, 'active')}
-        </TabsContent>
-        <TabsContent value="completed">
-          {renderOrderList(ordersByStatus.completed, 'completed')}
-        </TabsContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="pending">Pending ({Object.values(ordersByStatus.pending).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+              <TabsTrigger value="active">Active ({Object.values(ordersByStatus.active).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+              <TabsTrigger value="completed">History ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsContent value="pending" className="mt-0">
+            {renderOrderList(ordersByStatus.pending, 'pending')}
+          </TabsContent>
+          <TabsContent value="active" className="mt-0">
+            {renderOrderList(ordersByStatus.active, 'active')}
+          </TabsContent>
+          <TabsContent value="completed" className="mt-0">
+            {renderOrderList(ordersByStatus.completed, 'completed')}
+          </TabsContent>
       </Tabs>
     </div>
     </>
   );
 }
-
-    
