@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, User, Package, FileText, Phone, Truck } from 'lucide-react';
+import { Check, X, User, Package, FileText, Phone, Truck, MapPin } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -196,80 +196,93 @@ export default function ManageShopOrdersPage() {
     
     return (
         <div className="mt-8 space-y-6">
-          {orderGroups.map(({ user, orders }) => (
-            <Card key={user.uid}>
-              <CardHeader className="bg-muted/50">
-                <CardTitle className="flex items-center gap-2">
-                    <User /> Customer: {user.name}
-                </CardTitle>
-                <CardDescription>Email: {user.email}</CardDescription>
-                 <div className="text-sm text-muted-foreground flex items-center gap-2 pt-2">
-                    <Phone className="h-4 w-4" />
+          {orderGroups.map(({ user, orders }) => {
+            const firstOrder = orders[0];
+            if (!firstOrder) return null;
+            const address = firstOrder.shippingAddress;
+            return (
+              <Card key={user.uid}>
+                <CardHeader className="bg-muted/50">
+                  <CardTitle className="flex items-center gap-2">
+                      <User /> Customer: {user.name}
+                  </CardTitle>
+                  <CardDescription>Email: {user.email}</CardDescription>
+                  <div className="text-sm text-muted-foreground flex items-center gap-2 pt-2">
+                      <Phone className="h-4 w-4" />
+                      <div>
+                          <p>{orders[0].mobile}</p>
+                          {orders[0].altMobiles?.[0]?.value && <p>{orders[0].altMobiles[0].value}</p>}
+                      </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-start gap-2 pt-2 border-t mt-2">
+                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <div>
-                        <p>{orders[0].mobile}</p>
-                        {orders[0].altMobiles?.[0]?.value && <p>{orders[0].altMobiles[0].value}</p>}
+                        <p className="font-medium text-foreground">{address.type} Address</p>
+                        <p>{address.line1}{address.line2 ? `, ${address.line2}` : ''}</p>
+                        <p>{address.city}, {address.state} - {address.postalCode}</p>
                     </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                {orders.map(order => {
-                  const StatusIcon = statusConfig[order.status]?.icon || Package;
-                  return (
-                    <div key={order.id} className="p-4 border rounded-lg flex flex-col gap-4">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                          <div className="flex gap-4">
-                              <div className="relative h-16 w-16 flex-shrink-0 bg-muted rounded-md overflow-hidden">
-                                  {order.productImage ? (
-                                      <Image src={order.productImage} alt={order.productName} fill className="object-cover" />
-                                  ) : (
-                                      <FileText className="h-8 w-8 text-muted-foreground m-auto" />
-                                  )}
-                              </div>
-                              <div>
-                                  <p className="font-semibold">{order.productName}</p>
-                                  <p className="text-sm text-muted-foreground">Quantity: {order.quantity}</p>
-                                  <p className="text-sm text-muted-foreground">Total: Rs {(order.price * order.quantity).toFixed(2)}</p>
-                              </div>
-                          </div>
-                           <div className="flex flex-col items-end gap-2 self-end md:self-start">
-                             <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2">
-                                <StatusIcon className="h-4 w-4" />
-                                {order.status}
-                             </Badge>
-                             {listType === 'pending' && (
-                                <div className="flex gap-2">
-                                    <Button size="sm" onClick={() => handleConfirmOrder(order.id)}>
-                                        <Check className="mr-2 h-4 w-4"/> Confirm
-                                    </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => setRejectingOrder(order)}>
-                                        <X className="mr-2 h-4 w-4"/> Reject
-                                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  {orders.map(order => {
+                    const StatusIcon = statusConfig[order.status]?.icon || Package;
+                    return (
+                      <div key={order.id} className="p-4 border rounded-lg flex flex-col gap-4">
+                          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                            <div className="flex gap-4">
+                                <div className="relative h-16 w-16 flex-shrink-0 bg-muted rounded-md overflow-hidden">
+                                    {order.productImage ? (
+                                        <Image src={order.productImage} alt={order.productName} fill className="object-cover" />
+                                    ) : (
+                                        <FileText className="h-8 w-8 text-muted-foreground m-auto" />
+                                    )}
                                 </div>
-                              )}
+                                <div>
+                                    <p className="font-semibold">{order.productName}</p>
+                                    <p className="text-sm text-muted-foreground">Quantity: {order.quantity}</p>
+                                    <p className="text-sm text-muted-foreground">Total: Rs {(order.price * order.quantity).toFixed(2)}</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2 self-end md:self-start">
+                              <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2">
+                                  <StatusIcon className="h-4 w-4" />
+                                  {order.status}
+                              </Badge>
+                              {listType === 'pending' && (
+                                  <div className="flex gap-2">
+                                      <Button size="sm" onClick={() => handleConfirmOrder(order.id)}>
+                                          <Check className="mr-2 h-4 w-4"/> Confirm
+                                      </Button>
+                                      <Button size="sm" variant="destructive" onClick={() => setRejectingOrder(order)}>
+                                          <X className="mr-2 h-4 w-4"/> Reject
+                                      </Button>
+                                  </div>
+                                )}
+                            </div>
                           </div>
-                        </div>
-                        {listType !== 'pending' && (
-                          <>
-                           <Separator />
-                           <OrderTracker trackingInfo={order.tracking} />
-                           {listType === 'active' && (
-                            <CardFooter className="p-0">
-                                <Button 
-                                  className="w-full" 
-                                  onClick={() => handleUpdateStatus(order)} 
-                                  disabled={!NEXT_STATUS[order.status]}
-                                >
-                                  {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Order Complete"}
-                                </Button>
-                            </CardFooter>
-                           )}
-                          </>
-                        )}
-                    </div>
-                )})}
-              </CardContent>
-            </Card>
-          ))}
+                          {listType !== 'pending' && (
+                            <>
+                            <Separator />
+                            <OrderTracker trackingInfo={order.tracking} />
+                            {listType === 'active' && (
+                              <CardFooter className="p-0">
+                                  <Button 
+                                    className="w-full" 
+                                    onClick={() => handleUpdateStatus(order)} 
+                                    disabled={!NEXT_STATUS[order.status]}
+                                  >
+                                    {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Order Complete"}
+                                  </Button>
+                              </CardFooter>
+                            )}
+                            </>
+                          )}
+                      </div>
+                  )})}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
     )
   }
