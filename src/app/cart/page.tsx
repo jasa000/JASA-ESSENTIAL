@@ -78,13 +78,6 @@ export default function CartPage() {
   const handleQuantityChange = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return; // Prevent quantity from going below 1
     updateQuantity(productId, newQuantity);
-    if (selectedItems.length > 0) {
-      setSelectedItems([]); // Deselect all items if quantity changes
-      toast({
-        title: "Selection Cleared",
-        description: "Item selection has been cleared due to a quantity change. Please review your order and select items again."
-      });
-    }
   };
 
   const getCategoryItems = (category: string) => {
@@ -373,5 +366,3 @@ export default function CartPage() {
     </div>
   );
 }
-
-    
