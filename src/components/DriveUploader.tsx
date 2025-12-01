@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Progress } from "./ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { UploadCloud, Link, Loader2 } from "lucide-react";
+import { UploadCloud, Link as LinkIcon, Loader2 } from "lucide-react";
 
 type DriveUploaderProps = {
   onUploadSuccess?: () => void;
@@ -52,8 +52,8 @@ export default function DriveUploader({ onUploadSuccess }: DriveUploaderProps) {
       
       const data = await res.json();
       
-      if (res.ok && data?.link) {
-        setLink(data.link);
+      if (res.ok && data?.url) {
+        setLink(data.url);
         if(onUploadSuccess) onUploadSuccess();
       } else {
         throw new Error(data.error || "An unknown error occurred during upload.");
@@ -103,7 +103,7 @@ export default function DriveUploader({ onUploadSuccess }: DriveUploaderProps) {
       
       {link && (
         <div className="flex items-center gap-2 text-sm text-green-600">
-          <Link className="mr-2 h-4 w-4" />
+          <LinkIcon className="mr-2 h-4 w-4" />
           <span>Upload complete!</span>
           <Button variant="link" asChild className="p-0 h-auto">
             <a href={link} target="_blank" rel="noopener noreferrer">View File</a>
