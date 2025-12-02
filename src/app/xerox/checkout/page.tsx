@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText } from 'lucide-react';
+import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText, Trash2 } from 'lucide-react';
 import type { UserProfile, Shop, OrderSettings, ShopService, XeroxDocument, XeroxOption } from '@/lib/types';
 import { HARDCODED_XEROX_OPTIONS } from '@/lib/xerox-options';
 import { Progress } from '@/components/ui/progress';
@@ -467,19 +467,19 @@ export default function XeroxCheckoutPage() {
 
   return (
     <>
-    <Dialog open={orderPlaced}>
+      <Dialog open={orderPlaced}>
         <DialogContent>
-            <DialogHeader>
-                 <DialogTitle>Order Placed Successfully!</DialogTitle>
-                <DialogDescription>
-                    Your print order for {xeroxJobs.length} document(s) has been placed. You will be redirected to your order history shortly.
-                </DialogDescription>
-            </DialogHeader>
-             <div className="flex flex-col items-center justify-center p-8 text-center">
-                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-            </div>
+          <DialogHeader>
+            <DialogTitle>Order Placed Successfully!</DialogTitle>
+            <DialogDescription>
+              Your print order for {xeroxJobs.length} document(s) has been placed. You will be redirected to your order history shortly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+          </div>
         </DialogContent>
-    </Dialog>
+      </Dialog>
 
     <Dialog open={isPlacingOrder && !orderPlaced}>
         <DialogContent hideCloseButton>
@@ -540,7 +540,8 @@ export default function XeroxCheckoutPage() {
             <CardHeader><CardTitle className="font-headline">Your Order</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {xeroxJobs.map((job) => {
+                {xeroxJobs.map((job, index) => {
+                    const docPrice = job.price * job.config.quantity;
                     const details = [
                         { key: 'Paper', value: getOptionName('paperType', job.config.paperType) },
                         { key: 'Color', value: getOptionName('colorOption', job.config.colorOption) },
@@ -562,7 +563,7 @@ export default function XeroxCheckoutPage() {
                                     <p className="text-xs text-muted-foreground">Qty: {job.config.quantity}</p>
                                 </div>
                                 </div>
-                                <p className="flex-shrink-0 pl-2 font-semibold">Rs {(job.price * job.config.quantity).toFixed(2)}</p>
+                                <p className="flex-shrink-0 pl-2 font-semibold">Rs {docPrice.toFixed(2)}</p>
                             </div>
                             <div className="mt-2 pl-14 grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-muted-foreground">
                                 {details.map(d => (
