@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText } from 'lucide-react';
@@ -47,7 +47,7 @@ const checkoutFormSchema = z.object({
 });
 
 type StoredXeroxJob = Omit<XeroxDocument, 'file'> & {
-    fileDetails: { name: string, type: string };
+    fileDetails: { name: string; type: string };
     fileDataUrl: string; // Store file as data URL
 };
 
@@ -431,13 +431,17 @@ export default function XeroxCheckoutPage() {
     <>
     <Dialog open={orderPlaced}>
         <DialogContent hideCloseButton>
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                <h2 className="text-2xl font-bold">Order Placed Successfully!</h2>
-                <p className="text-muted-foreground mt-2">
+            <DialogHeader className="items-center text-center">
+                <DialogTitle>
+                    <div className="flex flex-col items-center justify-center p-8 text-center">
+                        <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                        <h2 className="text-2xl font-bold">Order Placed Successfully!</h2>
+                    </div>
+                </DialogTitle>
+                <DialogDescription>
                     Your print order for {xeroxJobs.length} document(s) has been placed. You will be redirected to your order history shortly.
-                </p>
-            </div>
+                </DialogDescription>
+            </DialogHeader>
         </DialogContent>
     </Dialog>
 
