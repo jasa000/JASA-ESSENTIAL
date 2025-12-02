@@ -48,6 +48,7 @@ const checkoutFormSchema = z.object({
 
 type StoredXeroxJob = Omit<XeroxDocument, 'file'> & {
     fileDetails: { name: string, type: string };
+    fileDataUrl: string; // Store file as data URL
 };
 
 
@@ -163,6 +164,54 @@ export default function XeroxCheckoutPage() {
     }
   }
 
+  async function handlePlaceOrder(mobileData: z.infer<typeof mobileSchema>) {
+    const values = checkoutForm.getValues();
+    if (!user || !user.addresses || !orderSettings) return;
+
+    const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
+    const shippingAddress = user.addresses[addressIndex];
+
+    const orderPromises = xeroxJobs.map(async (job) => {
+      const blob = await fetch(job.fileDataUrl).then(res => res.blob());
+      const fileToUpload = new File([blob], job.fileDetails.name, { type: job.fileDetails.type });
+
+      const fd = new FormData();
+      fd.append("file", fileToUpload);
+
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || `Upload failed for ${job.fileDetails.name}`);
+      }
+
+      return createOrder({
+        userId: user.uid,
+        productName: job.fileDetails.name,
+        productImage: data.url, // Google Drive URL
+        quantity: job.config.quantity,
+        price: job.price,
+        deliveryCharge: xeroxDeliveryFee / xeroxJobs.length,
+        sellerId: values.selectedShop,
+        shippingAddress: shippingAddress,
+        mobile: mobileData.mobile,
+        altMobiles: mobileData.altMobiles?.filter(m => m.value),
+        status: 'Pending Confirmation',
+        category: 'xerox',
+      });
+    });
+
+    try {
+      await Promise.all(orderPromises);
+      sessionStorage.removeItem('xeroxCheckoutJobs');
+      setOrderPlaced(true);
+      setTimeout(() => { router.push('/orders'); }, 5000);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: 'Order Failed', description: `An error occurred: ${error.message}` });
+      throw error; // Rethrow to be caught by onCheckoutSubmit
+    }
+  }
+
   async function onCheckoutSubmit(values: z.infer<typeof checkoutFormSchema>) {
     const mobileData = mobileForm.getValues();
     if (!mobileData.mobile) {
@@ -171,52 +220,13 @@ export default function XeroxCheckoutPage() {
       return;
     }
     
-    if (!user || !user.addresses || !orderSettings) return;
-    
-    const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
-    const shippingAddress = user.addresses[addressIndex];
-    
     setIsPlacingOrder(true);
     try {
         await updateUserProfile(user.uid, { mobile: mobileData.mobile, altMobiles: mobileData.altMobiles?.filter(m => m.value) });
-
-        const orderPromises = xeroxJobs.map(async (job) => {
-            const blob = await fetch(job.file as any).then(res => res.blob());
-            const fileToUpload = new File([blob], job.fileDetails.name, { type: job.fileDetails.type });
-            
-            const fd = new FormData();
-            fd.append("file", fileToUpload);
-            
-            const res = await fetch("/api/upload", { method: "POST", body: fd });
-            const data = await res.json();
-            
-            if (!res.ok || !data.url) {
-                throw new Error(data.error || `Upload failed for ${job.fileDetails.name}`);
-            }
-
-            return createOrder({
-                userId: user.uid,
-                productName: job.fileDetails.name,
-                productImage: data.url, // Google Drive URL
-                quantity: job.config.quantity,
-                price: job.price,
-                deliveryCharge: xeroxDeliveryFee / xeroxJobs.length,
-                sellerId: values.selectedShop,
-                shippingAddress: shippingAddress,
-                mobile: mobileData.mobile,
-                altMobiles: mobileData.altMobiles?.filter(m => m.value),
-                status: 'Pending Confirmation',
-                category: 'xerox',
-            });
-        });
-        
-        await Promise.all(orderPromises);
-        sessionStorage.removeItem('xeroxCheckoutJobs');
-        setOrderPlaced(true);
-        setTimeout(() => { router.push('/orders'); }, 5000);
-
+        await handlePlaceOrder(mobileData);
     } catch (error: any) {
-        toast({ variant: "destructive", title: 'Order Failed', description: `An error occurred: ${error.message}` });
+        // Error toast is already shown in handlePlaceOrder
+    } finally {
         setIsPlacingOrder(false);
     }
   }
@@ -322,6 +332,16 @@ export default function XeroxCheckoutPage() {
                     )}
                 />
               ))}
+              {altMobilesFields.length < 2 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendAltMobile({ value: '' })}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Alternate
+                </Button>
+              )}
             </div>
           </Form>
         </CardContent>
