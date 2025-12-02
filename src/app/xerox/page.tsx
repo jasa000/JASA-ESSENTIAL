@@ -22,7 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/hooks/use-cart";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import * as pdfjsLib from 'pdfjs-dist';
@@ -80,7 +79,6 @@ export default function XeroxPage() {
 
   const { toast } = useToast();
   const router = useRouter();
-  const { addXeroxItem } = useCart();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<DocumentState[]>([]);
   const nextId = useRef(0);
@@ -251,7 +249,7 @@ export default function XeroxPage() {
     return documentPrices.reduce((total, item) => total + item.price, 0);
   }, [documentPrices]);
   
-   const handleCheckout = () => {
+  const handleCheckout = () => {
     if (documents.some(d => d.isParsing)) {
       toast({
         variant: "destructive",
@@ -260,36 +258,29 @@ export default function XeroxPage() {
       });
       return;
     }
-    
-    documents.forEach((doc, index) => {
+
+    const xeroxJobs: XeroxDocument[] = documents.map((doc, index) => {
         const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
-        if (doc.file && doc.fileDetails) {
-            const xeroxDoc: XeroxDocument = {
-                id: `${Date.now()}-${index}`, // Unique ID for the cart item
-                file: doc.file,
-                pageCount: doc.fileDetails.pages || 0,
-                price: price / doc.quantity, // Price for a single copy
-                config: {
-                    paperType: doc.selectedPaperType,
-                    colorOption: doc.selectedColorOption,
-                    formatType: doc.selectedFormatType,
-                    printRatio: doc.selectedPrintRatio,
-                    bindingType: doc.selectedBindingType,
-                    laminationType: doc.selectedLaminationType,
-                    quantity: doc.quantity,
-                    message: doc.message,
-                }
-            };
-            addXeroxItem(xeroxDoc);
-        }
-    });
+        return {
+            id: `${Date.now()}-${index}`, // Unique ID for this job instance
+            file: doc.file!,
+            pageCount: doc.fileDetails?.pages || 0,
+            price: price / doc.quantity,
+            config: {
+                paperType: doc.selectedPaperType,
+                colorOption: doc.selectedColorOption,
+                formatType: doc.selectedFormatType,
+                printRatio: doc.selectedPrintRatio,
+                bindingType: doc.selectedBindingType,
+                laminationType: doc.selectedLaminationType,
+                quantity: doc.quantity,
+                message: doc.message,
+            }
+        };
+    }).filter(job => job.file !== null);
 
-    toast({
-      title: "Added to Cart",
-      description: `${documents.length} print job(s) have been added to your cart.`,
-    });
-
-    router.push('/cart');
+    sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(xeroxJobs));
+    router.push('/xerox/checkout');
   };
   
   const EditDocumentDialog = ({ doc, index, onSave }: { doc: DocumentState | null, index: number, onSave: (updatedDoc: DocumentState) => void }) => {
