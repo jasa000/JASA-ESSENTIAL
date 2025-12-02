@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone } from "lucide-react";
+import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone, ChevronDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +28,9 @@ import Link from "next/link";
 import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
 import OrderTracker from "@/components/order-tracker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 
 const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string } } = {
@@ -54,15 +56,8 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-start justify-between bg-muted/50 p-4">
-        <div>
-          <CardTitle className="font-headline text-lg truncate max-w-xs">{order.productName}</CardTitle>
+      <CardHeader className="bg-muted/50 p-4">
           <CardDescription>Order ID: {order.id}</CardDescription>
-        </div>
-        <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2">
-            <StatusIcon className="h-4 w-4" />
-            {order.status}
-        </Badge>
       </CardHeader>
       <CardContent className="p-4">
         {order.rejectionReason && (
@@ -82,10 +77,26 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
                     <ShoppingCart className="h-10 w-10 text-muted-foreground m-auto" />
                 )}
             </div>
-            <div className="space-y-2 text-sm">
-                <p><span className="font-medium">Quantity:</span> {itemQuantity}</p>
-                <p><span className="font-medium">Price per item:</span> Rs {itemPrice.toFixed(2)}</p>
-                {deliveryCharge > 0 && <p><span className="font-medium text-destructive">Delivery Fee:</span> Rs {deliveryCharge.toFixed(2)} per item</p>}
+            <div className="space-y-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                        <h3 className="font-headline text-lg font-semibold line-clamp-2">{order.productName}</h3>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{order.productName}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2 w-fit">
+                    <StatusIcon className="h-4 w-4" />
+                    {order.status}
+                </Badge>
+                
+                <p className="text-sm pt-1"><span className="font-medium">Quantity:</span> {itemQuantity}</p>
+                <p className="text-sm"><span className="font-medium">Price per item:</span> Rs {itemPrice.toFixed(2)}</p>
+                {deliveryCharge > 0 && <p className="text-sm text-destructive"><span className="font-medium">Delivery Fee:</span> Rs {deliveryCharge.toFixed(2)} per item</p>}
                 <p className="font-bold"><span className="font-medium">Total:</span> Rs {totalOrderPrice.toFixed(2)}</p>
             </div>
         </div>
@@ -98,23 +109,31 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
         )}
 
         <Separator className="my-4" />
-        <div>
-            <h4 className="font-medium mb-2">Shipping Address & Contact</h4>
-            <div className="text-sm text-muted-foreground">
-                <p>{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ''}</p>
-                <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
-                 <div className="mt-2 flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    <div>
-                        <p>{order.mobile}</p>
-                        {order.altMobiles?.[0]?.value && <p>{order.altMobiles[0].value}</p>}
+        <Collapsible>
+            <CollapsibleTrigger asChild>
+                <Button variant="link" className="p-0 h-auto flex items-center gap-1 text-muted-foreground">
+                    View Shipping & Contact Details
+                    <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 pt-2">
+                <h4 className="font-medium">Shipping Address & Contact</h4>
+                <div className="text-sm text-muted-foreground">
+                    <p>{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ''}</p>
+                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        <div>
+                            <p>{order.mobile}</p>
+                            {order.altMobiles?.[0]?.value && <p>{order.altMobiles[0].value}</p>}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </CollapsibleContent>
+        </Collapsible>
       </CardContent>
-      <CardFooter className="bg-muted/50 p-4">
-        {order.status === 'Pending Confirmation' && (
+      {order.status === 'Pending Confirmation' && (
+        <CardFooter className="bg-muted/50 p-4">
            <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button className="w-full" variant="destructive">Cancel Order</Button>
@@ -134,8 +153,8 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        )}
-      </CardFooter>
+        </CardFooter>
+      )}
     </Card>
   )
 };
