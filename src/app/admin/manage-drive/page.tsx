@@ -40,7 +40,6 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ExternalLink, HardDrive } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import DriveUploader from "@/components/DriveUploader";
 
 type DriveFile = {
   id: string;
@@ -128,15 +127,6 @@ export default function ManageDrivePage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
   };
-  
-  const handleUploadSuccess = () => {
-    toast({
-        title: "Upload Complete",
-        description: "Your file has been successfully uploaded.",
-    });
-    fetchData(); // Refresh file list after upload
-  }
-
 
   const renderUsageCard = () => {
     if (isLoading || !usage) {
@@ -196,15 +186,6 @@ export default function ManageDrivePage() {
         <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
             <div className="md:col-span-1 space-y-8">
                 {renderUsageCard()}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Upload Document</CardTitle>
-                        <CardDescription>Upload a new file to your designated Google Drive folder.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <DriveUploader onUploadSuccess={handleUploadSuccess} />
-                    </CardContent>
-                </Card>
             </div>
 
             <Card className="mt-8 md:mt-0 md:col-span-2">
