@@ -136,7 +136,8 @@ export default function XeroxCheckoutPage() {
       toast({ title: "Address Saved", description: "Your new address has been added." });
       addressForm.reset();
       setIsAddressDialogOpen(false);
-    } catch (error: any)       toast({ variant: "destructive", title: "Error", description: "Failed to save address. " + error.message });
+    } catch (error: any) {
+       toast({ variant: "destructive", title: "Error", description: "Failed to save address. " + error.message });
     }
   }
 
