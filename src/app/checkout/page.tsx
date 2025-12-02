@@ -10,7 +10,7 @@ import { useAuth } from '@/context/auth-provider';
 import { updateUserProfile } from '@/lib/users';
 import { getShops } from '@/lib/shops';
 import { getOrderSettings, createOrder } from '@/lib/data';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
@@ -24,8 +24,8 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, Pencil } from 'lucide-react';
-import type { UserProfile, Shop, OrderSettings, Product, ShopService } from '@/lib/types';
+import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, Pencil, FileText } from 'lucide-react';
+import type { UserProfile, Shop, OrderSettings, Product, ShopService, CartItem, XeroxDocument } from '@/lib/types';
 
 
 const addressSchema = z.object({
@@ -64,17 +64,17 @@ export default function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderItemCount, setOrderItemCount] = useState(0);
 
-  const cartItems = useMemo(() => items.filter(item => selectedItems.includes(item.product.id)), [items, selectedItems]);
+  const cartItems = useMemo(() => items.filter(item => selectedItems.includes(item.id)), [items, selectedItems]);
   
   const itemsByCategory = useMemo(() => {
     return cartItems.reduce((acc, item) => {
-      const category: CategoryKey = item.product.category;
+      const category: CategoryKey = item.type;
       if (!acc[category]) {
         acc[category] = [];
       }
       acc[category].push(item);
       return acc;
-    }, {} as Record<CategoryKey, { product: Product; quantity: number }[]>);
+    }, {} as Record<CategoryKey, CartItem[]>);
   }, [cartItems]);
   
   const presentCategories = Object.keys(itemsByCategory) as CategoryKey[];
@@ -135,15 +135,19 @@ export default function CheckoutPage() {
 
   const selectedSellers = checkoutForm.watch();
 
-  const { total, itemsSubtotal, deliveryFee, savings } = useMemo(() => {
-    const itemsGroup = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || [])
-    const itemsSubtotal = itemsGroup.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
-    const totalItemCount = itemsGroup.reduce((acc, item) => acc + item.quantity, 0);
+  const { total, itemsSubtotal, xeroxSubtotal, deliveryFee, savings, xeroxDeliveryFee } = useMemo(() => {
+    if (!orderSettings) return { total: 0, itemsSubtotal: 0, xeroxSubtotal: 0, deliveryFee: 0, savings: 0, xeroxDeliveryFee: 0 };
 
-    const originalItemsTotal = itemsGroup.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    const productItems = cartItems.filter(item => item.type !== 'xerox') as (CartItem & {type: 'stationary' | 'books' | 'electronics', product: Product})[];
+    const xeroxItems = cartItems.filter(item => item.type === 'xerox') as (CartItem & {type: 'xerox', xerox: XeroxDocument})[];
+
+    const itemsSubtotal = productItems.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
+    const totalItemCount = productItems.reduce((acc, item) => acc + item.quantity, 0);
+
+    const originalItemsTotal = productItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
     
     let deliveryFee = 0;
-    if (orderSettings && totalItemCount > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery) {
+    if (totalItemCount > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery) {
         let chargePerItem = 0;
         if (totalItemCount <= 5) chargePerItem = orderSettings.itemChargeTier1;
         else if (totalItemCount <= 10) chargePerItem = orderSettings.itemChargeTier2;
@@ -151,12 +155,18 @@ export default function CheckoutPage() {
         else chargePerItem = orderSettings.itemChargeTier4;
         deliveryFee = chargePerItem * totalItemCount;
     }
+
+    const xeroxSubtotal = xeroxItems.reduce((acc, item) => acc + item.price, 0);
+    let xeroxDeliveryFee = 0;
+    if (xeroxSubtotal > 0 && xeroxSubtotal < orderSettings.minXeroxOrderPrice) {
+        xeroxDeliveryFee = orderSettings.xeroxDeliveryCharge;
+    }
     
-    const total = itemsSubtotal + deliveryFee;
+    const total = itemsSubtotal + deliveryFee + xeroxSubtotal + xeroxDeliveryFee;
     const savings = originalItemsTotal - itemsSubtotal;
 
-    return { total, itemsSubtotal, deliveryFee, savings };
-  }, [itemsByCategory, orderSettings]);
+    return { total, itemsSubtotal, xeroxSubtotal, deliveryFee, savings, xeroxDeliveryFee };
+  }, [cartItems, orderSettings]);
 
   async function onAddressSubmit(values: z.infer<typeof addressSchema>) {
     if (!user) return;
@@ -178,29 +188,36 @@ export default function CheckoutPage() {
     const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
     const shippingAddress = user.addresses[addressIndex];
     
-    const orderCreationPromises = [];
+    let orderCreationPromises = [];
 
-    const itemsGroup = (itemsByCategory.stationary || []).concat(itemsByCategory.books || []).concat(itemsByCategory.electronics || []);
-    const totalItemCount = itemsGroup.reduce((acc, item) => acc + item.quantity, 0);
-
-    let chargePerItem = 0;
+    // --- Product Items Order Creation ---
+    const productItems = cartItems.filter(item => item.type !== 'xerox') as (CartItem & {type: 'stationary' | 'books' | 'electronics', product: Product})[];
+    const totalItemCount = productItems.reduce((acc, item) => acc + item.quantity, 0);
+    let deliveryChargePerItem = 0;
     if (totalItemCount > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery) {
-        if (totalItemCount <= 5) chargePerItem = orderSettings.itemChargeTier1;
-        else if (totalItemCount <= 10) chargePerItem = orderSettings.itemChargeTier2;
-        else if (totalItemCount <= 15) chargePerItem = orderSettings.itemChargeTier3;
-        else chargePerItem = orderSettings.itemChargeTier4;
+        let chargePerTier = 0;
+        if (totalItemCount <= 5) chargePerTier = orderSettings.itemChargeTier1;
+        else if (totalItemCount <= 10) chargePerTier = orderSettings.itemChargeTier2;
+        else if (totalItemCount <= 15) chargePerTier = orderSettings.itemChargeTier3;
+        else chargePerTier = orderSettings.itemChargeTier4;
+        deliveryChargePerItem = (chargePerTier * totalItemCount) / totalItemCount;
     }
-    const deliveryChargePerItem = totalItemCount > 0 ? (chargePerItem * totalItemCount) / totalItemCount : 0;
 
-    for (const category of presentCategories) {
+    const productItemsByCategory = productItems.reduce((acc, item) => {
+        const category: CategoryKey = item.type;
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(item);
+        return acc;
+    }, {} as Record<CategoryKey, typeof productItems>);
+
+    for (const category of Object.keys(productItemsByCategory) as CategoryKey[]) {
         const sellerId = values[category as keyof typeof values];
         if (!sellerId) {
             toast({ variant: "destructive", title: "Error", description: `Please select a seller for ${category}.` });
-            setIsPlacingOrder(false);
-            return;
+            return; // Stop the process
         }
 
-        const itemsToOrder = itemsByCategory[category as CategoryKey] || [];
+        const itemsToOrder = productItemsByCategory[category];
         for (const cartItem of itemsToOrder) {
             orderCreationPromises.push(
                 createOrder({
@@ -216,16 +233,60 @@ export default function CheckoutPage() {
                     mobile: mobileData.mobile,
                     altMobiles: mobileData.altMobiles?.filter(m => m.value),
                     status: 'Pending Confirmation',
-                    category: cartItem.product.category,
+                    category: cartItem.type,
                 })
             );
         }
     }
 
+    // --- Xerox Items Order Creation ---
+    const xeroxItems = cartItems.filter(item => item.type === 'xerox') as (CartItem & {type: 'xerox', xerox: XeroxDocument})[];
+    let xeroxDeliveryCharge = 0;
+    if (xeroxSubtotal > 0 && xeroxSubtotal < orderSettings.minXeroxOrderPrice) {
+        xeroxDeliveryCharge = orderSettings.xeroxDeliveryCharge;
+    }
+    const xeroxSellerId = values['xerox' as keyof typeof values];
+    if (xeroxItems.length > 0 && !xeroxSellerId) {
+        toast({ variant: "destructive", title: "Error", description: `Please select a seller for Xerox.` });
+        return; // Stop the process
+    }
+    for (const xeroxItem of xeroxItems) {
+      if (xeroxItem.xerox.file) {
+        const fd = new FormData();
+        fd.append("file", xeroxItem.xerox.file);
+        
+        try {
+          const res = await fetch("/api/upload", { method: "POST", body: fd });
+          const data = await res.json();
+          if (!res.ok || !data.url) throw new Error(data.error || 'Upload failed');
+          
+          orderCreationPromises.push(createOrder({
+            userId: user.uid,
+            productName: xeroxItem.xerox.file.name,
+            productImage: data.url, // Storing drive URL here
+            quantity: xeroxItem.quantity,
+            price: xeroxItem.price,
+            deliveryCharge: xeroxDeliveryCharge / xeroxItems.length, // Distribute charge
+            sellerId: xeroxSellerId,
+            shippingAddress: shippingAddress,
+            mobile: mobileData.mobile,
+            altMobiles: mobileData.altMobiles?.filter(m => m.value),
+            status: 'Pending Confirmation',
+            category: 'xerox',
+            // Include Xerox-specific details if needed in the future
+          }));
+        } catch (uploadError: any) {
+          toast({ variant: "destructive", title: 'Upload Failed', description: `Could not upload ${xeroxItem.xerox.file.name}. Order cancelled.` });
+          return;
+        }
+      }
+    }
+
     try {
+      setIsPlacingOrder(true);
       await Promise.all(orderCreationPromises);
       setOrderItemCount(cartItems.length);
-      cartItems.forEach(item => removeItem(item.product.id));
+      cartItems.forEach(item => removeItem(item.id));
       setOrderPlaced(true);
       setTimeout(() => { router.push('/orders'); }, 5000);
     } catch (error: any) {
@@ -237,7 +298,7 @@ export default function CheckoutPage() {
   
   async function onMobileSubmit(values: z.infer<typeof mobileSchema>) {
     if (!user) return;
-    setIsPlacingOrder(true);
+    setIsPlacingOrder(true); // Show loader immediately
     try {
         await updateUserProfile(user.uid, { mobile: values.mobile, altMobiles: values.altMobiles?.filter(m => m.value) });
         toast({ title: "Mobile Number Saved" });
@@ -249,13 +310,21 @@ export default function CheckoutPage() {
   }
 
   async function onCheckoutSubmit() {
+    // Validate all seller selections first
+    for (const category of presentCategories) {
+        if (!checkoutForm.getValues(category as keyof typeof selectedSellers)) {
+            toast({ variant: "destructive", title: "Seller Not Selected", description: `Please select a seller for the ${category} items.` });
+            return;
+        }
+    }
+
     const mobileData = mobileForm.getValues();
     if (!mobileData.mobile) {
       toast({ variant: 'destructive', title: 'Mobile Number Required', description: 'Please enter and save your mobile number.' });
       mobileForm.trigger('mobile');
       return;
     }
-    // Trigger validation and if valid, proceed.
+    
     const isValid = await mobileForm.trigger();
     if (isValid) {
       await onMobileSubmit(mobileData);
@@ -457,7 +526,7 @@ export default function CheckoutPage() {
     </Form>
   )
 
-  const isCheckoutDisabled = isPlacingOrder || !checkoutForm.formState.isValid || !selectedAddress || presentCategories.some(cat => !selectedSellers[cat]);
+  const isCheckoutDisabled = isPlacingOrder || !selectedAddress || presentCategories.some(cat => !selectedSellers[cat]);
 
   return (
     <>
@@ -495,6 +564,7 @@ export default function CheckoutPage() {
                     {presentCategories.map(cat => (
                         <div key={cat}>
                             {renderSellerSelection(cat)}
+                            <FormMessage>{checkoutForm.formState.errors[cat]?.message?.toString()}</FormMessage>
                         </div>
                     ))}
                 </CardContent>
@@ -510,27 +580,50 @@ export default function CheckoutPage() {
                 {presentCategories.map((category) => (
                     <div key={category}>
                         <h4 className="font-medium capitalize mb-2">{category}</h4>
-                        {itemsByCategory[category]?.map(({ product, quantity }) => (
-                           <div key={product.id} className="flex items-center justify-between text-sm ml-2">
-                            <div className="flex gap-2 min-w-0">
-                               <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden">
-                                  {product.imageNames?.[0] ? (<Image src={product.imageNames[0]} alt={product.name} fill className="object-cover" />) : (<div className="flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground">JASA</div>)}
-                               </div>
-                                <div className="min-w-0">
-                                    <p className="font-medium truncate">{product.name}</p>
-                                    <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
+                        {itemsByCategory[category]?.map((item) => {
+                          if (item.type === 'xerox') {
+                            const xerox = item.xerox;
+                            return (
+                              <div key={item.id} className="flex items-center justify-between text-sm ml-2">
+                                <div className="flex gap-2 min-w-0">
+                                  <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                                    <FileText className="h-6 w-6 text-muted-foreground" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate">{xerox.file?.name || 'Printing Job'}</p>
+                                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                  </div>
                                 </div>
-                            </div>
-                            <p className="flex-shrink-0 pl-2">Rs {((product.discountPrice || product.price) * quantity).toFixed(2)}</p>
-                          </div>
-                        ))}
+                                <p className="flex-shrink-0 pl-2">Rs {item.price.toFixed(2)}</p>
+                              </div>
+                            )
+                          } else {
+                            const product = item.product;
+                            return (
+                               <div key={product.id} className="flex items-center justify-between text-sm ml-2">
+                                <div className="flex gap-2 min-w-0">
+                                   <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden">
+                                      {product.imageNames?.[0] ? (<Image src={product.imageNames[0]} alt={product.name} fill className="object-cover" />) : (<div className="flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground">JASA</div>)}
+                                   </div>
+                                    <div className="min-w-0">
+                                        <p className="font-medium truncate">{product.name}</p>
+                                        <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                    </div>
+                                </div>
+                                <p className="flex-shrink-0 pl-2">Rs {((product.discountPrice || product.price) * item.quantity).toFixed(2)}</p>
+                              </div>
+                            )
+                          }
+                        })}
                     </div>
                 ))}
                 <Separator />
-                 <div className="space-y-2">
-                    {itemsSubtotal > 0 && <div className="flex justify-between text-sm"><span>Items Subtotal</span><span>Rs {itemsSubtotal.toFixed(2)}</span></div>}
-                    {deliveryFee > 0 && <div className="flex justify-between text-sm text-destructive"><span>Delivery Fee</span><span>Rs {deliveryFee.toFixed(2)}</span></div>}
-                    {savings > 0 && <div className="flex justify-between text-sm text-green-600"><span>You Save</span><span>Rs {savings.toFixed(2)}</span></div>}
+                 <div className="space-y-2 text-sm">
+                    {itemsSubtotal > 0 && <div className="flex justify-between"><span>Items Subtotal</span><span>Rs {itemsSubtotal.toFixed(2)}</span></div>}
+                    {xeroxSubtotal > 0 && <div className="flex justify-between"><span>Printing Subtotal</span><span>Rs {xeroxSubtotal.toFixed(2)}</span></div>}
+                    {deliveryFee > 0 && <div className="flex justify-between text-destructive"><span>Item Delivery</span><span>Rs {deliveryFee.toFixed(2)}</span></div>}
+                    {xeroxDeliveryFee > 0 && <div className="flex justify-between text-destructive"><span>Printing Delivery</span><span>Rs {xeroxDeliveryFee.toFixed(2)}</span></div>}
+                    {savings > 0 && <div className="flex justify-between text-green-600"><span>You Save on Items</span><span>Rs {savings.toFixed(2)}</span></div>}
                     <Separator />
                     <div className="flex justify-between font-bold text-lg"><span>Total</span><span>Rs {total.toFixed(2)}</span></div>
                 </div>
@@ -539,7 +632,16 @@ export default function CheckoutPage() {
                     <Info className="h-4 w-4" />
                     <AlertTitle>Delivery Charges Applied</AlertTitle>
                     <AlertDescription>
-                      Add items worth Rs {(orderSettings.minItemOrderForFreeDelivery - itemsSubtotal).toFixed(2)} more to get FREE delivery.
+                      Add items worth Rs {(orderSettings.minItemOrderForFreeDelivery - itemsSubtotal).toFixed(2)} more to get FREE delivery on products.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {orderSettings && xeroxSubtotal > 0 && xeroxSubtotal < orderSettings.minXeroxOrderPrice && (
+                  <Alert className="mt-2">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Printing Delivery Charge</AlertTitle>
+                    <AlertDescription>
+                      Your printing subtotal is below Rs {orderSettings.minXeroxOrderPrice}. A fee of Rs {orderSettings.xeroxDeliveryCharge} has been added.
                     </AlertDescription>
                   </Alert>
                 )}

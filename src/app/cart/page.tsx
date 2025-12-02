@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, ShoppingBag, Plus, Minus, Info } from "lucide-react";
+import { Trash2, ShoppingBag, Plus, Minus, Info, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Product, OrderSettings } from "@/lib/types";
+import type { Product, OrderSettings, CartItem, XeroxDocument } from "@/lib/types";
 import { useAuth } from "@/context/auth-provider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import AuthForm from "@/components/auth-form";
@@ -22,10 +22,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getOrderSettings } from "@/lib/data";
 
 const categories: { value: string, label: string }[] = [
-    { value: 'all', label: 'All' },
+    { value: 'all', label: 'All Items' },
     { value: 'stationary', label: 'Stationary' },
     { value: 'books', label: 'Books' },
     { value: 'electronics', label: 'Electronic Kit' },
+    { value: 'xerox', label: 'Xerox & Printing' },
 ];
 
 export default function CartPage() {
@@ -58,14 +59,14 @@ export default function CartPage() {
   }, [toast]);
 
 
-  const handleToggleSelectedItem = (productId: string) => {
-    const newSelectedItems = selectedItems.includes(productId)
-      ? selectedItems.filter(id => id !== productId)
-      : [...selectedItems, productId];
+  const handleToggleSelectedItem = (itemId: string) => {
+    const newSelectedItems = selectedItems.includes(itemId)
+      ? selectedItems.filter(id => id !== itemId)
+      : [...selectedItems, itemId];
     setSelectedItems(newSelectedItems);
   };
   
-  const handleToggleAll = (itemsToToggle: Product[]) => {
+  const handleToggleAll = (itemsToToggle: CartItem[]) => {
       const itemIds = itemsToToggle.map(item => item.id);
       const allSelected = itemIds.every(id => selectedItems.includes(id));
       if (allSelected) {
@@ -75,18 +76,18 @@ export default function CartPage() {
       }
   }
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return; // Prevent quantity from going below 1
-    updateQuantity(productId, newQuantity);
+    updateQuantity(itemId, newQuantity);
   };
 
   const getCategoryItems = (category: string) => {
     if (category === 'all') return items;
-    return items.filter(item => item.product.category === category);
+    return items.filter(item => item.type === category);
   };
 
   const selectedCartItems = useMemo(() => {
-    return items.filter(item => selectedItems.includes(item.product.id));
+    return items.filter(item => selectedItems.includes(item.id));
   }, [items, selectedItems]);
 
   const handleCheckout = () => {
@@ -153,15 +154,15 @@ export default function CartPage() {
         </Card>
     );
 
-    const { total, itemsSubtotal, deliveryFee, savings } = (() => {
-        const itemsGroup = selectedCartItems.filter(item => ['stationary', 'books', 'electronics'].includes(item.product.category));
+    const { total, itemsSubtotal, xeroxSubtotal, deliveryFee, savings, xeroxDeliveryFee } = (() => {
+        const productItems = selectedCartItems.filter(item => item.type !== 'xerox') as (CartItem & {type: 'stationary' | 'books' | 'electronics', product: Product})[];
+        const xeroxItems = selectedCartItems.filter(item => item.type === 'xerox') as (CartItem & {type: 'xerox', xerox: XeroxDocument})[];
         
-        const itemsSubtotal = itemsGroup.reduce((acc, item) => acc + (item.product.discountPrice ?? item.product.price) * item.quantity, 0);
-        const totalItemCount = itemsGroup.reduce((acc, item) => acc + item.quantity, 0);
+        const itemsSubtotal = productItems.reduce((acc, item) => acc + (item.product.discountPrice || item.product.price) * item.quantity, 0);
+        const totalItemCount = productItems.reduce((acc, item) => acc + item.quantity, 0);
         
-        const originalTotal = selectedCartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-        const currentSubtotal = itemsSubtotal;
-        const savings = originalTotal - currentSubtotal;
+        const originalItemsTotal = productItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+        const savings = originalItemsTotal - itemsSubtotal;
 
         let deliveryFee = 0;
         if (orderSettings && totalItemCount > 0 && itemsSubtotal < orderSettings.minItemOrderForFreeDelivery) {
@@ -173,8 +174,14 @@ export default function CartPage() {
             deliveryFee = chargePerItem * totalItemCount;
         }
 
-        const total = itemsSubtotal + deliveryFee;
-        return { total, itemsSubtotal, deliveryFee, savings };
+        const xeroxSubtotal = xeroxItems.reduce((acc, item) => acc + item.price, 0);
+        let xeroxDeliveryFee = 0;
+        if (orderSettings && xeroxSubtotal > 0 && xeroxSubtotal < orderSettings.minXeroxOrderPrice) {
+            xeroxDeliveryFee = orderSettings.xeroxDeliveryCharge;
+        }
+
+        const total = itemsSubtotal + deliveryFee + xeroxSubtotal + xeroxDeliveryFee;
+        return { total, itemsSubtotal, xeroxSubtotal, deliveryFee, savings, xeroxDeliveryFee };
     })();
 
     return (
@@ -185,20 +192,19 @@ export default function CartPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             {selectedCartItems.map(item => (
-              <div key={item.product.id} className="flex justify-between text-sm">
-                  <span className="truncate pr-4">{item.product.name}</span>
-                  <span className="flex-shrink-0">{item.quantity} x Rs {(item.product.discountPrice ?? item.product.price).toFixed(2)}</span>
+              <div key={item.id} className="flex justify-between text-sm">
+                  <span className="truncate pr-4">{item.type === 'xerox' ? item.xerox.file?.name : item.product.name}</span>
+                  <span className="flex-shrink-0">{item.quantity} x Rs {(item.price).toFixed(2)}</span>
               </div>
             ))}
           </div>
           <Separator />
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Subtotal ({selectedCartItems.length} items)</span>
-              <span>Rs {itemsSubtotal.toFixed(2)}</span>
-            </div>
-            {deliveryFee > 0 && <div className="flex justify-between text-destructive"><span>Delivery Fee</span><span>Rs {deliveryFee.toFixed(2)}</span></div>}
-            {savings > 0 && <div className="flex justify-between text-green-600"><span>You Save</span><span>Rs {savings.toFixed(2)}</span></div>}
+             {itemsSubtotal > 0 && <div className="flex justify-between"><span>Items Subtotal</span><span>Rs {itemsSubtotal.toFixed(2)}</span></div>}
+             {xeroxSubtotal > 0 && <div className="flex justify-between"><span>Printing Subtotal</span><span>Rs {xeroxSubtotal.toFixed(2)}</span></div>}
+             {deliveryFee > 0 && <div className="flex justify-between text-destructive"><span>Item Delivery</span><span>Rs {deliveryFee.toFixed(2)}</span></div>}
+             {xeroxDeliveryFee > 0 && <div className="flex justify-between text-destructive"><span>Printing Delivery</span><span>Rs {xeroxDeliveryFee.toFixed(2)}</span></div>}
+             {savings > 0 && <div className="flex justify-between text-green-600"><span>You Save on Items</span><span>Rs {savings.toFixed(2)}</span></div>}
           </div>
           <Separator />
           <div className="flex justify-between font-bold text-lg">
@@ -211,7 +217,17 @@ export default function CartPage() {
                 <Info className="h-4 w-4" />
                 <AlertTitle>Almost there!</AlertTitle>
                 <AlertDescription>
-                    Add items worth Rs {(orderSettings.minItemOrderForFreeDelivery - itemsSubtotal).toFixed(2)} more for FREE delivery.
+                    Add items worth Rs {(orderSettings.minItemOrderForFreeDelivery - itemsSubtotal).toFixed(2)} more for FREE delivery on products.
+                </AlertDescription>
+            </Alert>
+          )}
+
+          {orderSettings && xeroxSubtotal > 0 && xeroxSubtotal < orderSettings.minXeroxOrderPrice && (
+            <Alert className="mt-2">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Printing Delivery Charge</AlertTitle>
+                <AlertDescription>
+                    Your printing subtotal is below Rs {orderSettings.minXeroxOrderPrice}. A fee of Rs {orderSettings.xeroxDeliveryCharge} has been added.
                 </AlertDescription>
             </Alert>
           )}
@@ -227,7 +243,7 @@ export default function CartPage() {
   }
 
   const categoryItems = getCategoryItems(activeTab);
-  const areAllCategoryItemsSelected = categoryItems.length > 0 && categoryItems.every(item => selectedItems.includes(item.product.id));
+  const areAllCategoryItemsSelected = categoryItems.length > 0 && categoryItems.every(item => selectedItems.includes(item.id));
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -242,7 +258,7 @@ export default function CartPage() {
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
         <div className="sticky top-20 z-40 bg-background py-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
               {categories.map((cat) => (
                   <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
               ))}
@@ -257,7 +273,7 @@ export default function CartPage() {
                           <Checkbox
                             id={`select-all-${activeTab}`}
                             checked={areAllCategoryItemsSelected}
-                            onCheckedChange={() => handleToggleAll(categoryItems.map(i => i.product))}
+                            onCheckedChange={() => handleToggleAll(categoryItems)}
                           />
                           <label
                             htmlFor={`select-all-${activeTab}`}
@@ -267,7 +283,40 @@ export default function CartPage() {
                           </label>
                         </div>
 
-                        {categoryItems.map(({ product, quantity }) => {
+                        {categoryItems.map((item) => {
+                          if (item.type === 'xerox') {
+                            const xerox = item.xerox;
+                            return (
+                              <Card key={item.id} className="flex items-center overflow-hidden">
+                                  <div className="p-4 flex items-center h-full">
+                                      <Checkbox
+                                          id={`select-${item.id}`}
+                                          checked={selectedItems.includes(item.id)}
+                                          onCheckedChange={() => handleToggleSelectedItem(item.id)}
+                                          className="h-5 w-5"
+                                       />
+                                  </div>
+                                  <div className="relative h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32 bg-muted flex items-center justify-center">
+                                    <FileText className="h-10 w-10 text-muted-foreground" />
+                                  </div>
+                                  <div className="flex flex-grow flex-col p-4 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex-grow">
+                                      <h2 className="font-headline text-lg font-semibold truncate">{xerox.file?.name || 'Printing Job'}</h2>
+                                      <p className="text-lg font-bold text-primary">Rs {item.price.toFixed(2)}</p>
+                                  </div>
+                                  <div className="mt-4 flex items-center gap-2 sm:mt-0">
+                                      <div className="flex items-center gap-1 rounded-md border">
+                                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleQuantityChange(item.id, item.quantity - 1)} disabled={item.quantity <= 1}> <Minus className="h-4 w-4" /> </Button>
+                                          <Input type="number" min="1" value={item.quantity} onChange={(e) => { const newQuantity = parseInt(e.target.value, 10); if (!isNaN(newQuantity)) { handleQuantityChange(item.id, newQuantity); } }} className="h-9 w-12 border-0 text-center text-base font-medium focus-visible:ring-0" aria-label={`Quantity for ${xerox.file?.name}`} />
+                                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleQuantityChange(item.id, item.quantity + 1)}> <Plus className="h-4 w-4" /> </Button>
+                                      </div>
+                                      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => removeItem(item.id)} aria-label={`Remove ${xerox.file?.name} from cart`}> <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" /> </Button>
+                                  </div>
+                                  </div>
+                              </Card>
+                            )
+                          }
+                          const product = item.product;
                           const mainImage = product.imageNames && product.imageNames.length > 0 ? product.imageNames[0] : null;
                           const hasDiscount = product.discountPrice && product.discountPrice < product.price;
                           return (
@@ -314,15 +363,15 @@ export default function CartPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-9 w-9"
-                                            onClick={() => handleQuantityChange(product.id, quantity - 1)}
-                                            disabled={quantity <= 1}
+                                            onClick={() => handleQuantityChange(product.id, item.quantity - 1)}
+                                            disabled={item.quantity <= 1}
                                         >
                                             <Minus className="h-4 w-4" />
                                         </Button>
                                         <Input
                                             type="number"
                                             min="1"
-                                            value={quantity}
+                                            value={item.quantity}
                                             onChange={(e) => {
                                                 const newQuantity = parseInt(e.target.value, 10);
                                                 if (!isNaN(newQuantity)) {
@@ -336,7 +385,7 @@ export default function CartPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-9 w-9"
-                                            onClick={() => handleQuantityChange(product.id, quantity + 1)}
+                                            onClick={() => handleQuantityChange(product.id, item.quantity + 1)}
                                         >
                                             <Plus className="h-4 w-4" />
                                         </Button>
