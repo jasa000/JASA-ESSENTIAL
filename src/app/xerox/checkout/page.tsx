@@ -154,7 +154,9 @@ export default function XeroxCheckoutPage() {
         await updateUserProfile(user.uid, { mobile: mobileData.mobile });
 
         const orderPromises = xeroxJobs.map(async (job) => {
-            const fileToUpload = new File([await new Blob([job.file as BlobPart]).arrayBuffer()], job.fileDetails.name, { type: job.fileDetails.type });
+            const blob = await fetch(job.file as any).then(res => res.blob());
+            const fileToUpload = new File([blob], job.fileDetails.name, { type: job.fileDetails.type });
+            
             const fd = new FormData();
             fd.append("file", fileToUpload);
             
@@ -264,7 +266,7 @@ export default function XeroxCheckoutPage() {
         </CardHeader>
         <CardContent>
           <Form {...mobileForm}>
-            <div className="space-y-4">
+            <form onSubmit={e => e.preventDefault()} className="space-y-4">
               <FormField
                 control={mobileForm.control}
                 name="mobile"
@@ -278,7 +280,7 @@ export default function XeroxCheckoutPage() {
                   </FormItem>
                 )}
               />
-            </div>
+            </form>
           </Form>
         </CardContent>
       </Card>
@@ -396,7 +398,7 @@ export default function XeroxCheckoutPage() {
                         <FileText className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{job.fileDetails.name}</p>
+                        <p className="font-medium truncate">{job.fileDetails?.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {job.config.quantity}</p>
                       </div>
                     </div>
