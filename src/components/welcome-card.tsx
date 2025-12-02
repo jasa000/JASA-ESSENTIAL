@@ -13,9 +13,16 @@ type WelcomeCardProps = {
 
 export default function WelcomeCard({ imageUrl, className }: WelcomeCardProps) {
   const [typedText, setTypedText] = useState("");
+  const [isClient, setIsClient] = useState(false);
   const fullText = "Welcome to Jasa Essentials";
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     let currentIndex = 0;
     let isDeleting = false;
 
@@ -40,7 +47,7 @@ export default function WelcomeCard({ imageUrl, className }: WelcomeCardProps) {
     const typingInterval = setInterval(type, isDeleting ? 100 : 150);
 
     return () => clearInterval(typingInterval);
-  }, []);
+  }, [isClient]);
 
   return (
     <div className="relative w-full overflow-hidden">
