@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/context/auth-provider';
@@ -38,6 +38,7 @@ const addressSchema = z.object({
 
 const mobileSchema = z.object({
     mobile: z.string().min(10, "A valid 10-digit mobile number is required.").max(10),
+    altMobiles: z.array(z.object({ value: z.string().min(10, "Must be 10 digits.").max(10).or(z.literal('')) })).optional(),
 });
 
 const checkoutFormSchema = z.object({
@@ -75,7 +76,15 @@ export default function XeroxCheckoutPage() {
   
   const mobileForm = useForm<z.infer<typeof mobileSchema>>({
     resolver: zodResolver(mobileSchema),
-    defaultValues: { mobile: user?.mobile || '' }
+    defaultValues: { 
+        mobile: user?.mobile || '',
+        altMobiles: user?.altMobiles?.map(alt => ({ value: alt.value || '' })) || [{ value: ''}],
+    }
+  });
+
+  const { fields: altMobilesFields, append: appendAltMobile } = useFieldArray({
+    control: mobileForm.control,
+    name: "altMobiles",
   });
 
   const addressForm = useForm<z.infer<typeof addressSchema>>({
@@ -96,7 +105,10 @@ export default function XeroxCheckoutPage() {
         checkoutForm.setValue('selectedAddress', `address-0`);
     }
     if (user) {
-        mobileForm.reset({ mobile: user.mobile || '' });
+        mobileForm.reset({ 
+            mobile: user.mobile || '',
+            altMobiles: user.altMobiles?.map(alt => ({ value: alt.value || '' })) || [{ value: ''}],
+        });
     }
     
     const fetchInitialData = async () => {
@@ -166,7 +178,7 @@ export default function XeroxCheckoutPage() {
     
     setIsPlacingOrder(true);
     try {
-        await updateUserProfile(user.uid, { mobile: mobileData.mobile });
+        await updateUserProfile(user.uid, { mobile: mobileData.mobile, altMobiles: mobileData.altMobiles?.filter(m => m.value) });
 
         const orderPromises = xeroxJobs.map(async (job) => {
             const blob = await fetch(job.file as any).then(res => res.blob());
@@ -192,6 +204,7 @@ export default function XeroxCheckoutPage() {
                 sellerId: values.selectedShop,
                 shippingAddress: shippingAddress,
                 mobile: mobileData.mobile,
+                altMobiles: mobileData.altMobiles?.filter(m => m.value),
                 status: 'Pending Confirmation',
                 category: 'xerox',
             });
@@ -295,6 +308,20 @@ export default function XeroxCheckoutPage() {
                   </FormItem>
                 )}
               />
+              {altMobilesFields.map((field, index) => (
+                 <FormField
+                    key={field.id}
+                    control={mobileForm.control}
+                    name={`altMobiles.${index}.value`}
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Alternate Mobile Number (Optional)</FormLabel>
+                        <FormControl><Input {...field} value={field.value || ''} type="tel" placeholder="Another 10-digit number" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+              ))}
             </div>
           </Form>
         </CardContent>
