@@ -44,12 +44,17 @@ const checkoutFormSchema = z.object({
   selectedShop: z.string().min(1, "Please select a seller."),
 });
 
+type StoredXeroxJob = Omit<XeroxDocument, 'file'> & {
+    fileDetails: { name: string, type: string };
+};
+
+
 export default function XeroxCheckoutPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
-  const [xeroxJobs, setXeroxJobs] = useState<XeroxDocument[]>([]);
+  const [xeroxJobs, setXeroxJobs] = useState<StoredXeroxJob[]>([]);
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [orderSettings, setOrderSettings] = useState<OrderSettings | null>(null);
@@ -73,20 +78,10 @@ export default function XeroxCheckoutPage() {
   });
 
   useEffect(() => {
-    // This effect runs on the client side only
     const storedJobs = sessionStorage.getItem('xeroxCheckoutJobs');
     if (storedJobs) {
-      // Re-hydrate File objects which are not serializable
-      const parsedJobs = JSON.parse(storedJobs).map((job: any) => ({
-        ...job,
-        file: new File([], job.file.name, { type: job.file.type }) // Placeholder File
-      }));
-       // The actual file object is lost, we need to ask the user to re-select if they refresh.
-       // For this implementation, we assume they won't refresh. The File object from the previous page is kept in state.
-       // A more robust solution might use IndexedDB for file storage.
       setXeroxJobs(JSON.parse(storedJobs));
     } else {
-      // If no jobs are found, redirect back to the xerox page
       router.push('/xerox');
     }
 
@@ -159,7 +154,7 @@ export default function XeroxCheckoutPage() {
         await updateUserProfile(user.uid, { mobile: mobileData.mobile });
 
         const orderPromises = xeroxJobs.map(async (job) => {
-            const fileToUpload = new File([await new Blob([job.file as BlobPart]).arrayBuffer()], job.file.name, { type: job.file.type });
+            const fileToUpload = new File([await new Blob([job.file as BlobPart]).arrayBuffer()], job.fileDetails.name, { type: job.fileDetails.type });
             const fd = new FormData();
             fd.append("file", fileToUpload);
             
@@ -167,12 +162,12 @@ export default function XeroxCheckoutPage() {
             const data = await res.json();
             
             if (!res.ok || !data.url) {
-                throw new Error(data.error || `Upload failed for ${job.file.name}`);
+                throw new Error(data.error || `Upload failed for ${job.fileDetails.name}`);
             }
 
             return createOrder({
                 userId: user.uid,
-                productName: job.file.name,
+                productName: job.fileDetails.name,
                 productImage: data.url, // Google Drive URL
                 quantity: job.config.quantity,
                 price: job.price,
@@ -401,7 +396,7 @@ export default function XeroxCheckoutPage() {
                         <FileText className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{job.file.name}</p>
+                        <p className="font-medium truncate">{job.fileDetails.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {job.config.quantity}</p>
                       </div>
                     </div>

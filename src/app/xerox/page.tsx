@@ -259,27 +259,32 @@ export default function XeroxPage() {
       return;
     }
 
-    const xeroxJobs: XeroxDocument[] = documents.map((doc, index) => {
-        const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
-        return {
-            id: `${Date.now()}-${index}`, // Unique ID for this job instance
-            file: doc.file!,
-            pageCount: doc.fileDetails?.pages || 0,
-            price: price / doc.quantity,
-            config: {
-                paperType: doc.selectedPaperType,
-                colorOption: doc.selectedColorOption,
-                formatType: doc.selectedFormatType,
-                printRatio: doc.selectedPrintRatio,
-                bindingType: doc.selectedBindingType,
-                laminationType: doc.selectedLaminationType,
-                quantity: doc.quantity,
-                message: doc.message,
-            }
-        };
-    }).filter(job => job.file !== null);
+    const xeroxJobsForStorage = documents.map((doc, index) => {
+      const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
+      if (!doc.file || !doc.fileDetails) return null;
+      return {
+        id: `${Date.now()}-${index}`,
+        file: doc.file,
+        fileDetails: {
+          name: doc.fileDetails.name,
+          type: doc.fileDetails.type,
+        },
+        pageCount: doc.fileDetails.pages || 0,
+        price: price / doc.quantity,
+        config: {
+          paperType: doc.selectedPaperType,
+          colorOption: doc.selectedColorOption,
+          formatType: doc.selectedFormatType,
+          printRatio: doc.selectedPrintRatio,
+          bindingType: doc.selectedBindingType,
+          laminationType: doc.selectedLaminationType,
+          quantity: doc.quantity,
+          message: doc.message,
+        }
+      };
+    }).filter(job => job !== null);
 
-    sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(xeroxJobs));
+    sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(xeroxJobsForStorage));
     router.push('/xerox/checkout');
   };
   
