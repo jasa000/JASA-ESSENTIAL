@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { useAuth } from '@/context/auth-provider';
 import { updateUserProfile } from '@/lib/users';
 import { getShops } from '@/lib/shops';
-import { getOrderSettings, createOrder } from '@/lib/data';
+import { getOrderSettings, createOrder, getXeroxOptions } from '@/lib/data';
 import { useState, useEffect, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText } from 'lucide-react';
-import type { UserProfile, Shop, OrderSettings, ShopService, XeroxDocument } from '@/lib/types';
+import type { UserProfile, Shop, OrderSettings, ShopService, XeroxDocument, XeroxOption } from '@/lib/types';
+import { HARDCODED_XEROX_OPTIONS } from '@/lib/xerox-options';
 
 
 const addressSchema = z.object({
@@ -62,6 +63,11 @@ export default function XeroxCheckoutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   
+  const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
+  const [bindingTypes, setBindingTypes] = useState<XeroxOption[]>([]);
+  const [laminationTypes, setLaminationTypes] = useState<XeroxOption[]>([]);
+
+
   const checkoutForm = useForm<z.infer<typeof checkoutFormSchema>>({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: { selectedAddress: "", selectedShop: "" },
@@ -96,9 +102,18 @@ export default function XeroxCheckoutPage() {
     const fetchInitialData = async () => {
         try {
             setLoading(true);
-            const [shops, settings] = await Promise.all([getShops(), getOrderSettings()]);
+            const [shops, settings, papers, bindings, laminations] = await Promise.all([
+                getShops(), 
+                getOrderSettings(),
+                getXeroxOptions('paperType'),
+                getXeroxOptions('bindingType'),
+                getXeroxOptions('laminationType'),
+            ]);
             setAllShops(shops);
             setOrderSettings(settings);
+            setPaperTypes(papers);
+            setBindingTypes(bindings);
+            setLaminationTypes(laminations);
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Could not fetch checkout data." });
         } finally {
@@ -354,6 +369,17 @@ export default function XeroxCheckoutPage() {
   
   const isCheckoutDisabled = isPlacingOrder || !checkoutForm.formState.isValid;
 
+    const getOptionName = (type: 'paperType' | 'colorOption' | 'formatType' | 'printRatio' | 'bindingType' | 'laminationType', id: string): string => {
+        if (!id || id === 'none') return '';
+        if (type === 'paperType') return paperTypes.find(o => o.id === id)?.name || '';
+        if (type === 'colorOption') return HARDCODED_XEROX_OPTIONS.colorOptions.find(o => o.id === id)?.name || '';
+        if (type === 'formatType') return HARDCODED_XEROX_OPTIONS.formatTypes.find(o => o.id === id)?.name || '';
+        if (type === 'printRatio') return HARDCODED_XEROX_OPTIONS.printRatios.find(o => o.id === id)?.name || '';
+        if (type === 'bindingType') return bindingTypes.find(o => o.id === id)?.name || '';
+        if (type === 'laminationType') return laminationTypes.find(o => o.id === id)?.name || '';
+        return '';
+    };
+
   return (
     <>
     <Dialog open={orderPlaced}>
@@ -391,20 +417,41 @@ export default function XeroxCheckoutPage() {
             <CardHeader><CardTitle className="font-headline">Your Order</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {xeroxJobs.map((job) => (
-                  <div key={job.id} className="flex items-center justify-between text-sm">
-                    <div className="flex gap-2 min-w-0">
-                      <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
-                        <FileText className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{job.fileDetails?.name}</p>
-                        <p className="text-xs text-muted-foreground">Qty: {job.config.quantity}</p>
-                      </div>
-                    </div>
-                    <p className="flex-shrink-0 pl-2">Rs {(job.price * job.config.quantity).toFixed(2)}</p>
-                  </div>
-                ))}
+                {xeroxJobs.map((job) => {
+                    const details = [
+                        { key: 'Paper', value: getOptionName('paperType', job.config.paperType) },
+                        { key: 'Color', value: getOptionName('colorOption', job.config.colorOption) },
+                        { key: 'Format', value: getOptionName('formatType', job.config.formatType) },
+                        { key: 'Ratio', value: getOptionName('printRatio', job.config.printRatio) },
+                        { key: 'Binding', value: getOptionName('bindingType', job.config.bindingType) },
+                        { key: 'Lamination', value: getOptionName('laminationType', job.config.laminationType) },
+                    ].filter(d => d.value);
+
+                    return (
+                        <div key={job.id} className="pb-4 border-b last:border-b-0">
+                            <div className="flex items-start justify-between text-sm">
+                                <div className="flex gap-2 min-w-0">
+                                <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                                    <FileText className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-medium truncate">{job.fileDetails?.name}</p>
+                                    <p className="text-xs text-muted-foreground">Qty: {job.config.quantity}</p>
+                                </div>
+                                </div>
+                                <p className="flex-shrink-0 pl-2 font-semibold">Rs {(job.price * job.config.quantity).toFixed(2)}</p>
+                            </div>
+                            <div className="mt-2 pl-14 grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                {details.map(d => (
+                                    <div key={d.key} className="flex">
+                                        <span className="font-semibold text-foreground/80 w-16 shrink-0">{d.key}:</span>
+                                        <span>{d.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
                 <Separator />
                  <div className="space-y-2 text-sm">
                     {xeroxSubtotal > 0 && <div className="flex justify-between"><span>Printing Subtotal</span><span>Rs {xeroxSubtotal.toFixed(2)}</span></div>}
