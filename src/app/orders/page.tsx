@@ -160,7 +160,7 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
   )
 };
 
-const filterConfig = {
+const statusFilterConfig = {
     all: (orders: Order[]) => orders,
     processing: (orders: Order[]) => orders.filter(o => 
         ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery"].includes(o.status)
@@ -169,13 +169,22 @@ const filterConfig = {
     cancelled: (orders: Order[]) => orders.filter(o => ["Cancelled", "Rejected"].includes(o.status)),
 };
 
+const categoryFilterOptions: { value: string, label: string }[] = [
+    { value: 'all', label: 'All Items' },
+    { value: 'stationary', label: 'Stationary' },
+    { value: 'books', label: 'Books' },
+    { value: 'electronics', label: 'Electronic Kit' },
+    { value: 'xerox', label: 'Xerox' },
+];
+
 export default function OrdersPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('all');
+    const [statusTab, setStatusTab] = useState('all');
+    const [categoryFilter, setCategoryFilter] = useState('all');
 
     const fetchOrders = async (userId: string) => {
         setIsLoading(true);
@@ -213,9 +222,15 @@ export default function OrdersPage() {
     };
     
     const filteredOrders = useMemo(() => {
-        const filterFn = filterConfig[activeTab as keyof typeof filterConfig] || filterConfig.all;
-        return filterFn(orders);
-    }, [orders, activeTab]);
+        // First, filter by category
+        const byCategory = categoryFilter === 'all' 
+            ? orders 
+            : orders.filter(o => o.category === categoryFilter);
+        
+        // Then, filter by status
+        const statusFilterFn = statusFilterConfig[statusTab as keyof typeof statusFilterConfig] || statusFilterConfig.all;
+        return statusFilterFn(byCategory);
+    }, [orders, statusTab, categoryFilter]);
 
     if (authLoading || (isLoading && orders.length === 0)) {
         return (
@@ -267,19 +282,30 @@ export default function OrdersPage() {
                 </Button>
             </div>
         ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-                <div className="sticky top-[80px] z-40 bg-background py-2">
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="all">All</TabsTrigger>
-                        <TabsTrigger value="processing">Processing</TabsTrigger>
-                        <TabsTrigger value="delivered">Delivered</TabsTrigger>
-                        <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-                    </TabsList>
+            <div className="mt-8">
+                <div className="sticky top-[80px] z-40 bg-background py-2 space-y-2">
+                    <Tabs value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <TabsList className="grid w-full grid-cols-5 h-auto flex-wrap">
+                            {categoryFilterOptions.map(opt => (
+                                <TabsTrigger key={opt.value} value={opt.value} className="text-xs sm:text-sm">
+                                    {opt.label}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                    <Tabs value={statusTab} onValueChange={setStatusTab}>
+                        <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="all">All</TabsTrigger>
+                            <TabsTrigger value="processing">Processing</TabsTrigger>
+                            <TabsTrigger value="delivered">Delivered</TabsTrigger>
+                            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
                 <div className="mt-4">
                     {renderOrderGrid(filteredOrders)}
                 </div>
-            </Tabs>
+            </div>
         )}
     </div>
   );
