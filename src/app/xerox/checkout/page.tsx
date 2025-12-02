@@ -147,7 +147,7 @@ export default function XeroxCheckoutPage() {
       addressForm.reset();
       setIsAddressDialogOpen(false);
     } catch (error: any) {
-       toast({ variant: "destructive", title: "Error", description: "Failed to save address. " + error.message });
+       toast({ variant: "destructive", title: "Error", description: `Failed to save address: ${error.message}` });
     }
   }
 
@@ -281,7 +281,7 @@ export default function XeroxCheckoutPage() {
         </CardHeader>
         <CardContent>
           <Form {...mobileForm}>
-            <form onSubmit={e => e.preventDefault()} className="space-y-4">
+            <div className="space-y-4">
               <FormField
                 control={mobileForm.control}
                 name="mobile"
@@ -295,7 +295,7 @@ export default function XeroxCheckoutPage() {
                   </FormItem>
                 )}
               />
-            </form>
+            </div>
           </Form>
         </CardContent>
       </Card>
