@@ -255,12 +255,14 @@ export default function ManageShopOrdersPage() {
                   {orders.map(order => {
                     const StatusIcon = statusConfig[order.status]?.icon || Package;
                     const totalItemPrice = (order.price + order.deliveryCharge) * order.quantity;
+                    const isDriveLink = order.productImage && order.productImage.includes('drive.google.com');
+
                     return (
                       <div key={order.id} className="p-4 border rounded-lg flex flex-col gap-4">
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div className="flex gap-4">
                                 <div className="relative h-16 w-16 flex-shrink-0 bg-muted rounded-md overflow-hidden">
-                                    {order.productImage ? (
+                                    {order.productImage && !isDriveLink ? (
                                         <Image src={order.productImage} alt={order.productName} fill className="object-cover" />
                                     ) : (
                                         <FileText className="h-8 w-8 text-muted-foreground m-auto" />
@@ -268,6 +270,11 @@ export default function ManageShopOrdersPage() {
                                 </div>
                                 <div>
                                     <p className="font-semibold">{order.productName}</p>
+                                    {isDriveLink && order.productImage && (
+                                        <a href={order.productImage} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-sm hover:underline">
+                                            View Document
+                                        </a>
+                                    )}
                                     <p className="text-sm text-muted-foreground">Quantity: {order.quantity}</p>
                                     <p className="text-sm text-muted-foreground">Price: Rs {order.price.toFixed(2)}</p>
                                     {order.deliveryCharge > 0 && <p className="text-sm text-muted-foreground">Delivery: Rs {order.deliveryCharge.toFixed(2)}</p>}

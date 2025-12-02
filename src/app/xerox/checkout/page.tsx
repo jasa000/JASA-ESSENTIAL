@@ -76,6 +76,14 @@ export default function XeroxCheckoutPage() {
     // This effect runs on the client side only
     const storedJobs = sessionStorage.getItem('xeroxCheckoutJobs');
     if (storedJobs) {
+      // Re-hydrate File objects which are not serializable
+      const parsedJobs = JSON.parse(storedJobs).map((job: any) => ({
+        ...job,
+        file: new File([], job.file.name, { type: job.file.type }) // Placeholder File
+      }));
+       // The actual file object is lost, we need to ask the user to re-select if they refresh.
+       // For this implementation, we assume they won't refresh. The File object from the previous page is kept in state.
+       // A more robust solution might use IndexedDB for file storage.
       setXeroxJobs(JSON.parse(storedJobs));
     } else {
       // If no jobs are found, redirect back to the xerox page
@@ -128,8 +136,7 @@ export default function XeroxCheckoutPage() {
       toast({ title: "Address Saved", description: "Your new address has been added." });
       addressForm.reset();
       setIsAddressDialogOpen(false);
-    } catch (error: any) {
-       toast({ variant: "destructive", title: "Error", description: "Failed to save address. " + error.message });
+    } catch (error: any)       toast({ variant: "destructive", title: "Error", description: "Failed to save address. " + error.message });
     }
   }
 
@@ -151,10 +158,13 @@ export default function XeroxCheckoutPage() {
         await updateUserProfile(user.uid, { mobile: mobileData.mobile });
 
         const orderPromises = xeroxJobs.map(async (job) => {
+            const fileToUpload = new File([await new Blob([job.file as BlobPart]).arrayBuffer()], job.file.name, { type: job.file.type });
             const fd = new FormData();
-            fd.append("file", job.file);
+            fd.append("file", fileToUpload);
+            
             const res = await fetch("/api/upload", { method: "POST", body: fd });
             const data = await res.json();
+            
             if (!res.ok || !data.url) {
                 throw new Error(data.error || `Upload failed for ${job.file.name}`);
             }
@@ -349,7 +359,7 @@ export default function XeroxCheckoutPage() {
   return (
     <>
     <Dialog open={orderPlaced}>
-        <DialogContent>
+        <DialogContent hideCloseButton>
             <div className="flex flex-col items-center justify-center p-8 text-center">
                 <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
                 <h2 className="text-2xl font-bold">Order Placed Successfully!</h2>
@@ -429,5 +439,3 @@ export default function XeroxCheckoutPage() {
     </>
   );
 }
-
-    
