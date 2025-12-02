@@ -258,7 +258,7 @@ export default function XeroxCheckoutPage() {
         </CardHeader>
         <CardContent>
           <Form {...mobileForm}>
-            <form onSubmit={e => e.preventDefault()} className="space-y-4">
+            <div className="space-y-4">
               <FormField
                 control={mobileForm.control}
                 name="mobile"
@@ -272,7 +272,7 @@ export default function XeroxCheckoutPage() {
                   </FormItem>
                 )}
               />
-            </form>
+            </div>
           </Form>
         </CardContent>
       </Card>
@@ -429,3 +429,5 @@ export default function XeroxCheckoutPage() {
     </>
   );
 }
+
+    
