@@ -249,7 +249,7 @@ export default function XeroxPage() {
     return documentPrices.reduce((total, item) => total + item.price, 0);
   }, [documentPrices]);
   
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (documents.some(d => d.isParsing)) {
       toast({
         variant: "destructive",
@@ -258,17 +258,26 @@ export default function XeroxPage() {
       });
       return;
     }
-
-    const xeroxJobsForStorage = documents.map((doc, index) => {
+  
+    const xeroxJobsForStorage = await Promise.all(documents.map(async (doc) => {
       const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
       if (!doc.file || !doc.fileDetails) return null;
+  
+      // Convert file to data URL
+      const reader = new FileReader();
+      const fileDataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(doc.file!);
+      });
+  
       return {
-        id: `${Date.now()}-${index}`,
-        file: doc.file,
+        id: `${Date.now()}-${doc.id}`,
         fileDetails: {
           name: doc.fileDetails.name,
           type: doc.fileDetails.type,
         },
+        fileDataUrl,
         pageCount: doc.fileDetails.pages || 0,
         price: price / doc.quantity,
         config: {
@@ -282,10 +291,14 @@ export default function XeroxPage() {
           message: doc.message,
         }
       };
-    }).filter(job => job !== null);
-
-    sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(xeroxJobsForStorage));
-    router.push('/xerox/checkout');
+    }));
+  
+    const validJobs = xeroxJobsForStorage.filter(job => job !== null);
+  
+    if (validJobs.length > 0) {
+      sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(validJobs));
+      router.push('/xerox/checkout');
+    }
   };
   
   const EditDocumentDialog = ({ doc, index, onSave }: { doc: DocumentState | null, index: number, onSave: (updatedDoc: DocumentState) => void }) => {
