@@ -229,7 +229,20 @@ export default function OrdersPage() {
         
         // Then, filter by status
         const statusFilterFn = statusFilterConfig[statusTab as keyof typeof statusFilterConfig] || statusFilterConfig.all;
-        return statusFilterFn(byCategory);
+        const byStatus = statusFilterFn(byCategory);
+
+        // Finally, sort the results on a new array to avoid mutation
+        return [...byStatus].sort((a, b) => {
+            const statusOrder = Object.keys(statusConfig);
+            const indexA = statusOrder.indexOf(a.status);
+            const indexB = statusOrder.indexOf(b.status);
+
+            // Sort by status first, then by creation date
+            if (indexA !== indexB) {
+                return indexA - indexB;
+            }
+            return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        });
     }, [orders, statusTab, categoryFilter]);
 
     if (authLoading || (isLoading && orders.length === 0)) {
