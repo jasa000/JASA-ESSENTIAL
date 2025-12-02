@@ -38,8 +38,15 @@ export default function CartPage() {
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [orderSettings, setOrderSettings] = useState<OrderSettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const fetchSettings = async () => {
       try {
         setLoadingSettings(true);
@@ -56,7 +63,7 @@ export default function CartPage() {
       }
     };
     fetchSettings();
-  }, [toast]);
+  }, [toast, isClient]);
 
 
   const handleToggleSelectedItem = (itemId: string) => {
@@ -101,6 +108,15 @@ export default function CartPage() {
     }
     router.push('/checkout');
   };
+
+  if (!isClient) {
+    // Render a skeleton or loading state on the server to avoid hydration mismatch
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">Your Cart</h1>
+        </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
