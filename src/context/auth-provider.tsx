@@ -28,8 +28,15 @@ const generateShortId = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<(User & UserProfile) | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -129,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Return a cleanup function for the auth state listener
     return () => unsubscribeAuth();
-  }, []);
+  }, [isClient]);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
