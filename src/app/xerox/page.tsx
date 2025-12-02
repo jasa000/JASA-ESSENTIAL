@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getXeroxServices, getXeroxOptions } from "@/lib/data";
-import type { XeroxService, XeroxOption } from "@/lib/types";
+import type { XeroxService, XeroxOption, XeroxDocument } from "@/lib/types";
 import { HARDCODED_XEROX_OPTIONS } from "@/lib/xerox-options";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import {
@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/use-cart";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import * as pdfjsLib from 'pdfjs-dist';
@@ -39,6 +40,8 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
+
 
 // Set up worker for pdf.js
 if (typeof window !== 'undefined') {
@@ -47,6 +50,7 @@ if (typeof window !== 'undefined') {
 
 type DocumentState = {
   id: number;
+  file: File | null;
   fileDetails: { name: string; type: string; pages?: number; preview?: string } | null;
   isParsing: boolean;
   selectedPaperType: string;
@@ -75,6 +79,8 @@ export default function XeroxPage() {
   const [isPriceListOpen, setIsPriceListOpen] = useState(false);
 
   const { toast } = useToast();
+  const router = useRouter();
+  const { addXeroxItem } = useCart();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<DocumentState[]>([]);
   const nextId = useRef(0);
@@ -112,6 +118,7 @@ export default function XeroxPage() {
     const defaultPaperType = paperTypes.length > 0 ? paperTypes[0] : null;
     const newDocument: DocumentState = {
       id: newDocId,
+      file,
       fileDetails: null,
       isParsing: true,
       selectedPaperType: defaultPaperType?.id || '',
@@ -231,7 +238,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -243,6 +250,47 @@ export default function XeroxPage() {
   const finalTotalPrice = useMemo(() => {
     return documentPrices.reduce((total, item) => total + item.price, 0);
   }, [documentPrices]);
+  
+   const handleCheckout = () => {
+    if (documents.some(d => d.isParsing)) {
+      toast({
+        variant: "destructive",
+        title: "Please wait",
+        description: "Some documents are still being processed.",
+      });
+      return;
+    }
+    
+    documents.forEach((doc, index) => {
+        const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
+        if (doc.file && doc.fileDetails) {
+            const xeroxDoc: XeroxDocument = {
+                id: `${Date.now()}-${index}`, // Unique ID for the cart item
+                file: doc.file,
+                pageCount: doc.fileDetails.pages || 0,
+                price: price / doc.quantity, // Price for a single copy
+                config: {
+                    paperType: doc.selectedPaperType,
+                    colorOption: doc.selectedColorOption,
+                    formatType: doc.selectedFormatType,
+                    printRatio: doc.selectedPrintRatio,
+                    bindingType: doc.selectedBindingType,
+                    laminationType: doc.selectedLaminationType,
+                    quantity: doc.quantity,
+                    message: doc.message,
+                }
+            };
+            addXeroxItem(xeroxDoc);
+        }
+    });
+
+    toast({
+      title: "Added to Cart",
+      description: `${documents.length} print job(s) have been added to your cart.`,
+    });
+
+    router.push('/cart');
+  };
   
   const EditDocumentDialog = ({ doc, index, onSave }: { doc: DocumentState | null, index: number, onSave: (updatedDoc: DocumentState) => void }) => {
     const [localDoc, setLocalDoc] = useState<DocumentState | null>(doc);
@@ -484,6 +532,7 @@ export default function XeroxPage() {
             size="lg" 
             className="w-full"
             disabled={documents.some(d => d.isParsing)}
+            onClick={handleCheckout}
           >
             <ShoppingCart className="mr-2 h-5 w-5" />
             Check Out Now

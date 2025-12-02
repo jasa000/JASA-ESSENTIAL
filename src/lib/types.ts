@@ -7,7 +7,7 @@ export type Product = {
   authorIds?: string[];
   productTypeIds?: string[];
   description: string;
-  category: 'stationary' | 'books' | 'electronics' | 'xerox';
+  category: 'stationary' | 'books' | 'electronics';
   price: number;
   discountPrice?: number;
   rating?: number;
@@ -15,15 +15,46 @@ export type Product = {
   imageNames?: string[];
 };
 
+export type XeroxDocument = {
+    id: string; // Unique identifier for this cart item instance
+    file: File | null;
+    pageCount: number;
+    price: number; // The calculated price for this single document configuration
+    config: {
+        paperType: string;
+        colorOption: string;
+        formatType: string;
+        printRatio: string;
+        bindingType: string;
+        laminationType: string;
+        quantity: number;
+        message: string;
+    }
+}
+
 export type CartItem = {
-  product: Product;
-  quantity: number;
+    id: string; // This will be product.id or xeroxDocument.id
+    type: 'stationary' | 'books' | 'electronics' | 'xerox';
+    quantity: number;
+    price: number; // Price per single unit at the time of adding
+    // One of the following will be present
+    product?: Product;
+    xerox?: XeroxDocument;
 };
 
+
 export type DBCartItem = {
-    productId: string;
+    id: string;
+    type: 'stationary' | 'books' | 'electronics' | 'xerox';
     quantity: number;
+    // For products
+    productId?: string;
+    // For xerox
+    xeroxConfig?: XeroxDocument['config'];
+    xeroxFile?: { name: string; type: string; pageCount: number };
+    price?: number;
 }
+
 
 export type Category = {
     id: string;
@@ -133,7 +164,7 @@ export type OrderTracking = {
   confirmed: string | null;
   packed: string | null;
   shipped: string | null;
-  outForDelivery: string | null;
+  outForDelivery?: string | null; // Keep this optional for backward compatibility
   delivered: string | null;
   expectedDelivery: string | null;
 }
@@ -142,7 +173,7 @@ export type Order = {
   id: string;
   userId: string;
   sellerId: string;
-  productId: string;
+  productId?: string; // Optional for Xerox orders
   productName: string;
   productImage: string | null;
   quantity: number;
