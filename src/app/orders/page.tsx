@@ -22,6 +22,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -102,36 +109,44 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
             </div>
         </div>
 
-        {(order.status !== 'Pending Confirmation' && order.status !== 'Cancelled' && order.status !== 'Rejected') && (
-          <>
-            <Separator className="my-4" />
-            <OrderTracker trackingInfo={order.tracking} />
-          </>
-        )}
-
-        <Separator className="my-4" />
-        <Collapsible>
-            <CollapsibleTrigger asChild>
-                <Button variant="link" className="p-0 h-auto flex items-center gap-1 text-muted-foreground">
-                    View Shipping & Contact Details
-                    <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-2 pt-2">
-                <h4 className="font-medium">Shipping Address & Contact</h4>
-                <div className="text-sm text-muted-foreground">
-                    <p>{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ''}</p>
-                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
-                    <div className="mt-2 flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        <div>
-                            <p>{order.mobile}</p>
-                            {order.altMobiles?.[0]?.value && <p>{order.altMobiles[0].value}</p>}
+        <div className="mt-4 flex items-center justify-between">
+            <Collapsible>
+                <CollapsibleTrigger asChild>
+                    <Button variant="link" className="p-0 h-auto flex items-center gap-1 text-muted-foreground">
+                        View Shipping & Contact Details
+                        <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                    </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 pt-2">
+                    <h4 className="font-medium">Shipping Address & Contact</h4>
+                    <div className="text-sm text-muted-foreground">
+                        <p>{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ''}</p>
+                        <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.postalCode}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                            <Phone className="h-4 w-4" />
+                            <div>
+                                <p>{order.mobile}</p>
+                                {order.altMobiles?.[0]?.value && <p>{order.altMobiles[0].value}</p>}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </CollapsibleContent>
-        </Collapsible>
+                </CollapsibleContent>
+            </Collapsible>
+
+             {(order.status !== 'Pending Confirmation' && order.status !== 'Cancelled' && order.status !== 'Rejected') && (
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">View Status</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Order Journey</DialogTitle>
+                        </DialogHeader>
+                        <OrderTracker trackingInfo={order.tracking} />
+                    </DialogContent>
+                </Dialog>
+            )}
+        </div>
       </CardContent>
       {order.status === 'Pending Confirmation' && (
         <CardFooter className="bg-muted/50 p-4">
@@ -323,3 +338,5 @@ export default function OrdersPage() {
     </div>
   );
 }
+
+    
