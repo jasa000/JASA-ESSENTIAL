@@ -1,17 +1,18 @@
 
+
 "use client";
 
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-provider';
 import { useState, useEffect, useMemo } from 'react';
-import { getOrdersBySeller, updateOrderStatus, updateOrderRejectionReason } from '@/lib/data';
+import { getOrdersBySeller, updateOrderStatus, approveOrderReturn, rejectOrderReturn } from '@/lib/data';
 import { getAllUsers } from '@/lib/users';
 import type { Order, UserProfile, OrderStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, User, Package, FileText, Phone, Truck, MapPin, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Check, X, User, Package, FileText, Phone, Truck, MapPin, Clock, CheckCircle, AlertTriangle, Undo2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -39,6 +40,9 @@ const NEXT_STATUS: Record<string, OrderStatus> = {
   "Packed": "Shipped",
   "Shipped": "Out for Delivery",
   "Out for Delivery": "Delivered",
+  "Return Approved": "Out for Pickup",
+  "Out for Pickup": "Picked Up",
+  "Picked Up": "Return Completed",
 };
 
 const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string, descriptiveLabel: string } } = {
@@ -50,6 +54,12 @@ const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label
   "Delivered": { icon: Check, label: "Delivered", descriptiveLabel: "Delivered" },
   "Cancelled": { icon: X, label: "Cancelled", descriptiveLabel: "Cancelled by You" },
   "Rejected": { icon: X, label: "Rejected", descriptiveLabel: "Rejected by Seller" },
+  "Return Requested": { icon: Undo2, label: "Return Requested", descriptiveLabel: "Return Requested" },
+  "Return Approved": { icon: CheckCircle, label: "Return Approved", descriptiveLabel: "Return Approved" },
+  "Out for Pickup": { icon: Truck, label: "Out for Pickup", descriptiveLabel: "Out for Pickup" },
+  "Picked Up": { icon: Package, label: "Picked Up", descriptiveLabel: "Picked Up" },
+  "Return Rejected": { icon: XCircle, label: "Return Rejected", descriptiveLabel: "Return Rejected" },
+  "Return Completed": { icon: CheckCircle, label: "Return Completed", descriptiveLabel: "Return Completed" },
 };
 
 const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: number, icon: React.ElementType, loading: boolean }) => (
@@ -79,6 +89,7 @@ export default function ManageShopOrdersPage() {
   const [groupedOrders, setGroupedOrders] = useState<GroupedOrders>({});
   const [isLoading, setIsLoading] = useState(true);
   const [rejectingOrder, setRejectingOrder] = useState<Order | null>(null);
+  const [rejectingReturn, setRejectingReturn] = useState<Order | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
 
@@ -150,6 +161,23 @@ export default function ManageShopOrdersPage() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+  
+  const handleRejectReturn = async () => {
+    if (!rejectingReturn || !rejectionReason.trim()) {
+        toast({ variant: 'destructive', title: 'Error', description: 'A reason for rejection is required.' });
+        return;
+    }
+    try {
+        await rejectOrderReturn(rejectingReturn.id, rejectionReason);
+        toast({ title: 'Return Rejected', description: 'The customer has been notified.' });
+        setRejectingReturn(null);
+        setRejectionReason("");
+        fetchOrdersAndUsers();
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+};
+
 
   const handleUpdateStatus = async (order: Order) => {
     const nextStatus = NEXT_STATUS[order.status];
@@ -163,34 +191,42 @@ export default function ManageShopOrdersPage() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+  
+  const handleApproveReturn = async (orderId: string) => {
+    try {
+      await approveOrderReturn(orderId);
+      toast({ title: 'Return Approved', description: 'The return request has been approved.' });
+      fetchOrdersAndUsers();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
 
   const ordersByStatus = useMemo(() => {
     const pending: GroupedOrders = {};
     const active: GroupedOrders = {};
+    const returns: GroupedOrders = {};
     const completed: GroupedOrders = {};
 
     Object.entries(groupedOrders).forEach(([userId, group]) => {
       const pendingOrders = group.orders.filter(o => o.status === 'Pending Confirmation');
       const activeOrders = group.orders.filter(o => ['Processing', 'Packed', 'Shipped', 'Out for Delivery'].includes(o.status));
+      const returnOrders = group.orders.filter(o => o.status.startsWith('Return'));
       const completedOrders = group.orders.filter(o => ['Delivered', 'Cancelled', 'Rejected'].includes(o.status));
       
-      if (pendingOrders.length > 0) {
-        pending[userId] = { user: group.user, orders: pendingOrders };
-      }
-      if (activeOrders.length > 0) {
-        active[userId] = { user: group.user, orders: activeOrders };
-      }
-      if (completedOrders.length > 0) {
-        completed[userId] = { user: group.user, orders: completedOrders };
-      }
+      if (pendingOrders.length > 0) pending[userId] = { user: group.user, orders: pendingOrders };
+      if (activeOrders.length > 0) active[userId] = { user: group.user, orders: activeOrders };
+      if (returnOrders.length > 0) returns[userId] = { user: group.user, orders: returnOrders };
+      if (completedOrders.length > 0) completed[userId] = { user: group.user, orders: completedOrders };
     });
-    return { pending, active, completed };
+    return { pending, active, returns, completed };
   }, [groupedOrders]);
 
   const orderStats = useMemo(() => {
     const activeStatuses = ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery"];
     return {
         active: orders.filter(o => activeStatuses.includes(o.status)).length,
+        returns: orders.filter(o => o.status.startsWith('Return')).length,
         completed: orders.filter(o => o.status === 'Delivered').length,
         sellerRejected: orders.filter(o => o.status === 'Rejected').length,
         userCancelled: orders.filter(o => o.status === 'Cancelled').length
@@ -198,7 +234,7 @@ export default function ManageShopOrdersPage() {
   }, [orders]);
 
 
-  const renderOrderList = (filteredGroupedOrders: GroupedOrders, listType: 'pending' | 'active' | 'completed') => {
+  const renderOrderList = (filteredGroupedOrders: GroupedOrders, listType: 'pending' | 'active' | 'returns' | 'completed') => {
     if (isLoading) {
       return (
          <div className="mt-8 space-y-6">
@@ -299,11 +335,24 @@ export default function ManageShopOrdersPage() {
                                 )}
                             </div>
                           </div>
+                           {order.status === 'Return Requested' && (
+                                <>
+                                <Separator />
+                                <div className="space-y-2">
+                                    <h4 className="font-semibold">Return Reason:</h4>
+                                    <p className="text-sm text-muted-foreground p-2 border rounded-md">{order.returnReason}</p>
+                                    <div className="flex gap-2 justify-end">
+                                        <Button size="sm" variant="outline" onClick={() => handleApproveReturn(order.id)}>Approve Return</Button>
+                                        <Button size="sm" variant="destructive" onClick={() => setRejectingReturn(order)}>Reject Return</Button>
+                                    </div>
+                                </div>
+                                </>
+                           )}
                           {listType !== 'pending' && (
                             <>
                             <Separator />
                             <OrderTracker trackingInfo={order.tracking} />
-                            {listType === 'active' && (
+                            {(listType === 'active' || listType === 'returns') && !order.status.startsWith('Return') && (
                               <CardFooter className="p-0">
                                   <Button 
                                     className="w-full" 
@@ -313,6 +362,13 @@ export default function ManageShopOrdersPage() {
                                     {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Order Complete"}
                                   </Button>
                               </CardFooter>
+                            )}
+                            {order.status.startsWith('Return') && order.status !== 'Return Requested' && order.status !== 'Return Rejected' && (
+                                <CardFooter className="p-0">
+                                    <Button className="w-full" onClick={() => handleUpdateStatus(order)} disabled={!NEXT_STATUS[order.status]}>
+                                        {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Return Finished"}
+                                    </Button>
+                                </CardFooter>
                             )}
                             </>
                           )}
@@ -349,6 +405,27 @@ export default function ManageShopOrdersPage() {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+
+    <Dialog open={!!rejectingReturn} onOpenChange={(open) => { if (!open) setRejectingReturn(null) }}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Reject Return: {rejectingReturn?.productName}</DialogTitle>
+                <DialogDescription>Please provide a reason for rejecting this return request. This will be shown to the customer.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Textarea
+                    placeholder="e.g., Item was damaged by customer, return period expired, etc."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="secondary" onClick={() => setRejectingReturn(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleRejectReturn}>Confirm Rejection</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
     <div className="container mx-auto px-4 py-8">
       <div className="pb-4">
         <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
@@ -362,15 +439,17 @@ export default function ManageShopOrdersPage() {
       <div className="sticky top-[80px] z-40 bg-background py-2 space-y-2">
         <div className="flex gap-2">
             <StatCard title="Active" value={orderStats.active} icon={Clock} loading={isLoading} />
+            <StatCard title="Returns" value={orderStats.returns} icon={Undo2} loading={isLoading} />
             <StatCard title="Completed" value={orderStats.completed} icon={CheckCircle} loading={isLoading} />
             <StatCard title="Rejected" value={orderStats.sellerRejected} icon={AlertTriangle} loading={isLoading} />
             <StatCard title="Cancelled" value={orderStats.userCancelled} icon={X} loading={isLoading} />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="pending">Pending ({Object.values(ordersByStatus.pending).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
               <TabsTrigger value="active">Active ({Object.values(ordersByStatus.active).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+              <TabsTrigger value="returns">Returns ({Object.values(ordersByStatus.returns).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
               <TabsTrigger value="completed">History ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -382,6 +461,9 @@ export default function ManageShopOrdersPage() {
           </TabsContent>
           <TabsContent value="active" className="mt-0">
             {renderOrderList(ordersByStatus.active, 'active')}
+          </TabsContent>
+          <TabsContent value="returns" className="mt-0">
+            {renderOrderList(ordersByStatus.returns, 'returns')}
           </TabsContent>
           <TabsContent value="completed" className="mt-0">
             {renderOrderList(ordersByStatus.completed, 'completed')}

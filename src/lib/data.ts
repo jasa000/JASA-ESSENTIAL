@@ -552,7 +552,9 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, re
               case 'Out for Pickup': updates['tracking.outForPickup'] = now; break;
               case 'Picked Up': updates['tracking.pickedUp'] = now; break;
               case 'Return Completed': updates['tracking.returnCompleted'] = now; break;
-              case 'Return Rejected': updates['rejectionReason'] = reason; break;
+              case 'Return Rejected': 
+                updates['rejectionReason'] = reason;
+                break;
             }
 
             transaction.update(orderDocRef, updates);
@@ -651,4 +653,12 @@ export const requestReturn = async (orderId: string, reason: string): Promise<vo
     console.error("Error requesting return:", error);
     throw new Error("Failed to submit return request.");
   }
+};
+
+export const approveOrderReturn = async (orderId: string): Promise<void> => {
+    await updateOrderStatus(orderId, "Return Approved");
+};
+
+export const rejectOrderReturn = async (orderId: string, reason: string): Promise<void> => {
+    await updateOrderStatus(orderId, "Return Rejected", reason);
 };

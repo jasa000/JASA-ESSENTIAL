@@ -171,7 +171,7 @@ export type OrderTracking = {
   confirmed: string | null;
   packed: string | null;
   shipped: string | null;
-  outForDelivery?: string | null; // Keep this optional for backward compatibility
+  outForDelivery?: string | null;
   delivered: string | null;
   // Return tracking
   returnRequested?: string | null;
@@ -288,4 +288,3 @@ export type PincodeDistrict = {
   pincodes: Pincode[];
   isActive: boolean;
 };
-

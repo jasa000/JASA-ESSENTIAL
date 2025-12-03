@@ -2,20 +2,20 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Package, ShieldCheck, Truck, Home } from "lucide-react";
+import { Package, ShieldCheck, Truck, Home, Undo2, CheckCircle, XCircle } from "lucide-react";
 import type { Order } from "@/lib/types";
 
 type OrderTrackerProps = {
   trackingInfo: Order['tracking'];
 };
 
-const formatDate = (dateString?: string) => {
+const formatDate = (dateString?: string | null) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
-const formatTime = (dateString?: string) => {
+const formatTime = (dateString?: string | null) => {
     if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -24,13 +24,24 @@ const formatTime = (dateString?: string) => {
 export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
   if (!trackingInfo) return null;
 
-  const steps = [
+  const isReturn = trackingInfo.returnRequested;
+
+  const standardSteps = [
     { id: "ordered", label: "Confirmed", icon: ShieldCheck, date: trackingInfo.confirmed },
     { id: "packed", label: "Packed", icon: Package, date: trackingInfo.packed },
     { id: "shipped", label: "Shipped", icon: Truck, date: trackingInfo.shipped },
     { id: "delivered", label: "Delivered", icon: Home, date: trackingInfo.delivered },
   ];
 
+  const returnSteps = [
+    { id: "requested", label: "Requested", icon: Undo2, date: trackingInfo.returnRequested },
+    { id: "approved", label: "Approved", icon: ShieldCheck, date: trackingInfo.returnApproved },
+    { id: "pickup", label: "Out for Pickup", icon: Truck, date: trackingInfo.outForPickup },
+    { id: "returned", label: "Returned", icon: CheckCircle, date: trackingInfo.returnCompleted },
+  ];
+
+  const steps = isReturn ? returnSteps : standardSteps;
+  
   let activeStepIndex = -1;
   for (let i = steps.length - 1; i >= 0; i--) {
       if (steps[i].date) {
@@ -42,25 +53,25 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
   return (
     <div className="py-4 px-2">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-md font-semibold">Order Journey</h3>
-        {trackingInfo.expectedDelivery && !trackingInfo.delivered && (
+        <h3 className="text-md font-semibold">{isReturn ? 'Return Journey' : 'Order Journey'}</h3>
+        {!isReturn && trackingInfo.expectedDelivery && !trackingInfo.delivered && (
             <p className="text-sm text-muted-foreground">
                 Expected by: <span className="font-medium text-foreground">{formatDate(trackingInfo.expectedDelivery)}</span>
             </p>
         )}
       </div>
 
-      <div className="relative flex items-center justify-between">
-        <div className="absolute left-0 top-1/2 h-1 w-full -translate-y-1/2 bg-muted"></div>
+      <div className="relative flex items-start justify-between">
+        <div className="absolute left-0 top-5 h-1 w-full -translate-y-1/2 bg-muted"></div>
         <div 
-          className="absolute left-0 top-1/2 h-1 -translate-y-1/2 bg-green-600 transition-all duration-500"
+          className="absolute left-0 top-5 h-1 -translate-y-1/2 bg-green-600 transition-all duration-500"
           style={{ width: activeStepIndex >= 0 ? `${(activeStepIndex / (steps.length - 1)) * 100}%` : "0%" }}
         ></div>
 
         {steps.map((step, index) => {
           const isCompleted = index <= activeStepIndex;
           return (
-            <div key={step.id} className="relative z-10 flex flex-col items-center">
+            <div key={step.id} className="relative z-10 flex flex-col items-center w-20">
               <div
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
@@ -78,7 +89,7 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
                         <p>{formatTime(step.date)}</p>
                     </div>
                 ) : (
-                   <div className="text-center text-xs text-muted-foreground h-8"></div>
+                   <div className="h-8"></div>
                 )}
             </div>
           );

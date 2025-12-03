@@ -1,16 +1,17 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/auth-provider";
 import { useRouter } from "next/navigation";
-import { getMyOrders, updateOrderStatus } from "@/lib/data";
+import { getMyOrders, updateOrderStatus, requestReturn } from "@/lib/data";
 import type { Order } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone, ChevronDown, FileText } from "lucide-react";
+import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone, ChevronDown, FileText, Undo2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +41,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 
 const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string, descriptiveLabel: string } } = {
@@ -50,10 +53,55 @@ const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label
   "Delivered": { icon: CheckCircle, label: "Delivered", descriptiveLabel: "Delivered" },
   "Cancelled": { icon: XCircle, label: "Cancelled", descriptiveLabel: "Cancelled by You" },
   "Rejected": { icon: AlertTriangle, label: "Rejected", descriptiveLabel: "Rejected by Seller" },
+  "Return Requested": { icon: Undo2, label: "Return Requested", descriptiveLabel: "Return Requested" },
+  "Return Approved": { icon: CheckCircle, label: "Return Approved", descriptiveLabel: "Return Approved" },
+  "Out for Pickup": { icon: Truck, label: "Out for Pickup", descriptiveLabel: "Out for Pickup" },
+  "Picked Up": { icon: Package, label: "Picked Up", descriptiveLabel: "Picked Up" },
+  "Return Rejected": { icon: XCircle, label: "Return Rejected", descriptiveLabel: "Return Rejected" },
+  "Return Completed": { icon: CheckCircle, label: "Return Completed", descriptiveLabel: "Return Completed" },
 };
 
+const ReturnRequestDialog = ({ order, onReturnSubmit }: { order: Order, onReturnSubmit: (orderId: string, reason: string) => void }) => {
+    const [reason, setReason] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
+    const { toast } = useToast();
 
-const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: string) => void }) => {
+    const handleSubmit = () => {
+        if (reason.trim().length < 10) {
+            toast({ variant: 'destructive', title: 'Invalid Reason', description: 'Please provide a reason with at least 10 characters.' });
+            return;
+        }
+        onReturnSubmit(order.id, reason);
+        setIsOpen(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button className="w-full" variant="outline">Request Return</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Request Return for: {order.productName}</DialogTitle>
+                    <AlertDesc>Please explain why you would like to return this item.</AlertDesc>
+                </DialogHeader>
+                <div className="py-4">
+                    <Textarea
+                        placeholder="e.g., Item was damaged, received wrong product, etc."
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => setIsOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSubmit}>Submit Request</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCancel: (orderId: string) => void, onReturnRequest: (orderId: string, reason: string) => void }) => {
   const { toast } = useToast();
   const StatusIcon = statusConfig[order.status]?.icon || Package;
   const descriptiveStatus = statusConfig[order.status]?.descriptiveLabel || order.status;
@@ -147,19 +195,17 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
                 </CollapsibleContent>
             </Collapsible>
 
-             {(order.status !== 'Pending Confirmation' && order.status !== 'Cancelled' && order.status !== 'Rejected') && (
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">View Status</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Order Journey</DialogTitle>
-                        </DialogHeader>
-                        <OrderTracker trackingInfo={order.tracking} />
-                    </DialogContent>
-                </Dialog>
-            )}
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">View Status</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Order Journey</DialogTitle>
+                    </DialogHeader>
+                    <OrderTracker trackingInfo={order.tracking} />
+                </DialogContent>
+            </Dialog>
         </div>
       </CardContent>
       {order.status === 'Pending Confirmation' && (
@@ -184,6 +230,11 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
             </AlertDialogContent>
           </AlertDialog>
         </CardFooter>
+      )}
+      {order.status === 'Delivered' && order.category !== 'xerox' && (
+         <CardFooter className="bg-muted/50 p-4">
+            <ReturnRequestDialog order={order} onReturnSubmit={onReturnRequest} />
+         </CardFooter>
       )}
     </Card>
     </>
@@ -251,6 +302,18 @@ export default function OrdersPage() {
         }
     };
     
+    const handleReturnRequest = async (orderId: string, reason: string) => {
+        try {
+            await requestReturn(orderId, reason);
+            toast({ title: 'Return Request Submitted', description: 'Your request has been sent to the seller for review.' });
+            if (user) {
+                fetchOrders(user.uid); // Refresh orders
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Return Request Failed', description: error.message });
+        }
+    };
+
     const filteredOrders = useMemo(() => {
         // First, filter by category
         const byCategory = categoryFilter === 'all' 
@@ -303,7 +366,7 @@ export default function OrdersPage() {
       return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {ordersToRender.map(order => (
-                <OrderCard key={order.id} order={order} onCancel={handleCancelOrder} />
+                <OrderCard key={order.id} order={order} onCancel={handleCancelOrder} onReturnRequest={handleReturnRequest} />
             ))}
         </div>
       );
