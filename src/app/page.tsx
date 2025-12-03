@@ -305,7 +305,7 @@ export default function Home() {
                     </div>
                  </CarouselItem>
             ) : carouselItems.map((item, index) => {
-              const cardHeight = "h-60 md:h-80 lg:h-[23rem]";
+              const cardHeight = "h-40 md:h-80 lg:h-[23rem]";
               if (item.type === 'welcome') {
                 return (
                   <CarouselItem key="welcome" className="pl-4">
