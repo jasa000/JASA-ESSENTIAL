@@ -568,18 +568,18 @@ export default function XeroxPage() {
 
   const renderInitialState = () => (
     <div className="container mx-auto px-4 py-8">
-      <Card className="text-center p-8 border-dashed bg-[#4169E1] text-white">
+      <Card className="text-center p-8 border-dashed bg-red-600 text-white">
         <CardHeader>
-          <FileUp className="mx-auto h-12 w-12 text-red-500" />
+          <FileUp className="mx-auto h-12 w-12 text-white" />
           <CardTitle className="text-2xl text-white">Start Your Printing Order</CardTitle>
-          <CardDescription className="text-gray-200">Upload your documents to get started.</CardDescription>
+          <CardDescription className="text-red-100">Upload your documents to get started.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button
             type="button"
             size="lg"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full h-14 bg-red-600 text-white hover:bg-red-700 rounded-full"
+            className="w-full h-14 bg-white text-red-600 hover:bg-gray-100 rounded-full"
           >
             Upload Documents
           </Button>
