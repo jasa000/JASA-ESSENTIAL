@@ -59,7 +59,9 @@ export default function AppSidebar() {
         setIsLoadingShops(true);
         try {
           const allShops = await getShops();
-          const assignedShops = allShops.filter(shop => shop.ownerIds.includes(user.uid));
+          const assignedShops = allShops.filter(shop => 
+            shop.ownerIds.includes(user.uid) || shop.employeeIds?.includes(user.uid)
+          );
           setUserShops(assignedShops);
         } catch (error) {
           toast({ variant: "destructive", title: "Error", description: "Could not load your shops." });
@@ -463,6 +465,14 @@ export default function AppSidebar() {
             <SidebarGroup className="bg-gray-100 dark:bg-gray-900 rounded-lg">
               <SidebarGroupLabel>EMPLOYEE ACCESS</SidebarGroupLabel>
               <SidebarMenu>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/employee-dashboard')}>
+                        <Link href="/employee-dashboard">
+                            <LayoutDashboard />
+                            <span>Dashboard</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
                 {user.canManageProducts && (
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/manage-products')}>
