@@ -1,7 +1,7 @@
 
 
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, getDoc } from 'firebase/firestore';
 import type { Shop } from './types';
 
 const shopsCollection = collection(db, 'shops');
@@ -30,6 +30,21 @@ export const getShops = async (): Promise<Shop[]> => {
     console.error("Error getting shops: ", error);
     throw new Error("Failed to fetch shops.");
   }
+};
+
+export const getShopById = async (id: string): Promise<Shop | null> => {
+    try {
+        const docRef = doc(db, 'shops', id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Shop;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting shop by ID: ", error);
+        throw new Error("Failed to fetch shop details.");
+    }
 };
 
 // Update a shop
