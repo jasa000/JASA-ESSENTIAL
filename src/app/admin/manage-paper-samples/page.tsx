@@ -289,8 +289,12 @@ function PaperSampleForm({ form, onSubmit, isSubmitting, onCancel, isEditing }: 
           <div className="mt-2 space-y-2">
             {fields.map((field, index) => (
               <div key={field.id} className="flex items-center gap-2">
-                <div className="relative h-12 w-12 flex-shrink-0">
-                  <Image src={field.value} alt={`Sample image ${index + 1}`} fill className="object-cover rounded-md" />
+                <div className="relative h-12 w-12 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
+                  {field.value ? (
+                    <Image src={field.value} alt={`Sample image ${index + 1}`} fill className="object-cover rounded-md" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  )}
                 </div>
                 <Input value={field.value} readOnly className="flex-grow" />
                 <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
