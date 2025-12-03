@@ -152,7 +152,7 @@ export default function ManageShopOrdersPage() {
         return;
     }
     try {
-      await updateOrderRejectionReason(rejectingOrder.id, rejectionReason);
+      await updateOrderStatus(rejectingOrder.id, 'Rejected', rejectionReason);
       toast({ title: 'Order Rejected', description: 'The customer has been notified.' });
       setRejectingOrder(null);
       setRejectionReason("");
@@ -211,7 +211,7 @@ export default function ManageShopOrdersPage() {
     Object.entries(groupedOrders).forEach(([userId, group]) => {
       const pendingOrders = group.orders.filter(o => o.status === 'Pending Confirmation');
       const activeOrders = group.orders.filter(o => ['Processing', 'Packed', 'Shipped', 'Out for Delivery'].includes(o.status));
-      const returnOrders = group.orders.filter(o => o.status.startsWith('Return'));
+      const returnOrders = group.orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up');
       const completedOrders = group.orders.filter(o => ['Delivered', 'Cancelled', 'Rejected'].includes(o.status));
       
       if (pendingOrders.length > 0) pending[userId] = { user: group.user, orders: pendingOrders };
@@ -226,7 +226,7 @@ export default function ManageShopOrdersPage() {
     const activeStatuses = ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery"];
     return {
         active: orders.filter(o => activeStatuses.includes(o.status)).length,
-        returns: orders.filter(o => o.status.startsWith('Return')).length,
+        returns: orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up').length,
         completed: orders.filter(o => o.status === 'Delivered').length,
         sellerRejected: orders.filter(o => o.status === 'Rejected').length,
         userCancelled: orders.filter(o => o.status === 'Cancelled').length
@@ -339,7 +339,7 @@ export default function ManageShopOrdersPage() {
                                 <>
                                 <Separator />
                                 <div className="space-y-2">
-                                    <h4 className="font-semibold">Return Reason:</h4>
+                                    <h4 className="font-semibold">Return Reason ({order.returnType}):</h4>
                                     <p className="text-sm text-muted-foreground p-2 border rounded-md">{order.returnReason}</p>
                                     <div className="flex gap-2 justify-end">
                                         <Button size="sm" variant="outline" onClick={() => handleApproveReturn(order.id)}>Approve Return</Button>

@@ -308,7 +308,7 @@ const statusFilterConfig = {
     ),
     delivered: (orders: Order[]) => orders.filter(o => o.status === "Delivered"),
     cancelled: (orders: Order[]) => orders.filter(o => ["Cancelled", "Rejected", "Return Rejected"].includes(o.status)),
-    returns: (orders: Order[]) => orders.filter(o => o.status.startsWith('Return') || o.status === 'Replacement Issued'),
+    returns: (orders: Order[]) => orders.filter(o => o.status.startsWith('Return') || o.status === 'Replacement Issued' || o.status === 'Picked Up'),
 };
 
 const categoryFilterOptions: { value: string, label: string }[] = [
@@ -387,6 +387,7 @@ export default function OrdersPage() {
             "Return Requested", 
             "Return Approved", 
             "Out for Pickup",
+            "Picked Up",
             "Replacement Issued"
         ];
 
@@ -481,4 +482,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-
