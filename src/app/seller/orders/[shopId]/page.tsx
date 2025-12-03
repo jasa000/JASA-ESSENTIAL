@@ -468,7 +468,7 @@ export default function ManageShopOrdersPage() {
       </div>
       
       <div className="sticky top-[80px] z-40 bg-background py-2 space-y-2">
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <StatCard title="Active" value={orderStats.active} icon={Clock} loading={isLoading} />
             <StatCard title="Returns" value={orderStats.returns} icon={Undo2} loading={isLoading} />
             <StatCard title="Completed" value={orderStats.completed} icon={CheckCircle} loading={isLoading} />
