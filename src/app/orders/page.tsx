@@ -211,7 +211,7 @@ export default function OrdersPage() {
     const { toast } = useToast();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [statusTab, setStatusTab] = useState('all');
+    const [statusTab, setStatusTab] = useState('processing');
     const [categoryFilter, setCategoryFilter] = useState('all');
 
     const fetchOrders = async (userId: string) => {
@@ -328,7 +328,7 @@ export default function OrdersPage() {
                     <Tabs value={categoryFilter} onValueChange={setCategoryFilter}>
                         <TabsList className="grid w-full grid-cols-5 h-auto flex-wrap">
                             {categoryFilterOptions.map(opt => (
-                                <TabsTrigger key={opt.value} value={opt.value} className="text-xs sm:text-sm">
+                                <TabsTrigger key={opt.value} value={opt.value} className="text-xs sm:text-sm order-tabs-trigger">
                                     {opt.label}
                                 </TabsTrigger>
                             ))}
@@ -336,10 +336,10 @@ export default function OrdersPage() {
                     </Tabs>
                     <Tabs value={statusTab} onValueChange={setStatusTab}>
                         <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="all">All</TabsTrigger>
-                            <TabsTrigger value="processing">Processing</TabsTrigger>
-                            <TabsTrigger value="delivered">Delivered</TabsTrigger>
-                            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+                            <TabsTrigger value="all" className="order-tabs-trigger">All</TabsTrigger>
+                            <TabsTrigger value="processing" className="order-tabs-trigger">Processing</TabsTrigger>
+                            <TabsTrigger value="delivered" className="order-tabs-trigger">Delivered</TabsTrigger>
+                            <TabsTrigger value="cancelled" className="order-tabs-trigger">Cancelled</TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
