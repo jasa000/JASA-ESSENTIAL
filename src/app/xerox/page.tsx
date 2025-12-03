@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { getXeroxServices, getXeroxOptions } from "@/lib/data";
-import type { XeroxService, XeroxOption, XeroxDocument } from "@/lib/types";
+import { getXeroxServices, getXeroxOptions, getPaperSamples } from "@/lib/data";
+import type { XeroxService, XeroxOption, XeroxDocument, PaperSample } from "@/lib/types";
 import { HARDCODED_XEROX_OPTIONS } from "@/lib/xerox-options";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import {
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil, ListOrdered } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil, ListOrdered, Images } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 
 // Set up worker for pdf.js
@@ -72,6 +73,7 @@ const MAX_WORDS = 100;
 export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
   const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
+  const [paperSamples, setPaperSamples] = useState<PaperSample[]>([]);
   const [allOptions, setAllOptions] = useState({
       bindingTypes: [] as XeroxOption[],
       laminationTypes: [] as XeroxOption[],
@@ -94,15 +96,17 @@ export default function XeroxPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const [fetchedServices, fetchedPaperTypes, bindingTypes, laminationTypes] = await Promise.all([
+        const [fetchedServices, fetchedPaperTypes, bindingTypes, laminationTypes, fetchedPaperSamples] = await Promise.all([
           getXeroxServices(),
           getXeroxOptions('paperType'),
           getXeroxOptions('bindingType'),
           getXeroxOptions('laminationType'),
+          getPaperSamples(),
         ]);
         setServices(fetchedServices);
         setPaperTypes(fetchedPaperTypes);
         setAllOptions({ bindingTypes, laminationTypes });
+        setPaperSamples(fetchedPaperSamples);
         
       } catch (err) {
         setError("Failed to load printing services. Please try again later.");
@@ -657,6 +661,59 @@ export default function XeroxPage() {
     </Dialog>
   );
 
+  const PaperSamplesDialog = () => (
+    <Dialog>
+        <DialogTrigger asChild>
+            <Button variant="outline"><Images className="mr-2 h-4 w-4"/> View Formats</Button>
+        </DialogTrigger>
+        <DialogContent className="max-h-[80vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Paper Sample Formats</DialogTitle>
+                <DialogDescription>
+                    Visual examples of different paper types.
+                </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-grow">
+                <div className="pr-6 space-y-4">
+                    {isLoading ? (
+                        <p>Loading samples...</p>
+                    ) : paperSamples.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-8">No samples available.</p>
+                    ) : (
+                        paperSamples.map(sample => (
+                            <Card key={sample.id}>
+                                <CardHeader>
+                                    <CardTitle>{sample.name}</CardTitle>
+                                    <CardDescription>{sample.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Carousel>
+                                        <CarouselContent>
+                                            {sample.imageUrls.map((url, i) => (
+                                                <CarouselItem key={i}>
+                                                    <div className="relative aspect-video">
+                                                        <Image src={url} alt={`${sample.name} ${i+1}`} fill className="object-contain rounded-md" />
+                                                    </div>
+                                                </CarouselItem>
+                                            ))}
+                                        </CarouselContent>
+                                        {sample.imageUrls.length > 1 && (
+                                            <>
+                                            <CarouselPrevious />
+                                            <CarouselNext />
+                                            </>
+                                        )}
+                                    </Carousel>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
+                </div>
+            </ScrollArea>
+        </DialogContent>
+    </Dialog>
+  );
+
 
   return (
     <div>
@@ -667,8 +724,9 @@ export default function XeroxPage() {
         <p className="mt-4 text-muted-foreground">
           High-quality photocopying and printing at competitive prices.
         </p>
-        <div className="mt-4">
+        <div className="mt-4 flex justify-center gap-2">
           <PriceListDialog />
+          <PaperSamplesDialog />
         </div>
       </div>
 

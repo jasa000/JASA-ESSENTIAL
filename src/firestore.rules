@@ -47,6 +47,11 @@ service cloud.firestore {
       // Admins have full access
       allow read, update, delete: if isAdmin();
     }
+    
+    match /paperSamples/{sampleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
     // Public read-only collections
     match /products/{productId} {

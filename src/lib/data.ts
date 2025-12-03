@@ -1,6 +1,6 @@
 
 
-import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus, Notification } from './types';
+import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus, Notification, PaperSample } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
 import { getShops } from './shops';
@@ -45,7 +45,53 @@ const xeroxServicesCollection = collection(db, 'xeroxServices');
 const orderSettingsCollection = collection(db, 'orderSettings');
 const ordersCollection = collection(db, 'orders');
 const notificationsCollection = collection(db, 'notifications');
+const paperSamplesCollection = collection(db, 'paperSamples');
 
+
+// --- Paper Sample Functions ---
+export const getPaperSamples = async (): Promise<PaperSample[]> => {
+    try {
+        const q = query(paperSamplesCollection, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaperSample));
+    } catch (error) {
+        console.error("Error getting paper samples: ", error);
+        throw new Error("Failed to fetch paper samples.");
+    }
+};
+
+export const addPaperSample = async (data: Omit<PaperSample, 'id' | 'createdAt'>): Promise<string> => {
+    try {
+        const docRef = await addDoc(paperSamplesCollection, {
+            ...data,
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding paper sample: ", error);
+        throw new Error("Failed to add paper sample.");
+    }
+};
+
+export const updatePaperSample = async (id: string, data: Partial<Omit<PaperSample, 'id' | 'createdAt'>>): Promise<void> => {
+    try {
+        const sampleDoc = doc(db, 'paperSamples', id);
+        await updateDoc(sampleDoc, data);
+    } catch (error) {
+        console.error("Error updating paper sample: ", error);
+        throw new Error("Failed to update paper sample.");
+    }
+};
+
+export const deletePaperSample = async (id: string): Promise<void> => {
+    try {
+        const sampleDoc = doc(db, 'paperSamples', id);
+        await deleteDoc(sampleDoc);
+    } catch (error) {
+        console.error("Error deleting paper sample: ", error);
+        throw new Error("Failed to delete paper sample.");
+    }
+};
 
 // --- Xerox Form Option Collections ---
 export const getXeroxOptionCollection = (type: XeroxOptionType) => {

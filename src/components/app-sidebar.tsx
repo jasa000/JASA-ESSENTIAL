@@ -28,7 +28,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { usePathname, useRouter } from "next/navigation"
-import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog, UserRoundCog, ClipboardList, Database, BookCopy, Map, PieChart, Wrench } from "lucide-react"
+import { Sun, Settings, LogOut, UserPlus, LogIn, Home, ShoppingCart, User, Moon, ShieldCheck, Notebook, Book, Printer, CircuitBoard, FilePenLine, Store, Package, History, FolderKanban, ImageIcon, LayoutDashboard, Copy, UserCog, UserRoundCog, ClipboardList, Database, BookCopy, Map, PieChart, Wrench, Images } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/context/theme-provider"
 import { Skeleton } from "./ui/skeleton"
@@ -413,6 +413,14 @@ export default function AppSidebar() {
                           <Link href="/admin/xerox-form">
                               <ClipboardList />
                               <span>Manage Paper Types</span>
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild onClick={handleMenuItemClick} isActive={pathname.startsWith('/admin/manage-paper-samples')}>
+                          <Link href="/admin/manage-paper-samples">
+                              <Images />
+                              <span>Paper Samples</span>
                           </Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>

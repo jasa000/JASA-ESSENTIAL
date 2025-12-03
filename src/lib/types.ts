@@ -291,3 +291,11 @@ export type PincodeDistrict = {
   pincodes: Pincode[];
   isActive: boolean;
 };
+
+export type PaperSample = {
+    id: string;
+    name: string;
+    description: string;
+    imageUrls: string[];
+    createdAt: any;
+}
