@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone, ChevronDown } from "lucide-react";
+import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone, ChevronDown, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -83,11 +83,13 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
       </CardHeader>
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
-            <div className="relative h-20 w-20 flex-shrink-0 bg-muted rounded-md overflow-hidden">
-                {order.productImage ? (
+            <div className="relative h-20 w-20 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                {order.category === 'xerox' ? (
+                    <FileText className="h-10 w-10 text-blue-600" />
+                ) : order.productImage ? (
                     <Image src={order.productImage} alt={order.productName} fill className="object-cover" />
                 ) : (
-                    <ShoppingCart className="h-10 w-10 text-muted-foreground m-auto" />
+                    <ShoppingCart className="h-10 w-10 text-muted-foreground" />
                 )}
             </div>
             <div className="space-y-1">
