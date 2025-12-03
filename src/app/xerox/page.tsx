@@ -561,31 +561,31 @@ export default function XeroxPage() {
 
   const renderInitialState = () => (
     <div className="container mx-auto px-4 py-8">
-        <Card className="text-center p-8 border-dashed">
-            <CardHeader>
-                <FileUp className="mx-auto h-12 w-12 text-green-600 animate-float-up" />
-                <CardTitle className="text-2xl">Start Your Printing Order</CardTitle>
-                <CardDescription>Upload your documents to get started.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button 
-                    type="button"
-                    size="lg" 
-                    onClick={() => fileInputRef.current?.click()} 
-                    className="w-full h-14 bg-green-600 text-white hover:bg-gray-500"
-                >
-                    Upload Documents
-                </Button>
-                 <Input 
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    multiple
-                    onChange={handleMultipleFileChanges}
-                    accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
-                />
-            </CardContent>
-        </Card>
+      <Card className="text-center p-8 border-dashed bg-[#4169E1] text-white">
+        <CardHeader>
+          <FileUp className="mx-auto h-12 w-12 text-white animate-float-up" />
+          <CardTitle className="text-2xl text-white">Start Your Printing Order</CardTitle>
+          <CardDescription className="text-gray-200">Upload your documents to get started.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            type="button"
+            size="lg"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full h-14 bg-white text-[#4169E1] hover:bg-gray-200"
+          >
+            Upload Documents
+          </Button>
+          <Input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            multiple
+            onChange={handleMultipleFileChanges}
+            accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 
