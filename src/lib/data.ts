@@ -554,6 +554,7 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, re
               case 'Return Rejected': 
                 updates['rejectionReason'] = reason;
                 break;
+              case 'Replacement Issued': updates['tracking.replacementIssued'] = now; break;
             }
 
             transaction.update(orderDocRef, updates);
@@ -641,12 +642,13 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
 };
 
 // --- Return Function ---
-export const requestReturn = async (orderId: string, reason: string): Promise<void> => {
+export const requestReturn = async (orderId: string, reason: string, returnType: 'refund' | 'replacement'): Promise<void> => {
   try {
     const orderDoc = doc(db, "orders", orderId);
     await updateDoc(orderDoc, {
       status: "Return Requested",
       returnReason: reason,
+      returnType: returnType,
       "tracking.returnRequested": new Date().toISOString(),
     });
   } catch (error) {
@@ -662,3 +664,7 @@ export const approveOrderReturn = async (orderId: string): Promise<void> => {
 export const rejectOrderReturn = async (orderId: string, reason: string): Promise<void> => {
     await updateOrderStatus(orderId, "Return Rejected", reason);
 };
+
+export const issueReplacement = async (orderId: string): Promise<void> => {
+    await updateOrderStatus(orderId, "Replacement Issued");
+}

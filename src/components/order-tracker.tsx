@@ -2,7 +2,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Package, ShieldCheck, Truck, Home, Undo2, CheckCircle, XCircle } from "lucide-react";
+import { Package, ShieldCheck, Truck, Home, Undo2, CheckCircle, XCircle, Repeat } from "lucide-react";
 import type { Order } from "@/lib/types";
 
 type OrderTrackerProps = {
@@ -25,6 +25,7 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
   if (!trackingInfo) return null;
 
   const isReturn = trackingInfo.returnRequested;
+  const isReplacement = trackingInfo.replacementIssued;
 
   const standardSteps = [
     { id: "ordered", label: "Confirmed", icon: ShieldCheck, date: trackingInfo.confirmed },
@@ -39,8 +40,17 @@ export default function OrderTracker({ trackingInfo }: OrderTrackerProps) {
     { id: "pickup", label: "Out for Pickup", icon: Truck, date: trackingInfo.outForPickup },
     { id: "returned", label: "Returned", icon: CheckCircle, date: trackingInfo.returnCompleted },
   ];
+  
+  const replacementSteps = [
+    { id: "requested", label: "Requested", icon: Undo2, date: trackingInfo.returnRequested },
+    { id: "approved", label: "Approved", icon: ShieldCheck, date: trackingInfo.returnApproved },
+    { id: "issued", label: "Replacement Issued", icon: Repeat, date: trackingInfo.replacementIssued },
+    { id: "shipped", label: "Shipped", icon: Truck, date: trackingInfo.shipped },
+    { id: "delivered", label: "Delivered", icon: Home, date: trackingInfo.delivered },
+  ];
 
-  const steps = isReturn ? returnSteps : standardSteps;
+
+  const steps = isReplacement ? replacementSteps : (isReturn ? returnSteps : standardSteps);
   
   let activeStepIndex = -1;
   for (let i = steps.length - 1; i >= 0; i--) {

@@ -163,7 +163,8 @@ export type OrderStatus =
   | "Out for Pickup"
   | "Picked Up"
   | "Return Rejected"
-  | "Return Completed";
+  | "Return Completed"
+  | "Replacement Issued";
 
 
 export type OrderTracking = {
@@ -179,6 +180,7 @@ export type OrderTracking = {
   outForPickup?: string | null;
   pickedUp?: string | null;
   returnCompleted?: string | null;
+  replacementIssued?: string | null;
   expectedDelivery: string | null;
 }
 
@@ -199,6 +201,7 @@ export type Order = {
   category: "stationary" | "books" | "electronics" | "xerox";
   rejectionReason?: string;
   returnReason?: string;
+  returnType?: 'refund' | 'replacement';
   tracking: OrderTracking;
   createdAt: any;
 };

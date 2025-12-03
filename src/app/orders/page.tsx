@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone, ChevronDown, FileText, Undo2 } from "lucide-react";
+import { Package, Truck, CheckCircle, Info, Clock, AlertTriangle, XCircle, ShoppingCart, Phone, ChevronDown, FileText, Undo2, Repeat } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +42,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 
 const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string, descriptiveLabel: string } } = {
@@ -59,10 +61,12 @@ const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label
   "Picked Up": { icon: Package, label: "Picked Up", descriptiveLabel: "Picked Up" },
   "Return Rejected": { icon: XCircle, label: "Return Rejected", descriptiveLabel: "Return Rejected" },
   "Return Completed": { icon: CheckCircle, label: "Return Completed", descriptiveLabel: "Return Completed" },
+  "Replacement Issued": { icon: Repeat, label: "Replacement Issued", descriptiveLabel: "Replacement Issued" },
 };
 
-const ReturnRequestDialog = ({ order, onReturnSubmit }: { order: Order, onReturnSubmit: (orderId: string, reason: string) => void }) => {
+const ReturnRequestDialog = ({ order, onReturnSubmit }: { order: Order, onReturnSubmit: (orderId: string, reason: string, returnType: 'refund' | 'replacement') => void }) => {
     const [reason, setReason] = useState("");
+    const [returnType, setReturnType] = useState<'refund' | 'replacement'>('refund');
     const [isOpen, setIsOpen] = useState(false);
     const { toast } = useToast();
 
@@ -71,21 +75,36 @@ const ReturnRequestDialog = ({ order, onReturnSubmit }: { order: Order, onReturn
             toast({ variant: 'destructive', title: 'Invalid Reason', description: 'Please provide a reason with at least 10 characters.' });
             return;
         }
-        onReturnSubmit(order.id, reason);
+        onReturnSubmit(order.id, reason, returnType);
         setIsOpen(false);
+        setReason("");
+        setReturnType("refund");
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button className="w-full" variant="outline">Request Return</Button>
+                <Button className="w-full" variant="outline">Request Return/Replacement</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Request Return for: {order.productName}</DialogTitle>
-                    <AlertDesc>Please explain why you would like to return this item.</AlertDesc>
+                    <DialogTitle>Request for: {order.productName}</DialogTitle>
+                    <AlertDesc>Please explain why you would like to return or replace this item.</AlertDesc>
                 </DialogHeader>
-                <div className="py-4">
+                <div className="py-4 space-y-4">
+                    <div>
+                        <Label>Request Type</Label>
+                        <RadioGroup value={returnType} onValueChange={(value: 'refund' | 'replacement') => setReturnType(value)} className="mt-2 flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="refund" id="refund" />
+                                <Label htmlFor="refund">Return for Refund</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="replacement" id="replacement" />
+                                <Label htmlFor="replacement">Request Replacement</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
                     <Textarea
                         placeholder="e.g., Item was damaged, received wrong product, etc."
                         value={reason}
@@ -101,7 +120,7 @@ const ReturnRequestDialog = ({ order, onReturnSubmit }: { order: Order, onReturn
     )
 }
 
-const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCancel: (orderId: string) => void, onReturnRequest: (orderId: string, reason: string) => void }) => {
+const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCancel: (orderId: string) => void, onReturnRequest: (orderId: string, reason: string, returnType: 'refund' | 'replacement') => void }) => {
   const { toast } = useToast();
   const StatusIcon = statusConfig[order.status]?.icon || Package;
   const descriptiveStatus = statusConfig[order.status]?.descriptiveLabel || order.status;
@@ -247,7 +266,8 @@ const statusFilterConfig = {
         ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery"].includes(o.status)
     ),
     delivered: (orders: Order[]) => orders.filter(o => o.status === "Delivered"),
-    cancelled: (orders: Order[]) => orders.filter(o => ["Cancelled", "Rejected"].includes(o.status)),
+    cancelled: (orders: Order[]) => orders.filter(o => ["Cancelled", "Rejected", "Return Rejected"].includes(o.status)),
+    returns: (orders: Order[]) => orders.filter(o => o.status.startsWith('Return') || o.status === 'Replacement Issued'),
 };
 
 const categoryFilterOptions: { value: string, label: string }[] = [
@@ -302,15 +322,15 @@ export default function OrdersPage() {
         }
     };
     
-    const handleReturnRequest = async (orderId: string, reason: string) => {
+    const handleReturnRequest = async (orderId: string, reason: string, returnType: 'refund' | 'replacement') => {
         try {
-            await requestReturn(orderId, reason);
-            toast({ title: 'Return Request Submitted', description: 'Your request has been sent to the seller for review.' });
+            await requestReturn(orderId, reason, returnType);
+            toast({ title: 'Request Submitted', description: 'Your request has been sent to the seller for review.' });
             if (user) {
                 fetchOrders(user.uid); // Refresh orders
             }
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Return Request Failed', description: error.message });
+            toast({ variant: 'destructive', title: 'Request Failed', description: error.message });
         }
     };
 
@@ -400,10 +420,11 @@ export default function OrdersPage() {
                         </TabsList>
                     </Tabs>
                     <Tabs value={statusTab} onValueChange={setStatusTab}>
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-5">
                             <TabsTrigger value="all" className="order-tabs-trigger">All</TabsTrigger>
                             <TabsTrigger value="processing" className="order-tabs-trigger">Processing</TabsTrigger>
                             <TabsTrigger value="delivered" className="order-tabs-trigger">Delivered</TabsTrigger>
+                            <TabsTrigger value="returns" className="order-tabs-trigger">Returns</TabsTrigger>
                             <TabsTrigger value="cancelled" className="order-tabs-trigger">Cancelled</TabsTrigger>
                         </TabsList>
                     </Tabs>
