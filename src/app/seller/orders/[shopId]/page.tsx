@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-provider';
 import { useState, useEffect, useMemo } from 'react';
-import { getOrdersBySeller, updateOrderStatus, approveOrderReturn, rejectOrderReturn } from '@/lib/data';
+import { getOrdersBySeller, updateOrderStatus, approveOrderReturn, rejectOrderReturn, issueReplacement } from '@/lib/data';
 import { getAllUsers } from '@/lib/users';
 import type { Order, UserProfile, OrderStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -50,9 +51,9 @@ const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label
   "Packed": { icon: Package, label: "Packed", descriptiveLabel: "Packed or Printed" },
   "Shipped": { icon: Truck, label: "Shipped", descriptiveLabel: "Shipping" },
   "Out for Delivery": { icon: Truck, label: "Out for Delivery", descriptiveLabel: "Out for Delivery" },
-  "Delivered": { icon: Check, label: "Delivered", descriptiveLabel: "Delivered" },
-  "Cancelled": { icon: X, label: "Cancelled", descriptiveLabel: "Cancelled by You" },
-  "Rejected": { icon: X, label: "Rejected", descriptiveLabel: "Rejected by Seller" },
+  "Delivered": { icon: CheckCircle, label: "Delivered", descriptiveLabel: "Delivered" },
+  "Cancelled": { icon: XCircle, label: "Cancelled", descriptiveLabel: "Cancelled by You" },
+  "Rejected": { icon: AlertTriangle, label: "Rejected", descriptiveLabel: "Rejected by Seller" },
   "Return Requested": { icon: Undo2, label: "Return Requested", descriptiveLabel: "Return Requested" },
   "Return Approved": { icon: CheckCircle, label: "Return Approved", descriptiveLabel: "Return Approved" },
   "Out for Pickup": { icon: Truck, label: "Out for Pickup", descriptiveLabel: "Out for Pickup" },
@@ -134,7 +135,7 @@ export default function ManageShopOrdersPage() {
       }
       fetchOrdersAndUsers();
     }
-  }, [authLoading, user, shopId]);
+  }, [authLoading, user, shopId, router, toast]);
 
   const handleConfirmOrder = async (orderId: string) => {
     try {
@@ -201,6 +202,17 @@ export default function ManageShopOrdersPage() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+  
+  const handleIssueReplacement = async (orderId: string) => {
+    try {
+      await issueReplacement(orderId);
+      toast({ title: 'Replacement Issued', description: 'The replacement has been marked as issued.' });
+      fetchOrdersAndUsers();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
+
 
   const ordersByStatus = useMemo(() => {
     const pending: GroupedOrders = {};
@@ -211,7 +223,7 @@ export default function ManageShopOrdersPage() {
     Object.entries(groupedOrders).forEach(([userId, group]) => {
       const pendingOrders = group.orders.filter(o => o.status === 'Pending Confirmation');
       const activeOrders = group.orders.filter(o => ['Processing', 'Packed', 'Shipped', 'Out for Delivery'].includes(o.status));
-      const returnOrders = group.orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up');
+      const returnOrders = group.orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up' || o.status === 'Replacement Issued');
       const completedOrders = group.orders.filter(o => ['Delivered', 'Cancelled', 'Rejected'].includes(o.status));
       
       if (pendingOrders.length > 0) pending[userId] = { user: group.user, orders: pendingOrders };
@@ -226,7 +238,7 @@ export default function ManageShopOrdersPage() {
     const activeStatuses = ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery"];
     return {
         active: orders.filter(o => activeStatuses.includes(o.status)).length,
-        returns: orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up').length,
+        returns: orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up' || o.status === 'Replacement Issued').length,
         completed: orders.filter(o => o.status === 'Delivered').length,
         sellerRejected: orders.filter(o => o.status === 'Rejected').length,
         userCancelled: orders.filter(o => o.status === 'Cancelled').length
@@ -289,8 +301,18 @@ export default function ManageShopOrdersPage() {
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                   {orders.map(order => {
-                    const StatusIcon = statusConfig[order.status]?.icon || Package;
-                    const descriptiveStatus = statusConfig[order.status]?.descriptiveLabel || order.status;
+                    const isReplacement = order.returnType === 'replacement';
+                    const baseStatusInfo = statusConfig[order.status];
+                    let StatusIcon = baseStatusInfo?.icon || Package;
+                    let descriptiveStatus = baseStatusInfo?.descriptiveLabel || order.status;
+
+                    if (isReplacement && ['Return Approved', 'Replacement Issued', 'Shipped', 'Delivered'].includes(order.status)) {
+                        StatusIcon = Repeat; // Use replacement icon
+                        if (order.status !== 'Return Requested') {
+                           descriptiveStatus = `Replacement: ${baseStatusInfo.descriptiveLabel}`;
+                        }
+                    }
+
                     const totalItemPrice = (order.price + order.deliveryCharge) * order.quantity;
                     const isDriveLink = order.productImage && order.productImage.includes('drive.google.com');
 
@@ -342,6 +364,9 @@ export default function ManageShopOrdersPage() {
                                     <h4 className="font-semibold">Return Reason ({order.returnType}):</h4>
                                     <p className="text-sm text-muted-foreground p-2 border rounded-md">{order.returnReason}</p>
                                     <div className="flex gap-2 justify-end">
+                                      {order.returnType === 'replacement' && (
+                                          <Button size="sm" variant="outline" onClick={() => handleIssueReplacement(order.id)}>Issue Replacement</Button>
+                                      )}
                                         <Button size="sm" variant="outline" onClick={() => handleApproveReturn(order.id)}>Approve Return</Button>
                                         <Button size="sm" variant="destructive" onClick={() => setRejectingReturn(order)}>Reject Return</Button>
                                     </div>
@@ -352,7 +377,7 @@ export default function ManageShopOrdersPage() {
                             <>
                             <Separator />
                             <OrderTracker trackingInfo={order.tracking} />
-                            {(listType === 'active' || listType === 'returns') && !order.status.startsWith('Return') && (
+                            {listType === 'active' && !order.status.startsWith('Return') && (
                               <CardFooter className="p-0">
                                   <Button 
                                     className="w-full" 
@@ -363,7 +388,7 @@ export default function ManageShopOrdersPage() {
                                   </Button>
                               </CardFooter>
                             )}
-                            {order.status.startsWith('Return') && order.status !== 'Return Requested' && order.status !== 'Return Rejected' && (
+                            {listType === 'returns' && order.status !== 'Return Requested' && order.status !== 'Return Rejected' && (
                                 <CardFooter className="p-0">
                                     <Button className="w-full" onClick={() => handleUpdateStatus(order)} disabled={!NEXT_STATUS[order.status]}>
                                         {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Return Finished"}

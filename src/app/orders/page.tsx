@@ -123,8 +123,21 @@ const ReturnRequestDialog = ({ order, onReturnSubmit }: { order: Order, onReturn
 
 const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCancel: (orderId: string) => void, onReturnRequest: (orderId: string, reason: string, returnType: 'refund' | 'replacement') => void }) => {
   const { toast } = useToast();
-  const StatusIcon = statusConfig[order.status]?.icon || Package;
-  const descriptiveStatus = statusConfig[order.status]?.descriptiveLabel || order.status;
+  
+  const isReplacement = order.returnType === 'replacement';
+  const baseStatusInfo = statusConfig[order.status];
+  
+  let StatusIcon = baseStatusInfo?.icon || Package;
+  let descriptiveStatus = baseStatusInfo?.descriptiveLabel || order.status;
+
+  if (isReplacement && ['Return Approved', 'Replacement Issued', 'Shipped', 'Delivered'].includes(order.status)) {
+      StatusIcon = Repeat; // Use replacement icon
+      if (order.status !== 'Return Requested') {
+          descriptiveStatus = `Replacement: ${baseStatusInfo.descriptiveLabel}`;
+      }
+  }
+
+
   const itemPrice = order.price || 0;
   const deliveryCharge = order.deliveryCharge || 0;
   const totalItemPrice = itemPrice + deliveryCharge;
@@ -308,7 +321,7 @@ const statusFilterConfig = {
     ),
     delivered: (orders: Order[]) => orders.filter(o => o.status === "Delivered"),
     cancelled: (orders: Order[]) => orders.filter(o => ["Cancelled", "Rejected", "Return Rejected"].includes(o.status)),
-    returns: (orders: Order[]) => orders.filter(o => o.status.startsWith('Return') || o.status === 'Replacement Issued' || o.status === 'Picked Up'),
+    returns: (orders: Order[]) => orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up' || o.status === 'Replacement Issued'),
 };
 
 const categoryFilterOptions: { value: string, label: string }[] = [
