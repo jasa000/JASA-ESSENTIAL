@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function XeroxTicker() {
@@ -89,10 +89,10 @@ export default function XeroxTicker() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">Xerox & Printing</h2>
-        <Button asChild variant="outline">
+        <Button asChild className="bg-[#4169E1] text-white hover:bg-[#4169E1]/90 transition-transform active:scale-95">
           <Link href="/xerox?upload=true">
+            <FileUp className="mr-2 h-4 w-4 text-white" />
             <span>Print Now</span>
-            <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </div>
