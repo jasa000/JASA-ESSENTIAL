@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useParams, useRouter } from 'next/navigation';
@@ -12,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, User, Package, FileText, Phone, Truck, MapPin, Clock, CheckCircle, AlertTriangle, Undo2 } from 'lucide-react';
+import { Check, X, User, Package, FileText, Phone, Truck, MapPin, Clock, CheckCircle, AlertTriangle, Undo2, Repeat, XCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -60,6 +59,7 @@ const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label
   "Picked Up": { icon: Package, label: "Picked Up", descriptiveLabel: "Picked Up" },
   "Return Rejected": { icon: XCircle, label: "Return Rejected", descriptiveLabel: "Return Rejected" },
   "Return Completed": { icon: CheckCircle, label: "Return Completed", descriptiveLabel: "Return Completed" },
+  "Replacement Issued": { icon: Repeat, label: "Replacement Issued", descriptiveLabel: "Replacement Issued" },
 };
 
 const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: number, icon: React.ElementType, loading: boolean }) => (
