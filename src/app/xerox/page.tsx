@@ -250,7 +250,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -567,32 +567,33 @@ export default function XeroxPage() {
 
 
   const renderInitialState = () => (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="text-center p-8 border-dashed bg-red-600 text-white rounded-2xl h-64 md:h-52 flex flex-col justify-center">
-        <CardHeader>
-          <FileUp className="mx-auto h-12 w-12 text-red-100" />
-          <CardTitle className="text-2xl text-white">Start Your Printing Order</CardTitle>
-          <CardDescription className="text-red-100">Upload your documents to get started.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            type="button"
-            size="lg"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full h-14 bg-white text-red-600 hover:bg-gray-100 rounded-full"
-          >
-            Upload Documents
-          </Button>
-          <Input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            multiple
-            onChange={handleMultipleFileChanges}
-            accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
-          />
-        </CardContent>
-      </Card>
+    <div className="container mx-auto px-4 py-8 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-300 via-sky-100 to-white dark:from-sky-800 dark:via-sky-900 dark:to-black rounded-2xl"></div>
+        <Card className="relative z-10 text-center p-8 border-0 bg-transparent text-white rounded-2xl h-64 md:h-52 flex flex-col justify-center">
+            <CardHeader>
+                <FileUp className="mx-auto h-12 w-12 text-white" />
+                <CardTitle className="text-2xl text-white">Start Your Printing Order</CardTitle>
+                <CardDescription className="text-gray-200">Upload your documents to get started.</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Button
+                type="button"
+                size="lg"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-14 bg-white text-primary hover:bg-gray-100 rounded-full"
+            >
+                Upload Documents
+            </Button>
+            <Input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                onChange={handleMultipleFileChanges}
+                accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+            />
+            </CardContent>
+        </Card>
     </div>
   );
   
