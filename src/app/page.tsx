@@ -203,7 +203,7 @@ export default function Home() {
       <section>
         <div className="mb-4 flex items-center justify-between">
             <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">{catInfo.title}</h2>
-            <Button asChild variant="outline">
+            <Button asChild className="bg-[#4169E1] text-white hover:bg-[#4169E1]/90 transition-transform active:scale-95">
               <Link href={catInfo.href}>
                 <span>View All</span>
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -301,7 +301,7 @@ export default function Home() {
             {isLoading ? (
                  <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
-                        <Skeleton className="relative h-60 w-full rounded-2xl md:h-80 lg:h-[23rem]" />
+                        <Skeleton className="relative h-40 md:h-80 lg:h-[23rem]" />
                     </div>
                  </CarouselItem>
             ) : carouselItems.map((item, index) => {
@@ -334,7 +334,7 @@ export default function Home() {
               !isLoading && carouselItems.length === 0 && (
                 <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
-                       <div className="relative h-60 w-full rounded-2xl md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
+                       <div className="relative h-40 w-full rounded-2xl md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
                           <p className="text-muted-foreground">No promotional content available right now.</p>
                        </div>
                     </div>
