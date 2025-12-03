@@ -301,11 +301,11 @@ export default function Home() {
             {isLoading ? (
                  <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
-                        <Skeleton className="relative h-64 w-full rounded-2xl md:h-80 lg:h-[23rem]" />
+                        <Skeleton className="relative h-60 w-full rounded-2xl md:h-80 lg:h-[23rem]" />
                     </div>
                  </CarouselItem>
             ) : carouselItems.map((item, index) => {
-              const cardHeight = "h-64 md:h-80 lg:h-[23rem]";
+              const cardHeight = "h-60 md:h-80 lg:h-[23rem]";
               if (item.type === 'welcome') {
                 return (
                   <CarouselItem key="welcome" className="pl-4">
@@ -334,7 +334,7 @@ export default function Home() {
               !isLoading && carouselItems.length === 0 && (
                 <CarouselItem className="pl-4">
                     <div className="relative w-full overflow-hidden">
-                       <div className="relative h-64 w-full rounded-2xl md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
+                       <div className="relative h-60 w-full rounded-2xl md:h-80 lg:h-[23rem] bg-muted flex items-center justify-center">
                           <p className="text-muted-foreground">No promotional content available right now.</p>
                        </div>
                     </div>
