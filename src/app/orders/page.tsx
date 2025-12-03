@@ -154,7 +154,7 @@ const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCance
         setReturnTimeLeft('');
         return;
       }
-      setReturnTimeLeft(formatDistanceStrict(returnDeadline, now, { addSuffix: true, unit: 'minute' }).replace('in ', ''));
+      setReturnTimeLeft(formatDistanceStrict(returnDeadline, now, { addSuffix: false }));
     };
     
     calculateTimeLeft();
