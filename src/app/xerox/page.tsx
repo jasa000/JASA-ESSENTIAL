@@ -581,7 +581,7 @@ export default function XeroxPage() {
                     type="button"
                     size="lg"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-full bg-white text-black hover:bg-gray-100 rounded-full relative shining-button"
+                    className="w-full h-full bg-black text-white hover:bg-gray-800 rounded-full relative shining-button"
                 >
                     <FileUp className="mr-2 h-4 w-4" /> Upload Documents
                 </Button>
@@ -602,7 +602,7 @@ export default function XeroxPage() {
   const PriceListDialog = () => (
     <Dialog>
         <DialogTrigger asChild>
-            <Button variant="outline"><ListOrdered className="mr-2 h-4 w-4"/> View Price List</Button>
+            <Button className="bg-[#4169E1] hover:bg-[#4169E1]/90 transition-transform active:scale-95"><ListOrdered className="mr-2 h-4 w-4"/> View Price List</Button>
         </DialogTrigger>
         <DialogContent className="max-h-[80vh] flex flex-col">
             <DialogHeader>
@@ -672,7 +672,7 @@ export default function XeroxPage() {
   const PaperSamplesDialog = () => (
     <Dialog>
         <DialogTrigger asChild>
-            <Button variant="outline"><Images className="mr-2 h-4 w-4"/> View Formats</Button>
+            <Button className="bg-[#4169E1] hover:bg-[#4169E1]/90 transition-transform active:scale-95"><Images className="mr-2 h-4 w-4"/> View Formats</Button>
         </DialogTrigger>
         <DialogContent className="max-h-[80vh] flex flex-col">
             <DialogHeader>
