@@ -93,6 +93,8 @@ export default function ManageShopOrdersPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
 
+  const isEmployeeOnly = user?.roles.includes('employee') && !user.roles.includes('seller');
+
   const fetchOrdersAndUsers = async () => {
     if (!shopId) return;
     setIsLoading(true);
@@ -128,7 +130,7 @@ export default function ManageShopOrdersPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || !user.roles.includes("seller")) {
+      if (!user || (!user.roles.includes("seller") && !user.roles.includes("employee"))) {
         router.push("/");
         return;
       }
@@ -223,7 +225,7 @@ export default function ManageShopOrdersPage() {
       const pendingOrders = group.orders.filter(o => o.status === 'Pending Confirmation');
       const activeOrders = group.orders.filter(o => ['Processing', 'Packed', 'Shipped', 'Out for Delivery'].includes(o.status));
       const returnOrders = group.orders.filter(o => o.status.startsWith('Return') || o.status === 'Picked Up' || o.status === 'Replacement Issued');
-      const completedOrders = group.orders.filter(o => ['Delivered', 'Cancelled', 'Rejected'].includes(o.status));
+      const completedOrders = group.orders.filter(o => ['Delivered', 'Cancelled', 'Rejected', 'Return Completed'].includes(o.status));
       
       if (pendingOrders.length > 0) pending[userId] = { user: group.user, orders: pendingOrders };
       if (activeOrders.length > 0) active[userId] = { user: group.user, orders: activeOrders };
@@ -347,7 +349,7 @@ export default function ManageShopOrdersPage() {
                                   <StatusIcon className="h-4 w-4" />
                                   {descriptiveStatus}
                               </Badge>
-                              {listType === 'pending' && (
+                              {listType === 'pending' && !isEmployeeOnly && (
                                   <div className="flex gap-2">
                                       <Button size="sm" onClick={() => handleConfirmOrder(order.id)}>
                                           <Check className="mr-2 h-4 w-4"/> Confirm
@@ -365,13 +367,15 @@ export default function ManageShopOrdersPage() {
                                 <div className="space-y-2">
                                     <h4 className="font-semibold">Return Reason ({order.returnType}):</h4>
                                     <p className="text-sm text-muted-foreground p-2 border rounded-md">{order.returnReason}</p>
-                                    <div className="flex gap-2 justify-end">
-                                      {order.returnType === 'replacement' && (
-                                          <Button size="sm" variant="outline" onClick={() => handleIssueReplacement(order.id)}>Issue Replacement</Button>
-                                      )}
-                                        <Button size="sm" variant="outline" onClick={() => handleApproveReturn(order.id)}>Approve Return</Button>
-                                        <Button size="sm" variant="destructive" onClick={() => setRejectingReturn(order)}>Reject Return</Button>
-                                    </div>
+                                     {!isEmployeeOnly && (
+                                        <div className="flex gap-2 justify-end">
+                                        {order.returnType === 'replacement' && (
+                                            <Button size="sm" variant="outline" onClick={() => handleIssueReplacement(order.id)}>Issue Replacement</Button>
+                                        )}
+                                            <Button size="sm" variant="outline" onClick={() => handleApproveReturn(order.id)}>Approve Return</Button>
+                                            <Button size="sm" variant="destructive" onClick={() => setRejectingReturn(order)}>Reject Return</Button>
+                                        </div>
+                                     )}
                                 </div>
                                 </>
                            )}
@@ -384,7 +388,7 @@ export default function ManageShopOrdersPage() {
                                   <Button 
                                     className="w-full" 
                                     onClick={() => handleUpdateStatus(order)} 
-                                    disabled={!NEXT_STATUS[order.status]}
+                                    disabled={!NEXT_STATUS[order.status] || (isEmployeeOnly && order.status === 'Processing')}
                                   >
                                     {NEXT_STATUS[order.status] ? `Update to: ${NEXT_STATUS[order.status]}` : "Order Complete"}
                                   </Button>
@@ -477,7 +481,7 @@ export default function ManageShopOrdersPage() {
               <TabsTrigger value="pending">Pending ({Object.values(ordersByStatus.pending).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
               <TabsTrigger value="active">Active ({Object.values(ordersByStatus.active).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
               <TabsTrigger value="returns">Returns ({Object.values(ordersByStatus.returns).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
-              <TabsTrigger value="completed">History ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0)})</TabsTrigger>
+              <TabsTrigger value="completed">History ({Object.values(ordersByStatus.completed).reduce((sum, group) => sum + group.orders.length, 0) + orders.filter(o => o.status === 'Return Completed').length})</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -500,5 +504,3 @@ export default function ManageShopOrdersPage() {
     </>
   );
 }
-
-    
