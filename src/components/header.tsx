@@ -13,7 +13,10 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AuthForm from './auth-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getNotificationsForUser } from '@/lib/data';
+import { Badge } from '@/components/ui/badge';
+import type { Notification } from '@/lib/types';
 
 export default function Header() {
   const { user } = useAuth();
@@ -22,6 +25,31 @@ export default function Header() {
   const isHomePage = pathname === '/';
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authDialogDefaultTab, setAuthDialogDefaultTab] = useState<'login' | 'signup'>('login');
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      const fetchNotifications = async () => {
+        try {
+          const notifications = await getNotificationsForUser(user.uid);
+          const unread = notifications.filter(n => !n.isRead).length;
+          setUnreadCount(unread);
+        } catch (error) {
+          console.error("Failed to fetch notifications for header count", error);
+        }
+      };
+      
+      // Fetch on mount
+      fetchNotifications();
+
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [user]);
 
 
   return (
@@ -62,9 +90,14 @@ export default function Header() {
                 </Link>
               </Button>
               {user && (
-                <Button asChild variant="ghost" size="icon" className='rounded-full h-9 w-9'>
+                <Button asChild variant="ghost" size="icon" className='relative rounded-full h-9 w-9'>
                     <Link href="/notifications">
                         <Bell className="h-5 w-5" />
+                        {unreadCount > 0 && (
+                            <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-600 text-white hover:bg-red-700">
+                                {unreadCount}
+                            </Badge>
+                        )}
                         <span className="sr-only">Notifications</span>
                     </Link>
                 </Button>

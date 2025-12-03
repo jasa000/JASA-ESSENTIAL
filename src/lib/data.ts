@@ -1,5 +1,4 @@
 
-
 import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus, Notification } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
@@ -630,13 +629,14 @@ export const getNotificationsForUser = async (userId: string): Promise<Notificat
     }
 };
 
-export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
+export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
     try {
         const notificationDoc = doc(db, 'notifications', notificationId);
         await updateDoc(notificationDoc, { isRead: true });
+        return true;
     } catch (error) {
         console.error("Error marking notification as read:", error);
-        // We don't throw here, as it's not a critical failure if this fails silently.
+        return false;
     }
 };
 

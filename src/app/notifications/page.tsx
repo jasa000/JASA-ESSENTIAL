@@ -17,14 +17,15 @@ import Link from "next/link";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 
-const NotificationCard = ({ notification }: { notification: Notification }) => {
+const NotificationCard = ({ notification, onMarkAsRead }: { notification: Notification; onMarkAsRead: (id: string) => void }) => {
     
   const handleMarkAsRead = async () => {
     if (!notification.isRead) {
-      try {
-        await markNotificationAsRead(notification.id);
-      } catch (error) {
-        console.error("Failed to mark notification as read", error);
+      const success = await markNotificationAsRead(notification.id);
+      if (success) {
+        onMarkAsRead(notification.id);
+      } else {
+        console.error("Failed to mark notification as read");
       }
     }
   };
@@ -106,6 +107,12 @@ export default function NotificationsPage() {
     }
   }, [user, authLoading, router, toast]);
 
+  const handleLocalMarkAsRead = (id: string) => {
+    setNotifications(prev => 
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    );
+  };
+
   if (isLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -135,7 +142,7 @@ export default function NotificationsPage() {
         {notifications.length > 0 ? (
           <div className="space-y-4">
             {notifications.map((notification) => (
-              <NotificationCard key={notification.id} notification={notification} />
+              <NotificationCard key={notification.id} notification={notification} onMarkAsRead={handleLocalMarkAsRead} />
             ))}
           </div>
         ) : (
