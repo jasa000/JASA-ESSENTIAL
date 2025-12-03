@@ -68,6 +68,7 @@ export async function getAllCloudinaryImages() {
       id: resource.public_id,
       url: resource.secure_url,
       createdAt: resource.created_at,
+      bytes: resource.bytes,
       isUsed: usedUrls.has(resource.secure_url),
     }));
 

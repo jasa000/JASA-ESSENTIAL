@@ -45,6 +45,7 @@ type CloudinaryImage = {
   url: string;
   createdAt: string;
   isUsed: boolean;
+  bytes: number;
 };
 
 type CloudinaryUsage = {
@@ -69,6 +70,15 @@ type CloudinaryUsage = {
   };
   transformations?: any;
   storage?: any;
+};
+
+const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };
 
 export default function ManageCloudinaryPage() {
@@ -208,17 +218,6 @@ export default function ManageCloudinaryPage() {
     const transformationsData = usageData.transformations;
     const storageData = usageData.storage;
 
-    const formatBytes = (bytes: number) => {
-      if (bytes === 0) return "0 Bytes";
-      const k = 1024;
-      const dm = 2;
-      const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return (
-        parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i]
-      );
-    };
-
     const getPercentage = (used: number, limit: number) =>
       limit > 0 ? (used / limit) * 100 : 0;
     
@@ -316,6 +315,9 @@ export default function ManageCloudinaryPage() {
                 className="object-cover"
               />
             </div>
+            <Badge variant="secondary" className="absolute top-2 right-2 z-10">
+                {formatBytes(image.bytes)}
+            </Badge>
              {isUnusedTab && (
               <Checkbox
                 checked={selectedImages.includes(image.id)}
@@ -327,7 +329,7 @@ export default function ManageCloudinaryPage() {
             <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
               <Badge
                 variant={image.isUsed ? "default" : "destructive"}
-                className={`absolute right-2 top-2 ${isUnusedTab ? 'opacity-0 group-hover:opacity-100' : ''}`}
+                className={`absolute right-2 top-10 ${isUnusedTab ? 'opacity-0 group-hover:opacity-100' : ''}`}
               >
                 {image.isUsed ? "Used" : "Unused"}
               </Badge>
