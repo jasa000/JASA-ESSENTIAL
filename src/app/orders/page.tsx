@@ -41,42 +41,47 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils";
 
 
-const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string } } = {
-  "Pending Confirmation": { icon: Clock, label: "Pending" },
-  "Processing": { icon: Package, label: "Processing" },
-  "Packed": { icon: Package, label: "Packed" },
-  "Shipped": { icon: Truck, label: "Shipped" },
-  "Out for Delivery": { icon: Truck, label: "Out for Delivery" },
-  "Delivered": { icon: CheckCircle, label: "Delivered" },
-  "Cancelled": { icon: XCircle, label: "Cancelled" },
-  "Rejected": { icon: AlertTriangle, label: "Rejected" },
+const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string, descriptiveLabel: string } } = {
+  "Pending Confirmation": { icon: Clock, label: "Pending", descriptiveLabel: "Waiting for confirmation" },
+  "Processing": { icon: Package, label: "Processing", descriptiveLabel: "Processing" },
+  "Packed": { icon: Package, label: "Packed", descriptiveLabel: "Packed or Printed" },
+  "Shipped": { icon: Truck, label: "Shipped", descriptiveLabel: "Shipping" },
+  "Out for Delivery": { icon: Truck, label: "Out for Delivery", descriptiveLabel: "Out for Delivery" },
+  "Delivered": { icon: CheckCircle, label: "Delivered", descriptiveLabel: "Delivered" },
+  "Cancelled": { icon: XCircle, label: "Cancelled", descriptiveLabel: "Cancelled by You" },
+  "Rejected": { icon: AlertTriangle, label: "Rejected", descriptiveLabel: "Rejected by Seller" },
 };
 
 
 const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: string) => void }) => {
   const { toast } = useToast();
   const StatusIcon = statusConfig[order.status]?.icon || Package;
+  const descriptiveStatus = statusConfig[order.status]?.descriptiveLabel || order.status;
   const itemPrice = order.price || 0;
   const deliveryCharge = order.deliveryCharge || 0;
   const totalItemPrice = itemPrice + deliveryCharge;
   const itemQuantity = order.quantity || 1;
   const totalOrderPrice = totalItemPrice * itemQuantity;
+  const [isReasonDialogOpen, setIsReasonDialogOpen] = useState(false);
+
 
   return (
+    <>
+    <Dialog open={isReasonDialogOpen} onOpenChange={setIsReasonDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Reason for Rejection</DialogTitle>
+                <AlertDesc>
+                    {order.rejectionReason}
+                </AlertDesc>
+            </DialogHeader>
+        </DialogContent>
+    </Dialog>
     <Card className="overflow-hidden">
       <CardHeader className="bg-muted/50 p-4">
           <CardDescription>Order ID: {order.id}</CardDescription>
       </CardHeader>
       <CardContent className="p-4">
-        {order.rejectionReason && (
-            <Alert variant="destructive" className="mb-4">
-                <Info className="h-4 w-4" />
-                <AlertTitle>Rejection Reason</AlertTitle>
-                <AlertDesc>
-                    {order.rejectionReason}
-                </AlertDesc>
-            </Alert>
-        )}
         <div className="flex items-center gap-4">
             <div className="relative h-20 w-20 flex-shrink-0 bg-muted rounded-md overflow-hidden">
                 {order.productImage ? (
@@ -97,10 +102,17 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
                   </Tooltip>
                 </TooltipProvider>
 
-                <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2 w-fit">
-                    <StatusIcon className="h-4 w-4" />
-                    {order.status}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2 w-fit">
+                        <StatusIcon className="h-4 w-4" />
+                        {descriptiveStatus}
+                    </Badge>
+                     {order.status === 'Rejected' && order.rejectionReason && (
+                        <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setIsReasonDialogOpen(true)}>
+                            View Reason
+                        </Button>
+                    )}
+                </div>
                 
                 <p className="text-sm pt-1"><span className="font-medium">Quantity:</span> {itemQuantity}</p>
                 <p className="text-sm"><span className="font-medium">Price per item:</span> Rs {itemPrice.toFixed(2)}</p>
@@ -172,6 +184,7 @@ const OrderCard = ({ order, onCancel }: { order: Order, onCancel: (orderId: stri
         </CardFooter>
       )}
     </Card>
+    </>
   )
 };
 
@@ -338,5 +351,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-
-    

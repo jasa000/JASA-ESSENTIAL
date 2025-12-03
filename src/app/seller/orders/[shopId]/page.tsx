@@ -41,15 +41,15 @@ const NEXT_STATUS: Record<string, OrderStatus> = {
   "Out for Delivery": "Delivered",
 };
 
-const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string } } = {
-  "Pending Confirmation": { icon: Phone, label: "Pending" },
-  "Processing": { icon: Package, label: "Processing" },
-  "Packed": { icon: Package, label: "Packed" },
-  "Shipped": { icon: Truck, label: "Shipped" },
-  "Out for Delivery": { icon: Truck, label: "Out for Delivery" },
-  "Delivered": { icon: Check, label: "Delivered" },
-  "Cancelled": { icon: X, label: "Cancelled" },
-  "Rejected": { icon: X, label: "Rejected" },
+const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string, descriptiveLabel: string } } = {
+  "Pending Confirmation": { icon: Phone, label: "Pending", descriptiveLabel: "Waiting for confirmation" },
+  "Processing": { icon: Package, label: "Processing", descriptiveLabel: "Processing" },
+  "Packed": { icon: Package, label: "Packed", descriptiveLabel: "Packed or Printed" },
+  "Shipped": { icon: Truck, label: "Shipped", descriptiveLabel: "Shipping" },
+  "Out for Delivery": { icon: Truck, label: "Out for Delivery", descriptiveLabel: "Out for Delivery" },
+  "Delivered": { icon: Check, label: "Delivered", descriptiveLabel: "Delivered" },
+  "Cancelled": { icon: X, label: "Cancelled", descriptiveLabel: "Cancelled by You" },
+  "Rejected": { icon: X, label: "Rejected", descriptiveLabel: "Rejected by Seller" },
 };
 
 const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: number, icon: React.ElementType, loading: boolean }) => (
@@ -254,6 +254,7 @@ export default function ManageShopOrdersPage() {
                 <CardContent className="p-4 space-y-4">
                   {orders.map(order => {
                     const StatusIcon = statusConfig[order.status]?.icon || Package;
+                    const descriptiveStatus = statusConfig[order.status]?.descriptiveLabel || order.status;
                     const totalItemPrice = (order.price + order.deliveryCharge) * order.quantity;
                     const isDriveLink = order.productImage && order.productImage.includes('drive.google.com');
 
@@ -284,7 +285,7 @@ export default function ManageShopOrdersPage() {
                             <div className="flex flex-col items-end gap-2 self-end md:self-start">
                               <Badge variant={order.status === 'Rejected' || order.status === 'Cancelled' ? 'destructive' : 'default'} className="flex items-center gap-2">
                                   <StatusIcon className="h-4 w-4" />
-                                  {order.status}
+                                  {descriptiveStatus}
                               </Badge>
                               {listType === 'pending' && (
                                   <div className="flex gap-2">
