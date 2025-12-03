@@ -47,10 +47,15 @@ export default function ShopAnalyticsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfDay(new Date()),
-    to: endOfDay(new Date()),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  
+  useEffect(() => {
+    // Set initial date range on client to avoid hydration mismatch
+    setDateRange({
+        from: startOfDay(new Date()),
+        to: endOfDay(new Date()),
+    });
+  }, []);
 
   useEffect(() => {
     if (!authLoading) {
