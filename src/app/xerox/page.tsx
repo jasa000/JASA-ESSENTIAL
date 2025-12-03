@@ -11,6 +11,8 @@ import {
   TableBody,
   TableCell,
   TableRow,
+  TableHeader,
+  TableHead
 } from "@/components/ui/table";
 import {
   Collapsible,
@@ -19,7 +21,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil, ListOrdered } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -38,8 +40,10 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 // Set up worker for pdf.js
@@ -75,8 +79,7 @@ export default function XeroxPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isPriceListOpen, setIsPriceListOpen] = useState(false);
-
+  
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -563,7 +566,7 @@ export default function XeroxPage() {
     <div className="container mx-auto px-4 py-8">
       <Card className="text-center p-8 border-dashed bg-[#4169E1] text-white">
         <CardHeader>
-          <FileUp className="mx-auto h-12 w-12 text-white animate-float-up" />
+          <FileUp className="mx-auto h-12 w-12 text-red-500" />
           <CardTitle className="text-2xl text-white">Start Your Printing Order</CardTitle>
           <CardDescription className="text-gray-200">Upload your documents to get started.</CardDescription>
         </CardHeader>
@@ -572,7 +575,7 @@ export default function XeroxPage() {
             type="button"
             size="lg"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full h-14 bg-white text-[#4169E1] hover:bg-gray-200"
+            className="w-full h-14 bg-red-600 text-white hover:bg-red-700 rounded-full"
           >
             Upload Documents
           </Button>
@@ -588,6 +591,71 @@ export default function XeroxPage() {
       </Card>
     </div>
   );
+  
+  const PriceListDialog = () => (
+    <Dialog>
+        <DialogTrigger asChild>
+            <Button variant="outline"><ListOrdered className="mr-2 h-4 w-4"/> View Price List</Button>
+        </DialogTrigger>
+        <DialogContent className="max-h-[80vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Xerox & Printing Price List</DialogTitle>
+                <DialogDescription>
+                    Prices for various printing and finishing services.
+                </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-grow">
+                <div className="pr-6">
+                    {error ? (
+                        <p className="text-center text-destructive">{error}</p>
+                    ) : isLoading ? (
+                        <div className="space-y-2">
+                           <Skeleton className="h-8 w-full" />
+                           <Skeleton className="h-8 w-full" />
+                           <Skeleton className="h-8 w-full" />
+                        </div>
+                    ) : services.length === 0 ? (
+                        <p className="py-8 text-center text-muted-foreground">
+                            No printing services are available at the moment.
+                        </p>
+                    ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Service</TableHead>
+                                <TableHead className="text-right">Price</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {services.map((service) => {
+                            const hasDiscount = service.discountPrice != null && service.discountPrice < service.price;
+                            return (
+                            <TableRow key={service.id}>
+                                <TableCell className="font-medium">
+                                    <p>{service.name}</p>
+                                    {service.unit && <p className="text-xs text-muted-foreground">{service.unit}</p>}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                {hasDiscount ? (
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-base font-bold">Rs {service.discountPrice?.toFixed(2)}</span>
+                                        <span className="text-xs text-muted-foreground line-through">Rs {service.price.toFixed(2)}</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-base font-bold">Rs {service.price.toFixed(2)}</span>
+                                )}
+                                </TableCell>
+                            </TableRow>
+                            );
+                        })}
+                        </TableBody>
+                    </Table>
+                    )}
+                </div>
+            </ScrollArea>
+        </DialogContent>
+    </Dialog>
+  );
 
 
   return (
@@ -599,110 +667,11 @@ export default function XeroxPage() {
         <p className="mt-4 text-muted-foreground">
           High-quality photocopying and printing at competitive prices.
         </p>
+        <div className="mt-4">
+          <PriceListDialog />
+        </div>
       </div>
 
-      <div className="w-full bg-muted">
-        <Card className="container mx-auto mt-0 rounded-none border-x-0 border-y shadow-none">
-          <Collapsible open={isPriceListOpen} onOpenChange={setIsPriceListOpen}>
-            <CollapsibleTrigger className="w-full">
-              <CardHeader className="flex flex-row items-center justify-between text-center">
-                <CardTitle>Price List</CardTitle>
-                <ChevronDown
-                  className={cn(
-                    "h-6 w-6 transform transition-transform duration-200",
-                    isPriceListOpen ? "rotate-180" : "rotate-0"
-                  )}
-                />
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="py-2">
-                {error ? (
-                  <p className="text-center text-destructive">{error}</p>
-                ) : (
-                  <Table>
-                    <TableBody>
-                      {isLoading
-                        ? Array.from({ length: 4 }).map((_, i) => (
-                            <TableRow key={i}>
-                              <TableCell>
-                                <Skeleton className="h-6 w-48" />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Skeleton className="h-6 w-24 ml-auto" />
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        : services.map((service) => {
-                            const hasDiscount =
-                              service.discountPrice != null &&
-                              service.discountPrice < service.price;
-                            const discountPercent = hasDiscount
-                              ? Math.round(
-                                  ((service.price - service.discountPrice!) /
-                                    service.price) *
-                                    100
-                                )
-                              : 0;
-
-                            return (
-                              <TableRow key={service.id}>
-                                <TableCell className="font-medium">
-                                  {service.name}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex items-center justify-end gap-4">
-                                    {hasDiscount ? (
-                                      <div className="flex items-center gap-2">
-                                        <div className="flex flex-col items-end">
-                                          <span className="text-xs text-muted-foreground line-through">
-                                            Rs {service.price.toFixed(2)}
-                                          </span>
-                                          <span className="text-xl font-bold">
-                                            Rs{" "}
-                                            {service.discountPrice?.toFixed(2)}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span className="text-lg font-bold">
-                                        Rs {service.price.toFixed(2)}
-                                      </span>
-                                    )}
-                                    <div className="flex flex-col items-center gap-1">
-                                      {hasDiscount && (
-                                        <Badge
-                                          variant="destructive"
-                                          className="h-fit"
-                                        >
-                                          {discountPercent}% OFF
-                                        </Badge>
-                                      )}
-                                      {service.unit && (
-                                        <span className="text-sm text-muted-foreground">
-                                          {service.unit}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                    </TableBody>
-                  </Table>
-                )}
-                {!isLoading && services.length === 0 && !error && (
-                  <p className="py-8 text-center text-muted-foreground">
-                    No printing services are available at the moment. Please
-                    check back later.
-                  </p>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-      </div>
       
       {editingDocument && <EditDocumentDialog doc={editingDocument} index={documents.findIndex(d => d.id === editingDocument.id)} onSave={(updatedDoc) => updateDocumentState(updatedDoc.id, updatedDoc)} />}
 
