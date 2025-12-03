@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useParams, useRouter } from 'next/navigation';
@@ -175,7 +174,7 @@ export default function ManageShopOrdersPage() {
         setRejectionReason("");
         fetchOrdersAndUsers();
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error', description: error.message });
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
 };
 
@@ -313,7 +312,10 @@ export default function ManageShopOrdersPage() {
                         }
                     }
 
-                    const totalItemPrice = (order.price + order.deliveryCharge) * order.quantity;
+                    const itemPrice = order.price || 0;
+                    const deliveryCharge = order.deliveryCharge || 0;
+                    const itemQuantity = order.quantity || 1;
+                    const totalItemPrice = (itemPrice + deliveryCharge) * itemQuantity;
                     const isDriveLink = order.productImage && order.productImage.includes('drive.google.com');
 
                     return (
@@ -334,9 +336,9 @@ export default function ManageShopOrdersPage() {
                                             View Document
                                         </a>
                                     )}
-                                    <p className="text-sm text-muted-foreground">Quantity: {order.quantity}</p>
-                                    <p className="text-sm text-muted-foreground">Price: Rs {order.price.toFixed(2)}</p>
-                                    {order.deliveryCharge > 0 && <p className="text-sm text-muted-foreground">Delivery: Rs {order.deliveryCharge.toFixed(2)}</p>}
+                                    <p className="text-sm text-muted-foreground">Quantity: {itemQuantity}</p>
+                                    <p className="text-sm text-muted-foreground">Price: Rs {itemPrice.toFixed(2)}</p>
+                                    {deliveryCharge > 0 && <p className="text-sm text-muted-foreground">Delivery: Rs {deliveryCharge.toFixed(2)}</p>}
                                     <p className="text-sm font-semibold">Total: Rs {totalItemPrice.toFixed(2)}</p>
                                 </div>
                             </div>
@@ -498,3 +500,5 @@ export default function ManageShopOrdersPage() {
     </>
   );
 }
+
+    
