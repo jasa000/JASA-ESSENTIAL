@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -140,7 +141,7 @@ export default function EmployeeDashboardPage() {
               <Card key={user.uid}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2"><User /> {user.name}</CardTitle>
-                  <CardDescription>
+                  <div className="text-sm text-muted-foreground">
                     <div className="flex items-center gap-2 pt-2">
                         <Phone className="h-4 w-4" />
                         <span>{orders[0].mobile}</span>
@@ -149,7 +150,7 @@ export default function EmployeeDashboardPage() {
                         <MapPin className="h-4 w-4 mt-1 flex-shrink-0" />
                         <span>{orders[0].shippingAddress.line1}, {orders[0].shippingAddress.city} - {orders[0].shippingAddress.postalCode}</span>
                     </div>
-                  </CardDescription>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {Object.entries(ordersByCategory).map(([category, catOrders]) => {
