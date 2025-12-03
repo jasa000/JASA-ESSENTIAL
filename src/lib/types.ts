@@ -1,5 +1,4 @@
 
-
 export type Product = {
   id: string;
   name: string;
@@ -297,5 +296,6 @@ export type PaperSample = {
     name: string;
     description: string;
     imageUrls: string[];
+    primaryImageIndex?: number;
     createdAt: any;
 }

@@ -17,15 +17,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PlusCircle, Trash2, ArrowUp, ArrowDown, Upload, Save, X, Pencil, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, Upload, Save, X, Pencil, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const paperSampleSchema = z.object({
   name: z.string().min(1, "Name is required."),
   description: z.string().min(1, "Description is required."),
-  imageUrls: z.array(z.string().url()).min(1, "At least one image is required."),
+  imageUrls: z.array(z.string().min(1, "Image URL is required")).min(1, "At least one image is required."),
+  primaryImageIndex: z.string().optional(),
 });
 
 type FormData = z.infer<typeof paperSampleSchema>;
@@ -46,6 +48,7 @@ export default function ManagePaperSamplesPage() {
       name: "",
       description: "",
       imageUrls: [],
+      primaryImageIndex: "0",
     },
   });
 
@@ -77,28 +80,65 @@ export default function ManagePaperSamplesPage() {
       name: editingSample?.name || "",
       description: editingSample?.description || "",
       imageUrls: editingSample?.imageUrls || [],
+      primaryImageIndex: (editingSample?.primaryImageIndex || 0).toString(),
     });
   }, [editingSample, form]);
-
+  
   const handleFormSubmit = async (values: FormData) => {
     setIsSubmitting(true);
     try {
+      const imageInputs = values.imageUrls || [];
+      const uploadedImageUrls: string[] = [];
+
+      for (const imageValue of imageInputs) {
+        if (imageValue.startsWith('data:image')) {
+          const result = await uploadImageAction(imageValue);
+          if (result.success && result.url) {
+            uploadedImageUrls.push(result.url);
+          } else {
+            throw new Error(result.error || 'Image upload failed for one or more images.');
+          }
+        } else if (imageValue.startsWith('https://')) {
+          uploadedImageUrls.push(imageValue);
+        }
+      }
+
+      const primaryIndex = parseInt(values.primaryImageIndex || "0", 10);
+      let finalImageOrder: string[] = [];
+      if (uploadedImageUrls.length > 0) {
+        if (primaryIndex >= 0 && primaryIndex < uploadedImageUrls.length) {
+          const primaryImage = uploadedImageUrls[primaryIndex];
+          const otherImages = uploadedImageUrls.filter((_, index) => index !== primaryIndex);
+          finalImageOrder = [primaryImage, ...otherImages];
+        } else {
+          finalImageOrder = uploadedImageUrls;
+        }
+      }
+
+      const sampleData = {
+        name: values.name,
+        description: values.description,
+        imageUrls: finalImageOrder,
+      };
+
       if (editingSample) {
-        await updatePaperSample(editingSample.id, values);
+        await updatePaperSample(editingSample.id, sampleData);
         toast({ title: "Success", description: "Paper sample updated." });
       } else {
-        await addPaperSample(values);
+        await addPaperSample(sampleData);
         toast({ title: "Success", description: "New paper sample added." });
       }
+
       fetchSamples();
       setEditingSample(null);
-      form.reset({ name: "", description: "", imageUrls: [] });
+      form.reset({ name: "", description: "", imageUrls: [], primaryImageIndex: "0" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error", description: e.message });
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   const handleDeleteSample = async (id: string) => {
     setIsSubmitting(true);
@@ -131,7 +171,7 @@ export default function ManagePaperSamplesPage() {
                 onSubmit={handleFormSubmit}
                 onCancel={() => {
                   setEditingSample(null);
-                  form.reset({ name: "", description: "", imageUrls: [] });
+                  form.reset({ name: "", description: "", imageUrls: [], primaryImageIndex: "0" });
                 }}
                 isEditing={!!editingSample}
               />
@@ -215,17 +255,14 @@ function PaperSampleForm({ form, onSubmit, isSubmitting, onCancel, isEditing }: 
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
-    // Use a try-finally block to ensure loading state is managed correctly
-    form.clearErrors("imageUrls"); // Clear previous errors
-    const isUploadingToast = toast({
-        title: "Uploading...",
-        description: "Your image is being uploaded. Please wait.",
-    });
+    
+    setIsUploading(true);
+    form.clearErrors("imageUrls");
 
     try {
         for (const file of Array.from(files)) {
@@ -239,21 +276,16 @@ function PaperSampleForm({ form, onSubmit, isSubmitting, onCancel, isEditing }: 
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
-            const result = await uploadImageAction(dataUrl);
-            if (result.success && result.url) {
-                append(result.url);
-            } else {
-                throw new Error(result.error || 'Image upload failed.');
-            }
+            append(dataUrl);
         }
     } catch (error: any) {
         toast({
             variant: "destructive",
-            title: "Upload Failed",
+            title: "File Read Failed",
             description: error.message,
         });
     } finally {
-        isUploadingToast.dismiss();
+        setIsUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -286,35 +318,55 @@ function PaperSampleForm({ form, onSubmit, isSubmitting, onCancel, isEditing }: 
         />
         <div>
           <FormLabel>Images</FormLabel>
-          <div className="mt-2 space-y-2">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-center gap-2">
-                <div className="relative h-12 w-12 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
-                  {field.value ? (
-                    <Image src={field.value} alt={`Sample image ${index + 1}`} fill className="object-cover rounded-md" />
-                  ) : (
-                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                  )}
-                </div>
-                <Input value={field.value} readOnly className="flex-grow" />
-                <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+          <FormField
+            control={form.control}
+            name="primaryImageIndex"
+            render={({ field }) => (
+              <FormItem>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="mt-2 space-y-2"
+                >
+                  {fields.map((fieldItem, index) => (
+                    <div key={fieldItem.id} className="flex items-center gap-2 p-2 border rounded-md">
+                      <FormControl>
+                        <RadioGroupItem value={index.toString()} id={`image-radio-${index}`} />
+                      </FormControl>
+                      <FormLabel htmlFor={`image-radio-${index}`} className="flex-grow flex items-center gap-2 cursor-pointer">
+                        <div className="relative h-12 w-12 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
+                          {fieldItem.value ? (
+                            <Image src={fieldItem.value} alt={`Sample image ${index + 1}`} fill className="object-cover rounded-md" />
+                          ) : (
+                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="text-xs truncate">{`Image ${index + 1}`}</span>
+                      </FormLabel>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </RadioGroup>
+                <FormMessage>{form.formState.errors.imageUrls?.message || form.formState.errors.imageUrls?.root?.message}</FormMessage>
+              </FormItem>
+            )}
+          />
+
           <Input 
             ref={fileInputRef}
             type="file" 
             className="hidden" 
             multiple
             accept="image/*"
-            onChange={handleImageUpload}
+            onChange={handleImageFileSelect}
+            disabled={isUploading}
           />
-          <Button type="button" variant="outline" className="w-full mt-2" onClick={() => fileInputRef.current?.click()}>
-            <Upload className="mr-2 h-4 w-4" /> Upload Images
+          <Button type="button" variant="outline" className="w-full mt-2" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />}
+            Upload Images
           </Button>
-          <FormMessage>{form.formState.errors.imageUrls?.message}</FormMessage>
         </div>
         <div className="flex gap-2">
           {isEditing && (

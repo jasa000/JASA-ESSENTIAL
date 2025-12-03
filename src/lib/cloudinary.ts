@@ -1,7 +1,7 @@
 
 'use server';
 import { v2 as cloudinary } from 'cloudinary';
-import { getProducts, getHomepageContent } from './data';
+import { getProducts, getHomepageContent, getPaperSamples } from './data';
 
 // Configuration must be at the top, before any other cloudinary calls
 cloudinary.config({ 
@@ -30,9 +30,10 @@ export async function getAllCloudinaryImages() {
       .execute();
 
     // Fetch all data sources that use images
-    const [allProducts, homepageContent] = await Promise.all([
+    const [allProducts, homepageContent, paperSamples] = await Promise.all([
       getProducts(),
-      getHomepageContent()
+      getHomepageContent(),
+      getPaperSamples(),
     ]);
 
     // Create a set of all used image URLs
@@ -47,19 +48,21 @@ export async function getAllCloudinaryImages() {
 
     // Add homepage images
     if (homepageContent) {
-      // Add welcome card image
-      if (homepageContent.welcomeImageUrl) {
-        usedUrls.add(homepageContent.welcomeImageUrl);
-      }
-      // Add category images
+      if (homepageContent.welcomeImageUrl) usedUrls.add(homepageContent.welcomeImageUrl);
       Object.values(homepageContent.categoryImages).forEach(url => {
         if (url) usedUrls.add(url);
       });
-      // Add banner images
       homepageContent.banners.forEach(banner => {
         if (banner.imageUrl) usedUrls.add(banner.imageUrl);
       });
     }
+    
+    // Add paper sample images
+    paperSamples.forEach(sample => {
+      if (sample.imageUrls) {
+        sample.imageUrls.forEach(url => usedUrls.add(url));
+      }
+    });
 
     const images = resources.map((resource: any) => ({
       id: resource.public_id,
