@@ -569,11 +569,11 @@ export default function XeroxPage() {
   const renderInitialState = () => (
     <div className="container mx-auto px-4 py-8 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-sky-300 via-sky-100 to-white dark:from-sky-800 dark:via-sky-900 dark:to-black rounded-2xl"></div>
-        <Card className="relative z-10 text-center p-8 border-0 bg-transparent text-black rounded-2xl h-64 md:h-52 flex flex-col justify-center">
+        <Card className="relative z-10 text-center p-8 border-0 bg-transparent text-black dark:text-white rounded-2xl h-64 md:h-52 flex flex-col justify-center">
             <CardHeader>
-                <FileUp className="mx-auto h-12 w-12 text-black" />
-                <CardTitle className="text-2xl text-black">Start Your Printing Order</CardTitle>
-                <CardDescription className="text-gray-800">Upload your documents to get started.</CardDescription>
+                <FileUp className="mx-auto h-12 w-12 text-black dark:text-white" />
+                <CardTitle className="text-2xl text-black dark:text-white">Start Your Printing Order</CardTitle>
+                <CardDescription className="text-gray-800 dark:text-gray-200">Upload your documents to get started.</CardDescription>
             </CardHeader>
             <CardContent>
             <Button
