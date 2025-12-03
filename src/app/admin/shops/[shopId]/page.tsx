@@ -17,7 +17,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon, ArrowLeft, BarChart2, DollarSign, Package, PackageOpen, Repeat, Truck } from "lucide-react";
 import { format, startOfDay, endOfDay, subDays } from 'date-fns';
-import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
 const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: string | number, icon: React.ElementType, loading: boolean }) => (
@@ -47,14 +46,13 @@ export default function ShopAnalyticsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [fromDate, setFromDate] = useState<Date | undefined>();
+  const [toDate, setToDate] = useState<Date | undefined>();
   
   useEffect(() => {
     // Set initial date range on client to avoid hydration mismatch
-    setDateRange({
-        from: startOfDay(new Date()),
-        to: endOfDay(new Date()),
-    });
+    setFromDate(startOfDay(new Date()));
+    setToDate(endOfDay(new Date()));
   }, []);
 
   useEffect(() => {
@@ -93,14 +91,16 @@ export default function ShopAnalyticsPage() {
   };
 
   const filteredOrders = useMemo(() => {
-    if (!dateRange?.from) return orders;
+    if (!fromDate) return [];
+    
+    const start = startOfDay(fromDate);
+    const end = toDate ? endOfDay(toDate) : endOfDay(fromDate);
+
     return orders.filter(order => {
       const orderDate = order.createdAt.toDate();
-      const from = startOfDay(dateRange.from!);
-      const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
-      return orderDate >= from && orderDate <= to;
+      return orderDate >= start && orderDate <= end;
     });
-  }, [orders, dateRange]);
+  }, [orders, fromDate, toDate]);
 
   const stats = useMemo(() => {
     const deliveredOrders = filteredOrders.filter(o => o.status === 'Delivered');
@@ -154,50 +154,65 @@ export default function ShopAnalyticsPage() {
       
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => setDateRange({ from: startOfDay(new Date()), to: endOfDay(new Date()) })}>Today</Button>
+            <Button variant="outline" onClick={() => {
+                const today = new Date();
+                setFromDate(startOfDay(today));
+                setToDate(endOfDay(today));
+            }}>Today</Button>
             <Button variant="outline" onClick={() => {
                 const yesterday = subDays(new Date(), 1);
-                setDateRange({ from: startOfDay(yesterday), to: endOfDay(yesterday) });
+                setFromDate(startOfDay(yesterday));
+                setToDate(endOfDay(yesterday));
             }}>Yesterday</Button>
             <Popover>
                 <PopoverTrigger asChild>
                 <Button
-                    id="date"
+                    id="from-date"
                     variant={"outline"}
                     className={cn(
-                    "w-[300px] justify-start text-left font-normal",
-                    !dateRange && "text-muted-foreground"
+                    "w-[200px] justify-start text-left font-normal",
+                    !fromDate && "text-muted-foreground"
                     )}
                 >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                    dateRange.to ? (
-                        <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                        </>
-                    ) : (
-                        format(dateRange.from, "LLL dd, y")
-                    )
-                    ) : (
-                    <span>Pick a date</span>
-                    )}
+                    {fromDate ? format(fromDate, "LLL dd, y") : <span>From Date</span>}
                 </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                     initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
+                    mode="single"
+                    selected={fromDate}
+                    onSelect={setFromDate}
+                />
+                </PopoverContent>
+            </Popover>
+             <Popover>
+                <PopoverTrigger asChild>
+                <Button
+                    id="to-date"
+                    variant={"outline"}
+                    className={cn(
+                    "w-[200px] justify-start text-left font-normal",
+                    !toDate && "text-muted-foreground"
+                    )}
+                >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {toDate ? format(toDate, "LLL dd, y") : <span>To Date</span>}
+                </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                    initialFocus
+                    mode="single"
+                    selected={toDate}
+                    onSelect={setToDate}
                 />
                 </PopoverContent>
             </Popover>
         </div>
         <span className="text-sm text-muted-foreground">
-            {dateRange?.from && `Showing data for ${format(dateRange.from, "PPP")}${dateRange.to ? ` to ${format(dateRange.to, "PPP")}` : ''}`}
+            {fromDate && `Showing data for ${format(fromDate, "PPP")}${toDate ? ` to ${format(toDate, "PPP")}` : ''}`}
         </span>
       </div>
 
