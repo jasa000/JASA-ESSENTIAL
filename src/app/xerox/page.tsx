@@ -253,7 +253,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -587,8 +587,9 @@ export default function XeroxPage() {
                     type="button"
                     size="lg"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-full bg-black text-white hover:bg-gray-800 rounded-full relative shining-button"
+                    className="w-full h-full bg-black text-white hover:bg-gray-800 rounded-full relative"
                 >
+                    <div className="shining-button" />
                     <FileUp className="mr-2 h-4 w-4" /> Upload Documents
                 </Button>
             </div>
@@ -774,11 +775,11 @@ export default function XeroxPage() {
             <div className="fixed bottom-6 right-6 z-50">
                 <Button
                     type="button"
-                    className="rounded-full h-14 shadow-lg flex items-center justify-center gap-2 px-6"
+                    className="rounded-full h-12 shadow-lg flex items-center justify-center gap-2 px-4"
                     onClick={() => fileInputRef.current?.click()}
                 >
-                    <Plus className="h-6 w-6" />
-                    <span className="font-semibold">ADD MORE</span>
+                    <Plus className="h-5 w-5" />
+                    <span className="font-semibold text-sm">Add Another Document</span>
                 </Button>
             </div>
         )}
