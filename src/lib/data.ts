@@ -1,4 +1,5 @@
 
+
 import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus, Notification } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
@@ -555,6 +556,9 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, re
                 updates['rejectionReason'] = reason;
                 break;
               case 'Replacement Issued': updates['tracking.replacementIssued'] = now; break;
+              case 'Rejected':
+                updates['rejectionReason'] = reason;
+                break;
             }
 
             transaction.update(orderDocRef, updates);
@@ -578,45 +582,6 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, re
         throw new Error("Failed to update order status.");
     }
 };
-
-
-export const updateOrderRejectionReason = async (orderId: string, reason: string): Promise<void> => {
-    try {
-        const orderDocRef = doc(db, 'orders', orderId);
-
-        await runTransaction(db, async (transaction) => {
-            const orderDoc = await transaction.get(orderDocRef);
-            if (!orderDoc.exists()) {
-                throw new Error("Order not found!");
-            }
-            
-            const orderData = orderDoc.data() as Order;
-            const shopDocRef = doc(db, 'shops', orderData.sellerId);
-            const shopDoc = await transaction.get(shopDocRef);
-            const shopData = shopDoc.exists() ? shopDoc.data() : null;
-
-            transaction.update(orderDocRef, { status: 'Rejected', rejectionReason: reason });
-
-            // Create notification
-            const notificationDocRef = doc(notificationsCollection);
-            const notification: Omit<Notification, 'id'> = {
-                userId: orderData.userId,
-                orderId: orderId,
-                title: `Order Rejected`,
-                message: `Your order for "${orderData.productName}" was rejected. Reason: ${reason}`,
-                sellerMobileNumbers: shopData?.mobileNumbers || [],
-                isRead: false,
-                createdAt: serverTimestamp(),
-            };
-            transaction.set(notificationDocRef, notification);
-        });
-
-    } catch (error) {
-        console.error("Error updating rejection reason:", error);
-        throw new Error("Failed to update order.");
-    }
-};
-
 
 // --- Notification Functions ---
 export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
