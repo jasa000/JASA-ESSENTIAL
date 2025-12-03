@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { addDays, differenceInMilliseconds, formatDistanceStrict } from 'date-fns';
 
 
 const statusConfig: { [key in Order['status']]: { icon: React.ElementType, label: string, descriptiveLabel: string } } = {
@@ -130,7 +131,37 @@ const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCance
   const itemQuantity = order.quantity || 1;
   const totalOrderPrice = totalItemPrice * itemQuantity;
   const [isReasonDialogOpen, setIsReasonDialogOpen] = useState(false);
+  const [returnTimeLeft, setReturnTimeLeft] = useState('');
 
+  const returnDeadline = useMemo(() => {
+    if (order.status === 'Delivered' && order.tracking?.delivered) {
+      return addDays(new Date(order.tracking.delivered), 3);
+    }
+    return null;
+  }, [order.status, order.tracking?.delivered]);
+
+  const isReturnEligible = useMemo(() => {
+    return order.status === 'Delivered' && order.category !== 'xerox' && returnDeadline && new Date() < returnDeadline;
+  }, [order.status, order.category, returnDeadline]);
+  
+  useEffect(() => {
+    if (!isReturnEligible || !returnDeadline) return;
+
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const diff = differenceInMilliseconds(returnDeadline, now);
+      if (diff <= 0) {
+        setReturnTimeLeft('');
+        return;
+      }
+      setReturnTimeLeft(formatDistanceStrict(returnDeadline, now, { addSuffix: true, unit: 'minute' }).replace('in ', ''));
+    };
+    
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 60000); // Update every minute
+    return () => clearInterval(interval);
+
+  }, [isReturnEligible, returnDeadline]);
 
   return (
     <>
@@ -152,7 +183,7 @@ const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCance
         <div className="flex items-center gap-4">
             <div className="relative h-20 w-20 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
                 {order.category === 'xerox' ? (
-                    <FileText className="h-10 w-10 text-blue-600" />
+                    <FileText className="h-10 w-10 text-blue-500" />
                 ) : order.productImage ? (
                     <Image src={order.productImage} alt={order.productName} fill className="object-cover" />
                 ) : (
@@ -189,6 +220,16 @@ const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCance
                 <p className="font-bold"><span className="font-medium">Total:</span> Rs {totalOrderPrice.toFixed(2)}</p>
             </div>
         </div>
+        
+        {isReturnEligible && returnTimeLeft && (
+            <Alert className="mt-4">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Return & Replacement Window</AlertTitle>
+                <AlertDesc>
+                  This item is eligible for return/replacement for another <span className="font-bold">{returnTimeLeft}</span>.
+                </AlertDesc>
+            </Alert>
+        )}
 
         <div className="mt-4 flex items-center justify-between">
             <Collapsible>
@@ -250,7 +291,7 @@ const OrderCard = ({ order, onCancel, onReturnRequest }: { order: Order, onCance
           </AlertDialog>
         </CardFooter>
       )}
-      {order.status === 'Delivered' && order.category !== 'xerox' && (
+      {isReturnEligible && (
          <CardFooter className="bg-muted/50 p-4">
             <ReturnRequestDialog order={order} onReturnSubmit={onReturnRequest} />
          </CardFooter>
