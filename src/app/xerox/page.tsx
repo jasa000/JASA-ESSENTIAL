@@ -774,11 +774,11 @@ export default function XeroxPage() {
             <div className="fixed bottom-6 right-6 z-50">
                 <Button
                     type="button"
-                    className="rounded-full h-16 w-16 shadow-lg flex items-center justify-center"
+                    className="rounded-full h-14 shadow-lg flex items-center justify-center gap-2 px-6"
                     onClick={() => fileInputRef.current?.click()}
                 >
-                    <Plus className="h-8 w-8" />
-                    <span className="sr-only">Add Document</span>
+                    <Plus className="h-6 w-6" />
+                    <span className="font-semibold">ADD MORE</span>
                 </Button>
             </div>
         )}
