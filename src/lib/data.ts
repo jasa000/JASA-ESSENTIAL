@@ -1,4 +1,5 @@
 
+
 import type { Product, Category, Brand, Author, ProductType, HomepageContent, XeroxService, XeroxOption, XeroxOptionType, OrderSettings, Order, OrderStatus, Notification } from './types';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, setDoc, writeBatch, runTransaction } from 'firebase/firestore';
@@ -519,7 +520,7 @@ export const getOrdersBySeller = async (sellerId: string): Promise<Order[]> => {
     }
 };
 
-export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<void> => {
+export const updateOrderStatus = async (orderId: string, status: OrderStatus, reason?: string): Promise<void> => {
     try {
         const orderDocRef = doc(db, 'orders', orderId);
         
@@ -543,17 +544,26 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
               case 'Shipped': updates['tracking.shipped'] = now; break;
               case 'Out for Delivery': updates['tracking.outForDelivery'] = now; break;
               case 'Delivered': updates['tracking.delivered'] = now; break;
+              case 'Return Requested': 
+                updates['tracking.returnRequested'] = now; 
+                updates['returnReason'] = reason;
+                break;
+              case 'Return Approved': updates['tracking.returnApproved'] = now; break;
+              case 'Out for Pickup': updates['tracking.outForPickup'] = now; break;
+              case 'Picked Up': updates['tracking.pickedUp'] = now; break;
+              case 'Return Completed': updates['tracking.returnCompleted'] = now; break;
+              case 'Return Rejected': updates['rejectionReason'] = reason; break;
             }
 
             transaction.update(orderDocRef, updates);
             
-            // Create notification
+            // Create notification for customer
             const notificationDocRef = doc(notificationsCollection);
             const notification: Omit<Notification, 'id'> = {
                 userId: orderData.userId,
                 orderId: orderId,
                 title: `Order Status Updated: ${status}`,
-                message: `Your order for "${orderData.productName}" is now ${status}.`,
+                message: `Your order for "${orderData.productName}" is now ${status}.` + (reason ? ` Reason: ${reason}` : ''),
                 sellerMobileNumbers: shopData?.mobileNumbers || [],
                 isRead: false,
                 createdAt: serverTimestamp(),
@@ -566,6 +576,7 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
         throw new Error("Failed to update order status.");
     }
 };
+
 
 export const updateOrderRejectionReason = async (orderId: string, reason: string): Promise<void> => {
     try {
@@ -625,4 +636,19 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
         console.error("Error marking notification as read:", error);
         // We don't throw here, as it's not a critical failure if this fails silently.
     }
+};
+
+// --- Return Function ---
+export const requestReturn = async (orderId: string, reason: string): Promise<void> => {
+  try {
+    const orderDoc = doc(db, "orders", orderId);
+    await updateDoc(orderDoc, {
+      status: "Return Requested",
+      returnReason: reason,
+      "tracking.returnRequested": new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error requesting return:", error);
+    throw new Error("Failed to submit return request.");
+  }
 };

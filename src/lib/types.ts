@@ -157,7 +157,14 @@ export type OrderStatus =
   | "Out for Delivery" 
   | "Delivered" 
   | "Cancelled" 
-  | "Rejected";
+  | "Rejected"
+  | "Return Requested"
+  | "Return Approved"
+  | "Out for Pickup"
+  | "Picked Up"
+  | "Return Rejected"
+  | "Return Completed";
+
 
 export type OrderTracking = {
   ordered: string; // ISO date string
@@ -166,6 +173,12 @@ export type OrderTracking = {
   shipped: string | null;
   outForDelivery?: string | null; // Keep this optional for backward compatibility
   delivered: string | null;
+  // Return tracking
+  returnRequested?: string | null;
+  returnApproved?: string | null;
+  outForPickup?: string | null;
+  pickedUp?: string | null;
+  returnCompleted?: string | null;
   expectedDelivery: string | null;
 }
 
@@ -185,6 +198,7 @@ export type Order = {
   status: OrderStatus;
   category: "stationary" | "books" | "electronics" | "xerox";
   rejectionReason?: string;
+  returnReason?: string;
   tracking: OrderTracking;
   createdAt: any;
 };
@@ -274,3 +288,4 @@ export type PincodeDistrict = {
   pincodes: Pincode[];
   isActive: boolean;
 };
+
