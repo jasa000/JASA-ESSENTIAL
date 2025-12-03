@@ -657,6 +657,11 @@ export default function XeroxPage() {
                     )}
                 </div>
             </ScrollArea>
+             <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="destructive" className="transition-transform active:scale-95">Close</Button>
+                </DialogClose>
+            </DialogFooter>
         </DialogContent>
     </Dialog>
   );
@@ -710,6 +715,11 @@ export default function XeroxPage() {
                     )}
                 </div>
             </ScrollArea>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="destructive" className="transition-transform active:scale-95">Close</Button>
+                </DialogClose>
+            </DialogFooter>
         </DialogContent>
     </Dialog>
   );
