@@ -74,10 +74,10 @@ export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
   const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
   const [paperSamples, setPaperSamples] = useState<PaperSample[]>([]);
-  const [allOptions, setAllOptions] = useState({
+  const [allOptions, setAllOptions] = {
       bindingTypes: [] as XeroxOption[],
       laminationTypes: [] as XeroxOption[],
-  });
+  };
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -729,7 +729,7 @@ export default function XeroxPage() {
 
 
   return (
-    <div>
+    <div className="pb-24">
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
           Xerox & Printing Services
@@ -751,15 +751,7 @@ export default function XeroxPage() {
             {documents.map((doc, index) => (
               <DocumentCard key={doc.id} document={doc} index={index} />
             ))}
-
-            <Button 
-              type="button"
-              className="w-full h-16 bg-green-600 text-white hover:bg-gray-500 flex-col"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FileUp className="h-6 w-6" />
-              <span>Add Another Document</span>
-            </Button>
+            
             <Input 
                 ref={fileInputRef}
                 type="file"
@@ -771,6 +763,21 @@ export default function XeroxPage() {
             <FinalEstimation />
         </div>
        )}
+
+        {documents.length > 0 && (
+            <div className="fixed bottom-6 right-6 z-50">
+                <Button
+                    type="button"
+                    className="rounded-full h-16 w-16 shadow-lg flex items-center justify-center"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <Plus className="h-8 w-8" />
+                    <span className="sr-only">Add Document</span>
+                </Button>
+            </div>
+        )}
     </div>
   );
 }
+
+    
