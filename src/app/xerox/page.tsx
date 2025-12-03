@@ -74,10 +74,13 @@ export default function XeroxPage() {
   const [services, setServices] = useState<XeroxService[]>([]);
   const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
   const [paperSamples, setPaperSamples] = useState<PaperSample[]>([]);
-  const [allOptions, setAllOptions] = {
-      bindingTypes: [] as XeroxOption[],
-      laminationTypes: [] as XeroxOption[],
-  };
+  const [allOptions, setAllOptions] = useState<{
+      bindingTypes: XeroxOption[],
+      laminationTypes: XeroxOption[],
+  }>({
+      bindingTypes: [],
+      laminationTypes: [],
+  });
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -250,7 +253,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -498,7 +501,10 @@ export default function XeroxPage() {
         if (type === 'printRatio') return HARDCODED_XEROX_OPTIONS.printRatios.find(o => o.id === id)?.name || '';
         
         const optionsList = allOptions[type as keyof typeof allOptions];
-        return optionsList.find(o => o.id === id)?.name || '';
+        if (optionsList) {
+            return optionsList.find(o => o.id === id)?.name || '';
+        }
+        return '';
     };
 
     return (
@@ -779,5 +785,3 @@ export default function XeroxPage() {
     </div>
   );
 }
-
-    
