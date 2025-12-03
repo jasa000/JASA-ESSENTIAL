@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Autoplay from "embla-carousel-autoplay";
+import type { EmblaCarouselType } from "embla-carousel-react";
 import { getXeroxServices } from "@/lib/data";
 import type { XeroxService } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,13 @@ import { cn } from "@/lib/utils";
 export default function XeroxTicker() {
   const [services, setServices] = useState<XeroxService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const plugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: false }));
+  
+  const AUTOPLAY_DELAY = 4000;
+  const plugin = useRef(Autoplay({ delay: AUTOPLAY_DELAY, stopOnInteraction: false }));
+  
+  const [emblaApi, setEmblaApi] = useState<EmblaCarouselType | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -33,6 +40,29 @@ export default function XeroxTicker() {
     };
     fetchServices();
   }, []);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+  
+    const onSelect = () => {
+      setCurrentSlide(emblaApi.selectedScrollSnap());
+      setProgress(0);
+    };
+  
+    const onSettle = () => {
+      setProgress(0);
+      setTimeout(() => setProgress(100), 50);
+    };
+    
+    emblaApi.on("select", onSelect);
+    emblaApi.on("settle", onSettle);
+    onSettle();
+  
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("settle", onSettle);
+    };
+  }, [emblaApi]);
 
   if (isLoading) {
     return (
@@ -68,6 +98,7 @@ export default function XeroxTicker() {
       </div>
 
       <Carousel
+        setApi={setEmblaApi}
         plugins={[plugin.current]}
         opts={{
           loop: true,
@@ -117,6 +148,34 @@ export default function XeroxTicker() {
           })}
         </CarouselContent>
       </Carousel>
+      {services.length > 1 && (
+        <div className="mt-2 flex justify-center gap-2">
+            {services.map((_, index) => {
+                const isActive = index === currentSlide;
+                return (
+                    <button
+                        key={index}
+                        className={cn(
+                            "h-2 rounded-full bg-muted transition-all duration-300 relative overflow-hidden",
+                            isActive ? "w-6" : "w-2 hover:bg-muted-foreground"
+                        )}
+                        onClick={() => emblaApi?.scrollTo(index)}
+                    >
+                        {isActive && (
+                            <div
+                                className="absolute left-0 top-0 h-full rounded-full bg-primary"
+                                style={{
+                                  width: `${progress}%`,
+                                  transition: progress > 1 ? `width ${AUTOPLAY_DELAY}ms linear` : 'none',
+                                }}
+                            />
+                        )}
+                        <span className="sr-only">Go to service slide {index + 1}</span>
+                    </button>
+                );
+            })}
+        </div>
+      )}
     </div>
   );
 }
