@@ -376,25 +376,28 @@ export default function OrdersPage() {
     };
 
     const filteredOrders = useMemo(() => {
-        // First, filter by category
         const byCategory = categoryFilter === 'all' 
             ? orders 
             : orders.filter(o => o.category === categoryFilter);
         
-        // Then, filter by status
         const statusFilterFn = statusFilterConfig[statusTab as keyof typeof statusFilterConfig] || statusFilterConfig.all;
         const byStatus = statusFilterFn(byCategory);
 
-        // Finally, sort the results on a new array to avoid mutation
-        return [...byStatus].sort((a, b) => {
-            const statusOrder = Object.keys(statusConfig);
-            const indexA = statusOrder.indexOf(a.status);
-            const indexB = statusOrder.indexOf(b.status);
+        const priorityStatuses = [
+            "Return Requested", 
+            "Return Approved", 
+            "Out for Pickup",
+            "Replacement Issued"
+        ];
 
-            // Sort by status first, then by creation date
-            if (indexA !== indexB) {
-                return indexA - indexB;
-            }
+        return [...byStatus].sort((a, b) => {
+            const aIsPriority = priorityStatuses.includes(a.status);
+            const bIsPriority = priorityStatuses.includes(b.status);
+
+            if (aIsPriority && !bIsPriority) return -1; // a comes first
+            if (!aIsPriority && bIsPriority) return 1;  // b comes first
+
+            // If both are priority or neither are, sort by date
             return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
         });
     }, [orders, statusTab, categoryFilter]);
@@ -478,3 +481,4 @@ export default function OrdersPage() {
     </div>
   );
 }
+
