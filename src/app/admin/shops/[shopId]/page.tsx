@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, ArrowLeft, BarChart2, DollarSign, Package, PackageOpen, Repeat } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowLeft, BarChart2, DollarSign, Package, PackageOpen, Repeat, Truck } from "lucide-react";
 import { format, startOfDay, endOfDay, subDays } from 'date-fns';
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
