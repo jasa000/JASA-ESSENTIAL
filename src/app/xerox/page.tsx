@@ -39,7 +39,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 
 // Set up worker for pdf.js
@@ -79,6 +79,7 @@ export default function XeroxPage() {
 
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<DocumentState[]>([]);
   const nextId = useRef(0);
@@ -110,6 +111,12 @@ export default function XeroxPage() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('upload') === 'true' && fileInputRef.current) {
+        fileInputRef.current.click();
+    }
+  }, [searchParams]);
 
   const addNewDocument = (file: File) => {
     const newDocId = nextId.current++;

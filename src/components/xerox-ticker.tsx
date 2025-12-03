@@ -90,8 +90,8 @@ export default function XeroxTicker() {
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-headline text-2xl font-bold tracking-tight sm:text-3xl">Xerox & Printing</h2>
         <Button asChild variant="outline">
-          <Link href="/xerox">
-            <span>View All</span>
+          <Link href="/xerox?upload=true">
+            <span>Print Now</span>
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
