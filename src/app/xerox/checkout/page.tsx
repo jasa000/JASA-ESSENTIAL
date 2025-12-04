@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText, Trash2 } from 'lucide-react';
+import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText, Trash2, Link as LinkIcon } from 'lucide-react';
 import type { UserProfile, Shop, OrderSettings, ShopService, XeroxOption } from '@/lib/types';
 import { HARDCODED_XEROX_OPTIONS } from '@/lib/xerox-options';
 
@@ -472,13 +472,13 @@ export default function XeroxCheckoutPage() {
                         <div key={job.id} className="border-b pb-3 mb-3">
                             <div className="flex justify-between items-start text-sm">
                                 <div className="flex gap-2 min-w-0">
-                                <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
-                                    <FileText className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="font-medium truncate">{job.fileDetails?.name}</p>
-                                    <p className="text-xs text-muted-foreground">Qty: {job.config.quantity}</p>
-                                </div>
+                                    <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                                        <FileText className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-medium truncate">{job.fileDetails?.name}</p>
+                                        <p className="text-xs text-muted-foreground">Qty: {job.config.quantity}</p>
+                                    </div>
                                 </div>
                                 <p className="flex-shrink-0 pl-2 font-semibold">Rs {docPrice.toFixed(2)}</p>
                             </div>
@@ -490,6 +490,10 @@ export default function XeroxCheckoutPage() {
                                     </div>
                                 ))}
                             </div>
+                            <a href={job.fileDetails.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-2 pl-14">
+                                <LinkIcon className="h-3 w-3" />
+                                View Uploaded Document
+                            </a>
                         </div>
                     );
                 })}
