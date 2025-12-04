@@ -378,19 +378,19 @@ export default function ManageDrivePage() {
                   </TabsContent>
                   <TabsContent value="archived" className="mt-4">
                     <div className="p-4 rounded-lg border bg-muted/50 mb-4">
-                        <Label className="font-semibold">Filter by status:</Label>
-                        <RadioGroup value={unusedFilter} onValueChange={(v) => setUnusedFilter(v as any)} className="mt-2 flex items-center gap-4">
+                        <Label className="font-semibold text-base sm:text-lg">Filter by status:</Label>
+                        <RadioGroup value={unusedFilter} onValueChange={(v) => setUnusedFilter(v as any)} className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="unused" id="r-unused" />
-                                <Label htmlFor="r-unused">Unused</Label>
+                                <Label htmlFor="r-unused" className="text-sm sm:text-base">Unused</Label>
                             </div>
                              <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="delivered" id="r-delivered" />
-                                <Label htmlFor="r-delivered">Delivered</Label>
+                                <Label htmlFor="r-delivered" className="text-sm sm:text-base">Delivered</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="cancelled" id="r-cancelled" />
-                                <Label htmlFor="r-cancelled">Cancelled/Rejected</Label>
+                                <Label htmlFor="r-cancelled" className="text-sm sm:text-base">Cancelled/Rejected</Label>
                             </div>
                         </RadioGroup>
                     </div>
