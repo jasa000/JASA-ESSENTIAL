@@ -15,41 +15,50 @@ This is a modern, full-stack e-commerce and management application built on the 
 
 ## Deployment to Netlify
 
-For the live application to function correctly on Netlify, you must configure your environment variables. These are secrets (like API keys) that are not stored in the code for security reasons.
+For the live application to function correctly on Netlify, you must configure your environment variables and authorize your domain in Google Cloud. These are secrets (like API keys) and permissions that are not stored in the code for security reasons.
 
-### How to Add Environment Variables on Netlify:
+### Part 1: Add Environment Variables on Netlify
 
-1.  Log in to your Netlify account.
+1.  Log in to your **Netlify account**.
 2.  Go to your site's dashboard.
 3.  Navigate to **Site configuration** > **Build & deploy** > **Environment**.
 4.  Under **Environment variables**, click **Edit variables**.
-5.  Add each of the following variables one by one. Use the "Add a new variable" button for each.
+5.  Add each of the following variables one by one. Copy the names and values exactly from your local `.env.local` file.
 
-### Required Variables:
+**Required Variables:**
+- **Google Drive API:**
+  - `GOOGLE_CLIENT_ID`
+  - `GOOGLE_CLIENT_SECRET`
+  - `GOOGLE_REDIRECT_URI`
+  - `GOOGLE_REFRESH_TOKEN`
+  - `GOOGLE_FOLDER_ID`
+- **Cloudinary:**
+  - `CLOUDINARY_CLOUD_NAME`
+  - `CLOUDINARY_API_KEY`
+  - `CLOUDINARY_API_SECRET`
+- **Firebase:**
+  - `NEXT_PUBLIC_FIREBASE_API_KEY`
+  - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+  - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+  - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+  - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+  - `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-You will need to add the following variables with their corresponding values from your local `.env.local` file:
+### Part 2: Authorize Your Domain in Google Cloud
 
-**Firebase:**
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
+1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2.  Select the project that matches your `GOOGLE_CLIENT_ID`.
+3.  In the navigation menu (☰), go to **APIs & Services** > **Credentials**.
+4.  Under **OAuth 2.0 Client IDs**, find your client ID and click the pencil icon (✏️) to edit it.
+5.  Under **Authorized JavaScript origins**, click **+ ADD URI**.
+6.  Enter the URL of your live Netlify site (e.g., `https://your-site-name.netlify.app`).
+7.  Click **Save**.
 
-**Google Drive API (for Xerox uploads):**
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_REDIRECT_URI`
-- `GOOGLE_REFRESH_TOKEN`
-- `GOOGLE_FOLDER_ID`
+### Part 3: Re-deploy on Netlify
 
-**Cloudinary (for image uploads):**
-- `CLOUDINARY_CLOUD_NAME`
-- `CLOUDINARY_API_KEY`
-- `CLOUDINARY_API_SECRET`
-
-After adding all these variables, you must **re-deploy your site** for the changes to take effect. You can trigger a new deploy from the "Deploys" tab in Netlify by selecting "Trigger deploy" > "Deploy site".
+After completing both parts, you must **re-deploy your site** for the changes to take effect.
+1.  Go to the **Deploys** tab in your Netlify dashboard.
+2.  Click the **Trigger deploy** dropdown and select **Deploy site**.
 
 ---
 
