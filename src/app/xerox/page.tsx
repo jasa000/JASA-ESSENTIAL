@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil, ListOrdered, Images, Link as LinkIcon, CheckCircle } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil, ListOrdered, Images, Link as LinkIcon, CheckCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,13 @@ type DocumentState = {
   message: string;
 };
 
+type UploadStatus = {
+    status: 'pending' | 'uploading' | 'success' | 'error';
+    progress: number;
+    url?: string;
+    error?: string;
+};
+
 const MAX_WORDS = 100;
 
 export default function XeroxPage() {
@@ -78,7 +85,6 @@ export default function XeroxPage() {
   });
   
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
@@ -89,6 +95,11 @@ export default function XeroxPage() {
   const nextId = useRef(0);
   
   const [editingDocument, setEditingDocument] = useState<DocumentState | null>(null);
+  
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<Record<number, UploadStatus>>({});
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -235,7 +246,7 @@ export default function XeroxPage() {
 
     const singleCopyPrice = printingCost + bindingCost + laminationCost;
     return singleCopyPrice * doc.quantity;
-  }, [allOptions.bindingTypes, allOptions.laminationTypes, paperTypes]);
+  }, [allOptions.bindingTypes, allOptions.laminationTypes]);
 
   const documentPrices = useMemo(() => {
     return documents.map(doc => ({
@@ -248,61 +259,136 @@ export default function XeroxPage() {
     return documentPrices.reduce((total, item) => total + item.price, 0);
   }, [documentPrices]);
   
-  const handleCheckout = async () => {
-    setIsProcessingCheckout(true);
-    toast({ title: "Processing Documents...", description: "Uploading files to secure server. Please wait." });
-    
-    const uploadPromises = documents.map(async (doc) => {
-        const fd = new FormData();
-        fd.append("file", doc.file);
+    const uploadSingleDocument = async (doc: DocumentState) => {
+        setUploadStatus(prev => ({
+            ...prev,
+            [doc.id]: { status: 'uploading', progress: 0 }
+        }));
+
         try {
-            const res = await fetch("/api/upload", { method: "POST", body: fd });
-            if (!res.ok) throw new Error(`Upload failed for ${doc.file.name}`);
-            const data = await res.json();
-            return { ...doc, fileDetails: { ...doc.fileDetails, url: data.url } };
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Upload Failed", description: `Could not upload ${doc.file.name}`});
-            return null;
+            const fd = new FormData();
+            fd.append("file", doc.file);
+
+            // Using XMLHttpRequest for progress tracking
+            return await new Promise<string>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/api/upload", true);
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        setUploadStatus(prev => ({
+                            ...prev,
+                            [doc.id]: { ...prev[doc.id], progress: percentComplete }
+                        }));
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const response = JSON.parse(xhr.responseText);
+                        setUploadStatus(prev => ({
+                            ...prev,
+                            [doc.id]: { ...prev[doc.id], status: 'success', progress: 100, url: response.url }
+                        }));
+                        resolve(response.url);
+                    } else {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        setUploadStatus(prev => ({
+                            ...prev,
+                            [doc.id]: { status: 'error', progress: 0, error: errorResponse.error || 'Upload failed' }
+                        }));
+                        reject(new Error(errorResponse.error || `Upload failed for ${doc.file.name}`));
+                    }
+                };
+
+                xhr.onerror = () => {
+                    setUploadStatus(prev => ({
+                        ...prev,
+                        [doc.id]: { status: 'error', progress: 0, error: 'Network error' }
+                    }));
+                    reject(new Error("Network error during upload."));
+                };
+
+                xhr.send(fd);
+            });
+        } catch (error: any) {
+            setUploadStatus(prev => ({
+                ...prev,
+                [doc.id]: { status: 'error', progress: 0, error: error.message }
+            }));
+            throw error;
         }
-    });
+    };
+    
+    const handleCheckout = async () => {
+        setIsUploading(true);
+        setIsRedirecting(false);
 
-    const uploadedDocs = (await Promise.all(uploadPromises)).filter((doc): doc is DocumentState => doc !== null);
+        const initialStatuses: Record<number, UploadStatus> = {};
+        documents.forEach(doc => {
+            initialStatuses[doc.id] = { status: 'pending', progress: 0 };
+        });
+        setUploadStatus(initialStatuses);
+        
+        const uploadPromises = documents.map(doc => uploadSingleDocument(doc));
 
-    if (uploadedDocs.length !== documents.length) {
-        setIsProcessingCheckout(false);
-        toast({ variant: "destructive", title: "Checkout Cancelled", description: "Not all documents could be uploaded. Please try again." });
-        return;
-    }
+        try {
+            const urls = await Promise.all(uploadPromises);
 
-    const xeroxJobsForStorage = uploadedDocs.map(doc => {
-        const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
-        return {
-            id: `${Date.now()}-${doc.id}`,
-            fileDetails: {
-                name: doc.fileDetails!.name,
-                type: doc.fileDetails!.type,
-                url: doc.fileDetails!.url!,
-            },
-            pageCount: doc.fileDetails!.pages || 0,
-            price: price / doc.quantity,
-            config: {
-                paperType: doc.selectedPaperType,
-                colorOption: doc.selectedColorOption,
-                formatType: doc.selectedFormatType,
-                printRatio: doc.selectedPrintRatio,
-                bindingType: doc.selectedBindingType,
-                laminationType: doc.selectedLaminationType,
-                quantity: doc.quantity,
-                message: doc.message,
-            }
-        };
-    });
+            const xeroxJobsForStorage = documents.map((doc, index) => {
+                const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
+                return {
+                    id: `${Date.now()}-${doc.id}`,
+                    fileDetails: {
+                        name: doc.fileDetails!.name,
+                        type: doc.fileDetails!.type,
+                        url: urls[index],
+                    },
+                    pageCount: doc.fileDetails!.pages || 0,
+                    price: price / doc.quantity,
+                    config: {
+                        paperType: doc.selectedPaperType,
+                        colorOption: doc.selectedColorOption,
+                        formatType: doc.selectedFormatType,
+                        printRatio: doc.selectedPrintRatio,
+                        bindingType: doc.selectedBindingType,
+                        laminationType: doc.selectedLaminationType,
+                        quantity: doc.quantity,
+                        message: doc.message,
+                    }
+                };
+            });
 
-    sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(xeroxJobsForStorage));
-    router.push('/xerox/checkout');
-    setIsProcessingCheckout(false);
-  };
+            sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(xeroxJobsForStorage));
+            
+            setIsRedirecting(true);
+            setTimeout(() => {
+                router.push('/xerox/checkout');
+                setIsUploading(false);
+            }, 5000);
+
+        } catch (error) {
+            console.error("One or more uploads failed.", error);
+            toast({
+                variant: 'destructive',
+                title: "Upload Failed",
+                description: "One or more documents failed to upload. Please retry the failed uploads."
+            });
+            // We don't set isUploading to false here, so the dialog stays open for retries.
+        }
+    };
+
+    const handleRetry = (docId: number) => {
+        const docToRetry = documents.find(d => d.id === docId);
+        if (docToRetry) {
+            uploadSingleDocument(docToRetry).catch(err => {
+                // Error is handled inside uploadSingleDocument
+                console.error("Retry failed", err);
+            });
+        }
+    };
+
   
   const EditDocumentDialog = ({ doc, index, onSave }: { doc: DocumentState | null, index: number, onSave: (updatedDoc: DocumentState) => void }) => {
     const [localDoc, setLocalDoc] = useState<DocumentState | null>(doc);
@@ -540,11 +626,10 @@ export default function XeroxPage() {
           <Button 
             size="lg" 
             className="w-full"
-            disabled={isProcessingCheckout}
             onClick={handleCheckout}
           >
-            {isProcessingCheckout ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
-            {isProcessingCheckout ? "Processing..." : "Confirm & Proceed to Checkout"}
+            <CheckCircle className="mr-2 h-5 w-5" />
+            Confirm & Proceed to Checkout
           </Button>
         </CardContent>
       </Card>
@@ -714,8 +799,69 @@ export default function XeroxPage() {
     </Dialog>
   );
 
+  const allUploadsSuccessful = useMemo(() => {
+    if (documents.length === 0) return false;
+    return documents.every(doc => uploadStatus[doc.id]?.status === 'success');
+  }, [documents, uploadStatus]);
+
 
   return (
+    <>
+    <Dialog open={isUploading} onOpenChange={setIsUploading}>
+        <DialogContent hideCloseButton={true}>
+            <DialogHeader>
+                <DialogTitle>{isRedirecting ? 'Upload Complete!' : 'Uploading Documents...'}</DialogTitle>
+                <DialogDescription>
+                    {isRedirecting
+                        ? 'Your documents have been uploaded. Redirecting to checkout...'
+                        : 'Please wait while we upload your documents. Do not close this window.'
+                    }
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                {isRedirecting ? (
+                    <div className="flex flex-col items-center gap-4 text-center">
+                        <CheckCircle className="h-16 w-16 text-green-500"/>
+                    </div>
+                ) : (
+                    documents.map(doc => {
+                        const status = uploadStatus[doc.id];
+                        return (
+                            <div key={doc.id} className="space-y-2">
+                                <div className="flex justify-between items-center text-sm">
+                                    <p className="truncate font-medium flex items-center gap-2">
+                                        {status?.status === 'uploading' && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        {status?.status === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                        {status?.status === 'error' && <XCircle className="h-4 w-4 text-destructive" />}
+                                        <span className="truncate max-w-[200px] sm:max-w-xs">{doc.file.name}</span>
+                                    </p>
+                                    {status?.status === 'error' && (
+                                        <Button size="sm" variant="outline" onClick={() => handleRetry(doc.id)}>
+                                            <RefreshCw className="mr-2 h-4 w-4"/> Retry
+                                        </Button>
+                                    )}
+                                </div>
+                                {status?.status === 'uploading' && (
+                                    <Progress value={status.progress} />
+                                )}
+                                {status?.status === 'error' && (
+                                    <p className="text-xs text-destructive">{status.error}</p>
+                                )}
+                            </div>
+                        )
+                    })
+                )}
+            </div>
+            {!isRedirecting && (
+                 <DialogFooter>
+                    <Button variant="outline" disabled={!allUploadsSuccessful} onClick={() => handleCheckout()}>
+                        Proceed with successful uploads
+                    </Button>
+                </DialogFooter>
+            )}
+        </DialogContent>
+    </Dialog>
+
     <div className="pb-24">
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight lg:text-4xl">
@@ -764,5 +910,6 @@ export default function XeroxPage() {
             </div>
         )}
     </div>
+    </>
   );
 }
