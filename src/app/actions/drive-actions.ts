@@ -2,6 +2,8 @@
 'use server';
 
 import { google } from 'googleapis';
+import { getAllOrders } from '@/lib/data';
+import { Order, OrderStatus } from '@/lib/types';
 
 function getDriveClient() {
   const oauth2Client = new google.auth.OAuth2(
@@ -45,6 +47,25 @@ export async function getDriveUsageAction() {
   }
 }
 
+const getFileIdFromUrl = (url: string): string | null => {
+    if (!url) return null;
+    try {
+        const urlObj = new URL(url);
+        return urlObj.searchParams.get('id');
+    } catch (e) {
+        return null;
+    }
+};
+
+const getOrderStatusCategory = (status: OrderStatus): 'Active' | 'Delivered' | 'Cancelled/Rejected' => {
+    const activeStatuses: OrderStatus[] = ["Pending Confirmation", "Processing", "Packed", "Shipped", "Out for Delivery", "Return Requested", "Return Approved", "Out for Pickup", "Picked Up", "Replacement Issued"];
+    const deliveredStatuses: OrderStatus[] = ["Delivered", "Return Completed"];
+    
+    if (activeStatuses.includes(status)) return 'Active';
+    if (deliveredStatuses.includes(status)) return 'Delivered';
+    return 'Cancelled/Rejected';
+};
+
 export async function getDriveFilesAction() {
   const drive = getDriveClient();
   const folderId = process.env.GOOGLE_FOLDER_ID;
@@ -54,22 +75,45 @@ export async function getDriveFilesAction() {
     query += ` and '${folderId}' in parents`;
   }
   
-
   try {
-    const response = await drive.files.list({
-      q: query,
-      fields: 'files(id, name, size, createdTime, webViewLink)',
-      orderBy: 'createdTime desc',
-      pageSize: 100,
+    const [driveResponse, allOrders] = await Promise.all([
+      drive.files.list({
+        q: query,
+        fields: 'files(id, name, size, createdTime, webViewLink)',
+        orderBy: 'createdTime desc',
+        pageSize: 100,
+      }),
+      getAllOrders()
+    ]);
+    
+    const fileIdToOrderStatus = new Map<string, OrderStatus>();
+    allOrders.forEach(order => {
+        if (order.category === 'xerox' && order.productImage) {
+            const fileId = getFileIdFromUrl(order.productImage);
+            if (fileId) {
+                fileIdToOrderStatus.set(fileId, order.status);
+            }
+        }
     });
 
-    return (response.data.files || []).map((file) => ({
-      id: file.id || '',
-      name: file.name || 'Untitled',
-      size: file.size ? formatBytes(Number(file.size)) : 'N/A',
-      createdTime: file.createdTime || new Date().toISOString(),
-      webViewLink: file.webViewLink || '',
-    }));
+    return (driveResponse.data.files || []).map((file) => {
+        const orderStatus = file.id ? fileIdToOrderStatus.get(file.id) : undefined;
+        let statusCategory: 'Active' | 'Delivered' | 'Cancelled/Rejected' | 'Unused' | null = null;
+        if(orderStatus) {
+            statusCategory = getOrderStatusCategory(orderStatus);
+        } else {
+            statusCategory = 'Unused';
+        }
+        
+        return {
+          id: file.id || '',
+          name: file.name || 'Untitled',
+          size: file.size ? formatBytes(Number(file.size)) : 'N/A',
+          createdTime: file.createdTime || new Date().toISOString(),
+          webViewLink: file.webViewLink || '',
+          orderStatus: statusCategory
+        }
+    });
   } catch (error) {
     console.error('Error fetching Drive files:', error);
     throw new Error('Could not fetch files from Google Drive.');

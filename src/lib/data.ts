@@ -555,6 +555,17 @@ export const getMyOrders = async (userId: string): Promise<Order[]> => {
     }
 };
 
+export const getAllOrders = async (): Promise<Order[]> => {
+    try {
+        const q = query(ordersCollection, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    } catch (error) {
+        console.error("Error fetching all orders:", error);
+        throw new Error("Could not fetch all orders.");
+    }
+}
+
 export const getOrdersBySeller = async (sellerId: string): Promise<Order[]> => {
     try {
         const q = query(ordersCollection, where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
