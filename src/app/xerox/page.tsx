@@ -14,14 +14,9 @@ import {
   TableHeader,
   TableHead
 } from "@/components/ui/table";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil, ListOrdered, Images } from "lucide-react";
+import { ChevronDown, Loader2, FileUp, XCircle, FileText, ShoppingCart, Plus, Minus, Pencil, ListOrdered, Images, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -45,6 +40,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Progress } from "@/components/ui/progress";
 
 
 // Set up worker for pdf.js
@@ -54,9 +50,9 @@ if (typeof window !== 'undefined') {
 
 type DocumentState = {
   id: number;
-  file: File | null;
-  fileDetails: { name: string; type: string; pages?: number; preview?: string } | null;
-  isParsing: boolean;
+  fileDetails: { name: string; type: string; pages?: number; url?: string; } | null;
+  isUploading: boolean;
+  uploadProgress: number;
   selectedPaperType: string;
   currentPaperDetails: XeroxOption | null;
   selectedColorOption: string;
@@ -133,9 +129,9 @@ export default function XeroxPage() {
     const defaultPaperType = paperTypes.length > 0 ? paperTypes[0] : null;
     const newDocument: DocumentState = {
       id: newDocId,
-      file,
-      fileDetails: null,
-      isParsing: true,
+      fileDetails: { name: file.name, type: file.type },
+      isUploading: true,
+      uploadProgress: 0,
       selectedPaperType: defaultPaperType?.id || '',
       currentPaperDetails: defaultPaperType,
       selectedColorOption: defaultPaperType?.colorOptionIds?.[0] || '',
@@ -147,7 +143,7 @@ export default function XeroxPage() {
       message: '',
     };
     setDocuments(prev => [...prev, newDocument]);
-    handleFileChange(file, newDocId);
+    handleFileUpload(file, newDocId);
   };
   
   const updateDocumentState = (id: number, updates: Partial<DocumentState>) => {
@@ -205,19 +201,40 @@ export default function XeroxPage() {
       }
   };
 
-  const handleFileChange = async (file: File, docId: number) => {
-      updateDocumentState(docId, { isParsing: true });
-      const pages = await getPageCount(file);
-      const isImage = file.type.startsWith('image/');
-      updateDocumentState(docId, {
-          fileDetails: {
-              name: file.name,
-              type: file.type,
-              pages: isImage ? 1 : pages,
-              preview: isImage ? URL.createObjectURL(file) : undefined,
-          },
-          isParsing: false,
-      });
+  const handleFileUpload = async (file: File, docId: number) => {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+          updateDocumentState(docId, { uploadProgress: Math.min(90, (documents.find(d => d.id === docId)?.uploadProgress || 0) + 10) });
+      }, 500);
+
+      try {
+          const [pages, res] = await Promise.all([
+            getPageCount(file),
+            fetch("/api/upload", { method: "POST", body: fd })
+          ]);
+          
+          clearInterval(progressInterval);
+          updateDocumentState(docId, { uploadProgress: 100 });
+
+          if (!res.ok) {
+              const errorData = await res.json();
+              throw new Error(errorData.error || "An unknown error occurred during upload.");
+          }
+
+          const data = await res.json();
+          updateDocumentState(docId, {
+              fileDetails: { name: file.name, type: file.type, pages: pages, url: data.url },
+              isUploading: false,
+          });
+
+      } catch (err: any) {
+          clearInterval(progressInterval);
+          toast({ variant: "destructive", title: "Upload Failed", description: err.message });
+          removeDocument(docId); // Remove the document from the list on failure
+      }
   };
   
   const handleMultipleFileChanges = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,34 +284,26 @@ export default function XeroxPage() {
   }, [documentPrices]);
   
   const handleCheckout = async () => {
-    if (documents.some(d => d.isParsing)) {
+    if (documents.some(d => d.isUploading)) {
       toast({
         variant: "destructive",
         title: "Please wait",
-        description: "Some documents are still being processed.",
+        description: "Some documents are still uploading.",
       });
       return;
     }
   
-    const xeroxJobsForStorage = await Promise.all(documents.map(async (doc) => {
+    const xeroxJobsForStorage = documents.map(doc => {
       const price = documentPrices.find(p => p.id === doc.id)?.price || 0;
-      if (!doc.file || !doc.fileDetails) return null;
-  
-      // Convert file to data URL
-      const reader = new FileReader();
-      const fileDataUrl = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(doc.file!);
-      });
+      if (!doc.fileDetails?.url) return null;
   
       return {
         id: `${Date.now()}-${doc.id}`,
         fileDetails: {
           name: doc.fileDetails.name,
           type: doc.fileDetails.type,
+          url: doc.fileDetails.url,
         },
-        fileDataUrl,
         pageCount: doc.fileDetails.pages || 0,
         price: price / doc.quantity,
         config: {
@@ -308,13 +317,15 @@ export default function XeroxPage() {
           message: doc.message,
         }
       };
-    }));
+    });
   
     const validJobs = xeroxJobsForStorage.filter(job => job !== null);
   
     if (validJobs.length > 0) {
       sessionStorage.setItem('xeroxCheckoutJobs', JSON.stringify(validJobs));
       router.push('/xerox/checkout');
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: 'No valid documents with uploaded links found.' });
     }
   };
   
@@ -455,20 +466,26 @@ export default function XeroxPage() {
             </Button>
             <CardHeader className="p-4">
                 <div className="flex items-start gap-4">
-                    {document.fileDetails?.preview ? (
-                        <div className="relative h-20 w-20 flex-shrink-0">
-                            <Image src={document.fileDetails.preview} alt="File preview" fill className="rounded-md object-cover" />
-                        </div>
-                    ) : (
-                        <div className="h-20 w-20 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
-                            {document.isParsing ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/> : <FileText className="h-10 w-10 text-muted-foreground" />}
-                        </div>
-                    )}
+                    <div className="h-20 w-20 flex-shrink-0 flex items-center justify-center bg-muted rounded-md">
+                        {document.isUploading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/> : <FileText className="h-10 w-10 text-muted-foreground" />}
+                    </div>
                     <div className="flex-grow min-w-0">
                         <p className="font-semibold truncate">Document {index + 1}</p>
                         <p className="text-sm text-muted-foreground capitalize truncate">{document.fileDetails?.name || "Processing..."}</p>
-                        {document.fileDetails?.pages !== undefined && (
-                            <p className="text-sm text-muted-foreground">Pages: {document.fileDetails.pages}</p>
+                        {document.isUploading ? (
+                          <Progress value={document.uploadProgress} className="mt-2 h-2"/>
+                        ) : (
+                          <>
+                           {document.fileDetails?.pages !== undefined && (
+                                <p className="text-sm text-muted-foreground">Pages: {document.fileDetails.pages}</p>
+                           )}
+                           {document.fileDetails?.url && (
+                            <a href={document.fileDetails.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                                <LinkIcon className="h-3 w-3"/>
+                                View Document
+                            </a>
+                           )}
+                          </>
                         )}
                     </div>
                 </div>
@@ -476,7 +493,7 @@ export default function XeroxPage() {
             <CardFooter className="flex justify-between items-center bg-muted/50 p-4">
                 <div className="flex items-center gap-2">
                     <p className="text-lg font-bold">Rs {singleDocPrice.toFixed(2)}</p>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setEditingDocument(document)}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setEditingDocument(document)} disabled={document.isUploading}>
                         <Pencil className="mr-2 h-4 w-4"/> Edit
                     </Button>
                 </div>
@@ -560,7 +577,7 @@ export default function XeroxPage() {
           <Button 
             size="lg" 
             className="w-full"
-            disabled={documents.some(d => d.isParsing)}
+            disabled={documents.some(d => d.isUploading)}
             onClick={handleCheckout}
           >
             <ShoppingCart className="mr-2 h-5 w-5" />

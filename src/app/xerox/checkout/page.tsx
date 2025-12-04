@@ -22,10 +22,26 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText, Trash2, RotateCw } from 'lucide-react';
-import type { UserProfile, Shop, OrderSettings, ShopService, XeroxDocument, XeroxOption } from '@/lib/types';
+import { PlusCircle, Store, Info, MapPin, ArrowLeft, Loader2, CheckCircle, FileText, Trash2 } from 'lucide-react';
+import type { UserProfile, Shop, OrderSettings, ShopService, XeroxOption } from '@/lib/types';
 import { HARDCODED_XEROX_OPTIONS } from '@/lib/xerox-options';
-import { Progress } from '@/components/ui/progress';
+
+type StoredXeroxJob = {
+    id: string;
+    fileDetails: { name: string; type: string; url: string; };
+    pageCount: number;
+    price: number;
+    config: {
+        paperType: string;
+        colorOption: string;
+        formatType: string;
+        printRatio: string;
+        bindingType: string;
+        laminationType: string;
+        quantity: number;
+        message: string;
+    };
+};
 
 const addressSchema = z.object({
   type: z.enum(['Home', 'Work']),
@@ -46,18 +62,6 @@ const checkoutFormSchema = z.object({
   selectedShop: z.string().min(1, "Please select a seller."),
 });
 
-type StoredXeroxJob = Omit<XeroxDocument, 'file'> & {
-    fileDetails: { name: string; type: string };
-    fileDataUrl: string;
-};
-
-type UploadStatus = {
-  fileName: string;
-  progress: number;
-  status: 'pending' | 'uploading' | 'complete' | 'error';
-  error?: string | null;
-};
-
 export default function XeroxCheckoutPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -70,8 +74,6 @@ export default function XeroxCheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus[]>([]);
-  const [uploadedUrls, setUploadedUrls] = useState<{[key: string]: string}>({});
   
   const [paperTypes, setPaperTypes] = useState<XeroxOption[]>([]);
   const [bindingTypes, setBindingTypes] = useState<XeroxOption[]>([]);
@@ -178,72 +180,6 @@ export default function XeroxCheckoutPage() {
     }
   }
 
-  const uploadFile = useCallback(async (jobIndex: number) => {
-    const job = xeroxJobs[jobIndex];
-    if (!job) return;
-
-    setUploadStatus(prev => {
-        const newStatus = [...prev];
-        newStatus[jobIndex] = { ...newStatus[jobIndex], status: 'uploading', progress: 0, error: null };
-        return newStatus;
-    });
-
-    const progressInterval = setInterval(() => {
-        setUploadStatus(prev => {
-            const newStatus = [...prev];
-            if (newStatus[jobIndex] && newStatus[jobIndex].status === 'uploading' && newStatus[jobIndex].progress < 90) {
-                newStatus[jobIndex].progress += 10;
-            }
-            return newStatus;
-        });
-    }, 200);
-
-    try {
-        const blob = await fetch(job.fileDataUrl).then(res => res.blob());
-        const fileToUpload = new File([blob], job.fileDetails.name, { type: job.fileDetails.type });
-
-        const fd = new FormData();
-        fd.append("file", fileToUpload);
-
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        const data = await res.json();
-        
-        clearInterval(progressInterval);
-
-        if (!res.ok || !data.url) {
-            throw new Error(data.error || `Upload failed.`);
-        }
-        
-        setUploadStatus(prev => {
-            const newStatus = [...prev];
-            newStatus[jobIndex] = { ...newStatus[jobIndex], progress: 100, status: 'complete' };
-            return newStatus;
-        });
-        setUploadedUrls(prev => ({...prev, [job.id]: data.url}));
-
-    } catch (uploadError: any) {
-        clearInterval(progressInterval);
-        setUploadStatus(prev => {
-            const newStatus = [...prev];
-            newStatus[jobIndex] = { ...newStatus[jobIndex], status: 'error', error: uploadError.message };
-            return newStatus;
-        });
-    }
-  }, [xeroxJobs]);
-
-
-  const startUploads = useCallback(() => {
-    const initialStatus = xeroxJobs.map(job => ({
-        fileName: job.fileDetails.name,
-        progress: 0,
-        status: 'pending' as 'pending',
-        error: null,
-    }));
-    setUploadStatus(initialStatus);
-    setUploadedUrls({});
-    xeroxJobs.forEach((_, index) => uploadFile(index));
-  }, [xeroxJobs, uploadFile]);
-
   async function onCheckoutSubmit(values: z.infer<typeof checkoutFormSchema>) {
     const mobileData = mobileForm.getValues();
     if (!mobileData.mobile) {
@@ -252,33 +188,17 @@ export default function XeroxCheckoutPage() {
       return;
     }
     
-    setIsPlacingOrder(true);
-    startUploads();
-  }
-
-  const handleCreateOrders = async () => {
-    if (Object.keys(uploadedUrls).length !== xeroxJobs.length) {
-      toast({ variant: 'destructive', title: 'Upload Incomplete', description: 'Please ensure all files are uploaded successfully before placing the order.' });
-      return;
-    }
-
-    const values = checkoutForm.getValues();
-    const mobileData = mobileForm.getValues();
-
     if (!user || !user.addresses || !orderSettings) return;
 
+    setIsPlacingOrder(true);
     const addressIndex = parseInt(values.selectedAddress.replace('address-', ''));
     const shippingAddress = user.addresses[addressIndex];
 
     const orderPromises = xeroxJobs.map(job => {
-        const url = uploadedUrls[job.id];
-        if (!url) {
-            throw new Error(`Missing URL for ${job.fileDetails.name}`);
-        }
         return createOrder({
             userId: user.uid,
             productName: job.fileDetails.name,
-            productImage: url,
+            productImage: job.fileDetails.url,
             quantity: job.config.quantity,
             price: job.price,
             deliveryCharge: xeroxDeliveryFee / xeroxJobs.length,
@@ -298,7 +218,8 @@ export default function XeroxCheckoutPage() {
         setTimeout(() => { router.push('/orders'); }, 5000);
     } catch(e: any) {
         toast({ variant: "destructive", title: 'Order Creation Failed', description: `An error occurred: ${e.message}` });
-        setIsPlacingOrder(false); // Allow user to try again
+    } finally {
+        setIsPlacingOrder(false);
     }
   }
   
@@ -501,53 +422,14 @@ export default function XeroxCheckoutPage() {
   return (
     <>
       <Dialog open={orderPlaced}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Order Placed Successfully!</DialogTitle>
-                <DialogDescription>
-                Your print order for {xeroxJobs.length} document(s) has been placed. You will be redirected to your order history shortly.
-                </DialogDescription>
-            </DialogHeader>
+        <DialogContent hideCloseButton>
             <div className="flex flex-col items-center justify-center p-8 text-center">
                 <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                <h2 className="text-2xl font-bold">Order Placed Successfully!</h2>
+                <p className="text-muted-foreground mt-2">
+                Your print order for {xeroxJobs.length} document(s) has been placed. You will be redirected to your order history shortly.
+                </p>
             </div>
-        </DialogContent>
-      </Dialog>
-
-    <Dialog open={isPlacingOrder && !orderPlaced}>
-        <DialogContent hideCloseButton>
-          <DialogHeader>
-            <DialogTitle>Placing Your Order...</DialogTitle>
-            <DialogDescription>
-              Please wait while we upload your documents. Do not close this window.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4 space-y-4">
-            {uploadStatus.map((status, index) => (
-              <div key={index}>
-                <div className="flex justify-between text-sm">
-                  <span className="truncate pr-4">{status.fileName}</span>
-                   {status.status === 'error' && (
-                        <Button variant="link" size="sm" className="h-auto p-0 text-destructive" onClick={() => uploadFile(index)}>
-                            <RotateCw className="mr-1 h-3 w-3" />
-                            Retry
-                        </Button>
-                    )}
-                </div>
-                <Progress value={status.progress} className="h-2 mt-1" />
-                {status.status === 'error' && <p className="text-xs text-destructive mt-1">{status.error}</p>}
-              </div>
-            ))}
-          </div>
-          <DialogFooter className="mt-4">
-            <Button
-                className="w-full"
-                onClick={handleCreateOrders}
-                disabled={uploadStatus.some(s => s.status !== 'complete')}
-            >
-                Place Order
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -587,8 +469,8 @@ export default function XeroxCheckoutPage() {
                     ].filter(d => d.value);
 
                     return (
-                        <div key={job.id} className="pb-4 border-b last:border-b-0">
-                            <div className="flex items-start justify-between text-sm">
+                        <div key={job.id} className="border-b pb-3 mb-3">
+                            <div className="flex justify-between items-start text-sm">
                                 <div className="flex gap-2 min-w-0">
                                 <div className="relative h-12 w-12 flex-shrink-0 bg-muted rounded-md overflow-hidden flex items-center justify-center">
                                     <FileText className="h-6 w-6 text-muted-foreground" />
@@ -632,7 +514,7 @@ export default function XeroxCheckoutPage() {
             <CardFooter>
                 <Button type="submit" className="w-full" disabled={isCheckoutDisabled}>
                     {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isPlacingOrder ? "Processing..." : "Place Order"}
+                    {isPlacingOrder ? "Placing Order..." : "Place Order"}
                 </Button>
             </CardFooter>
           </Card>
@@ -643,5 +525,3 @@ export default function XeroxCheckoutPage() {
     </>
   );
 }
-
-    
