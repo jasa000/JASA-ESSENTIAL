@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -53,12 +52,5 @@ const PasswordStrength = ({ password = '' }: PasswordStrengthProps) => {
     </div>
   );
 };
-
-// Add this to your Progress component props if it's not already there
-declare module "@/components/ui/progress" {
-    interface ProgressProps extends React.RefAttributes<HTMLDivElement> {
-        indicatorClassName?: string;
-    }
-}
 
 export default PasswordStrength;
