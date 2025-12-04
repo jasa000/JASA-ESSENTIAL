@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 
 function getDriveClient() {
   const oauth2Client = new google.auth.OAuth2(
-    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_REDIRECT_URI
   );
@@ -47,13 +47,11 @@ export async function getDriveUsageAction() {
 
 export async function getDriveFilesAction() {
   const drive = getDriveClient();
-  const folderId = process.env.GOOGLE_FOLDER_ID || undefined;
+  const folderId = process.env.GOOGLE_FOLDER_ID;
 
-  let query = folderId ? `'${folderId}' in parents` : '';
-  if (query) {
-    query += ' and trashed=false';
-  } else {
-    query = 'trashed=false';
+  let query = 'trashed=false';
+  if (folderId) {
+    query += ` and '${folderId}' in parents`;
   }
   
 
