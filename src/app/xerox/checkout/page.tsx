@@ -423,6 +423,9 @@ export default function XeroxCheckoutPage() {
     <>
       <Dialog open={orderPlaced}>
         <DialogContent hideCloseButton>
+            <DialogHeader>
+                <DialogTitle className="sr-only">Order Placed</DialogTitle>
+            </DialogHeader>
             <div className="flex flex-col items-center justify-center p-8 text-center">
                 <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
                 <h2 className="text-2xl font-bold">Order Placed Successfully!</h2>
