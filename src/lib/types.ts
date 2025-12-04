@@ -46,12 +46,12 @@ export type DBCartItem = {
     id: string;
     type: 'stationary' | 'books' | 'electronics' | 'xerox';
     quantity: number;
+    price: number | null;
     // For products
-    productId?: string;
+    productId: string | null;
     // For xerox
-    xeroxConfig?: XeroxDocument['config'];
-    xeroxFile?: { name: string; type: string; pageCount: number };
-    price?: number;
+    xeroxConfig: XeroxDocument['config'] | null;
+    xeroxFile: { name: string; type: string; pageCount: number } | null;
 }
 
 

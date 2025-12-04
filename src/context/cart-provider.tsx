@@ -108,8 +108,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 xeroxFile: {
                     name: item.xerox.file?.name || 'Untitled',
                     type: item.xerox.file?.type || '',
-                    pageCount: item.xerox.pageCount,
+                    pageCount: item.xerox.pageCount ?? 0,
                 },
+                productId: null, // Explicitly null for Xerox items
             };
         }
         return {
@@ -117,7 +118,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             type: item.product!.category,
             quantity: item.quantity,
             productId: item.product!.id,
-            price: item.price ?? null
+            price: item.price ?? null,
+            xeroxConfig: null, // Explicitly null for Product items
+            xeroxFile: null,   // Explicitly null for Product items
         };
       });
       try {
