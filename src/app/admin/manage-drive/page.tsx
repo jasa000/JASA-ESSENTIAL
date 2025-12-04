@@ -92,6 +92,7 @@ export default function ManageDrivePage() {
         variant: "destructive",
         title: "Error",
         description: `Failed to fetch Google Drive data: ${error.message}`,
+        duration: 9000,
       });
     } finally {
       setIsLoading(false);
@@ -139,6 +140,7 @@ export default function ManageDrivePage() {
   
    const handleDeleteSelected = async () => {
     if (selectedFiles.length === 0) return;
+    setIsBulkDeleting(true);
     try {
       await deleteDriveFilesAction(selectedFiles);
       toast({

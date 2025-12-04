@@ -30,8 +30,8 @@ const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 export async function getDriveUsageAction() {
-  const drive = getDriveClient();
   try {
+    const drive = getDriveClient();
     const response = await drive.about.get({
       fields: 'storageQuota',
     });
@@ -41,9 +41,9 @@ export async function getDriveUsageAction() {
       usage: Number(storageQuota?.usage) || 0,
       usageInDrive: Number(storageQuota?.usageInDrive) || 0,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching Drive usage:', error);
-    throw new Error('Could not fetch Google Drive usage data.');
+    throw new Error('Could not fetch Google Drive usage data. Check server logs and environment variables.');
   }
 }
 
@@ -70,15 +70,15 @@ const getOrderStatusCategory = (status: OrderStatus): 'Active' | 'Delivered' | '
 };
 
 export async function getDriveFilesAction() {
-  const drive = getDriveClient();
   const folderId = process.env.GOOGLE_FOLDER_ID;
-
-  let query = 'trashed=false';
-  if (folderId) {
-    query += ` and '${folderId}' in parents`;
+  if (!folderId) {
+    throw new Error('GOOGLE_FOLDER_ID environment variable is not set.');
   }
   
+  let query = `trashed=false and '${folderId}' in parents`;
+  
   try {
+    const drive = getDriveClient();
     const [driveResponse, allOrders] = await Promise.all([
       drive.files.list({
         q: query,
@@ -117,26 +117,26 @@ export async function getDriveFilesAction() {
           orderStatus: statusCategory
         }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching Drive files:', error);
-    throw new Error('Could not fetch files from Google Drive.');
+    throw new Error('Could not fetch files from Google Drive. Check server logs and environment variables.');
   }
 }
 
 export async function deleteDriveFileAction(fileId: string) {
-  const drive = getDriveClient();
   try {
+    const drive = getDriveClient();
     await drive.files.delete({ fileId });
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting Drive file:', error);
     throw new Error('Could not delete file from Google Drive.');
   }
 }
 
 export async function deleteDriveFilesAction(fileIds: string[]) {
-    const drive = getDriveClient();
     try {
+        const drive = getDriveClient();
         const promises = fileIds.map(fileId => drive.files.delete({ fileId }));
         await Promise.all(promises);
         return { success: true };
