@@ -103,9 +103,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 id: item.id,
                 type: 'xerox',
                 quantity: item.quantity,
-                price: item.price,
-                xeroxConfig: item.xerox.config,
-                xeroxFile: { name: item.xerox.file?.name || 'Untitled', type: item.xerox.file?.type || '', pageCount: item.xerox.pageCount },
+                price: item.price ?? null,
+                xeroxConfig: item.xerox.config ?? null,
+                xeroxFile: {
+                    name: item.xerox.file?.name || 'Untitled',
+                    type: item.xerox.file?.type || '',
+                    pageCount: item.xerox.pageCount,
+                },
             };
         }
         return {
@@ -113,7 +117,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             type: item.product!.category,
             quantity: item.quantity,
             productId: item.product!.id,
-            price: item.price
+            price: item.price ?? null
         };
       });
       try {
