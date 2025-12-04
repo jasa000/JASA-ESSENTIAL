@@ -21,7 +21,10 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Initialize from user profile or localStorage
     if (user) {
-        setUserLocationState(user.userLocation || null);
+        // Only set state if user.userLocation is not undefined
+        if(user.userLocation !== undefined) {
+          setUserLocationState(user.userLocation || null);
+        }
     } else {
         try {
             const storedLocation = localStorage.getItem('userLocation');
