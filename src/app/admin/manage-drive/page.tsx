@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { 
     getDriveUsageAction, 
     getDriveFilesAction, 
-    deleteDriveFileAction
+    deleteDriveFileAction,
+    deleteDriveFilesAction
 } from "@/app/actions/drive-actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,13 +35,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, ExternalLink, HardDrive, AlertCircle } from "lucide-react";
+import { Trash2, ExternalLink, HardDrive, AlertCircle, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 type DriveFile = {
   id: string;
@@ -66,7 +71,11 @@ export default function ManageDrivePage() {
   const [usage, setUsage] = useState<DriveUsage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingFile, setDeletingFile] = useState<DriveFile | null>(null);
-  const [activeTab, setActiveTab] = useState("all");
+  
+  const [activeTab, setActiveTab] = useState("active");
+  const [unusedFilter, setUnusedFilter] = useState<'unused' | 'delivered' | 'cancelled'>('unused');
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
 
   const fetchData = useCallback(async () => {
@@ -103,6 +112,11 @@ export default function ManageDrivePage() {
       }
     }
   }, [user, authLoading, router, toast, fetchData]);
+  
+  useEffect(() => {
+    setSelectedFiles([]);
+  }, [activeTab, unusedFilter]);
+
 
   const handleDelete = async () => {
     if (!deletingFile) return;
@@ -122,6 +136,27 @@ export default function ManageDrivePage() {
       });
     }
   };
+  
+   const handleDeleteSelected = async () => {
+    if (selectedFiles.length === 0) return;
+    try {
+      await deleteDriveFilesAction(selectedFiles);
+      toast({
+        title: `${selectedFiles.length} File(s) Deleted`,
+        description: "The selected files have been removed from Google Drive.",
+      });
+      fetchData(); // Refresh data
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Bulk Deletion Failed",
+        description: error.message,
+      });
+    } finally {
+        setIsBulkDeleting(false);
+    }
+  };
+
 
   const formatBytes = (bytes: number, decimals = 2) => {
     if (bytes === 0) return "0 Bytes";
@@ -132,11 +167,20 @@ export default function ManageDrivePage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
   };
   
-  const filteredFiles = useMemo(() => {
-    if (activeTab === "all") return files;
-    if (activeTab === "unused") return files.filter(f => f.orderStatus === "Unused" || f.orderStatus === "Cancelled/Rejected");
-    return files.filter(f => f.orderStatus?.toLowerCase() === activeTab);
-  }, [files, activeTab]);
+  const activeFiles = useMemo(() => files.filter(f => f.orderStatus === 'Active'), [files]);
+  
+  const unusedArchivedFiles = useMemo(() => {
+    switch (unusedFilter) {
+      case 'delivered':
+        return files.filter(f => f.orderStatus === 'Delivered');
+      case 'cancelled':
+        return files.filter(f => f.orderStatus === 'Cancelled/Rejected');
+      case 'unused':
+      default:
+        return files.filter(f => f.orderStatus === 'Unused');
+    }
+  }, [files, unusedFilter]);
+
 
   const renderUsageCard = () => {
     if (isLoading || !usage) {
@@ -198,7 +242,16 @@ export default function ManageDrivePage() {
     }
 };
 
-  const renderFilesTable = (fileList: DriveFile[]) => {
+  const renderFilesTable = (fileList: DriveFile[], showCheckbox: boolean = false) => {
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedFiles(fileList.map(f => f.id));
+        } else {
+            setSelectedFiles([]);
+        }
+    };
+    const allSelected = showCheckbox && fileList.length > 0 && selectedFiles.length === fileList.length;
+
     if (isLoading) {
        return (
             <Table>
@@ -236,6 +289,15 @@ export default function ManageDrivePage() {
       <Table>
         <TableHeader>
           <TableRow>
+            {showCheckbox && (
+                <TableHead className="w-[40px]">
+                    <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all"
+                    />
+                </TableHead>
+            )}
             <TableHead>File Name</TableHead>
             <TableHead>Order Status</TableHead>
             <TableHead>Size</TableHead>
@@ -245,7 +307,22 @@ export default function ManageDrivePage() {
         </TableHeader>
         <TableBody>
           {fileList.map((file) => (
-            <TableRow key={file.id}>
+            <TableRow key={file.id} data-state={selectedFiles.includes(file.id) && "selected"}>
+              {showCheckbox && (
+                  <TableCell>
+                      <Checkbox
+                          checked={selectedFiles.includes(file.id)}
+                          onCheckedChange={() => {
+                              setSelectedFiles(prev => 
+                                prev.includes(file.id)
+                                    ? prev.filter(id => id !== file.id)
+                                    : [...prev, file.id]
+                              );
+                          }}
+                          aria-label={`Select file ${file.name}`}
+                      />
+                  </TableCell>
+              )}
               <TableCell className="font-medium truncate max-w-sm">{file.name}</TableCell>
               <TableCell>{renderStatusBadge(file.orderStatus)}</TableCell>
               <TableCell>{file.size}</TableCell>
@@ -292,32 +369,75 @@ export default function ManageDrivePage() {
             </CardHeader>
             <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="all">All Files</TabsTrigger>
-                    <TabsTrigger value="active">Active Orders</TabsTrigger>
-                    <TabsTrigger value="delivered">Delivered</TabsTrigger>
-                    <TabsTrigger value="unused" className="text-destructive">Unused/Archived</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="active">Active Files ({activeFiles.length})</TabsTrigger>
+                    <TabsTrigger value="archived">Unused/Archived</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="all" className="mt-4">
-                      {renderFilesTable(filteredFiles)}
-                  </TabsContent>
                   <TabsContent value="active" className="mt-4">
-                      {renderFilesTable(filteredFiles)}
+                      {renderFilesTable(activeFiles)}
                   </TabsContent>
-                  <TabsContent value="delivered" className="mt-4">
-                      {renderFilesTable(filteredFiles)}
-                  </TabsContent>
-                  <TabsContent value="unused" className="mt-4">
-                      <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
+                  <TabsContent value="archived" className="mt-4">
+                    <div className="p-4 rounded-lg border bg-muted/50 mb-4">
+                        <Label className="font-semibold">Filter by status:</Label>
+                        <RadioGroup value={unusedFilter} onValueChange={(v) => setUnusedFilter(v as any)} className="mt-2 flex items-center gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="unused" id="r-unused" />
+                                <Label htmlFor="r-unused">Unused</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="delivered" id="r-delivered" />
+                                <Label htmlFor="r-delivered">Delivered</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="cancelled" id="r-cancelled" />
+                                <Label htmlFor="r-cancelled">Cancelled/Rejected</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                    <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
                         <AlertCircle className="h-4 w-4"/>
-                        <p>These files are from cancelled/rejected orders or are not associated with any order. They are likely safe to delete.</p>
-                      </div>
-                      {renderFilesTable(filteredFiles)}
+                        <p>Files in this tab are from completed, cancelled, or unused uploads. They are likely safe to delete.</p>
+                    </div>
+                    {renderFilesTable(unusedArchivedFiles, true)}
                   </TabsContent>
                 </Tabs>
             </CardContent>
         </Card>
       </div>
+      
+       {activeTab === 'archived' && selectedFiles.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 p-4 backdrop-blur-sm border-t">
+          <div className="container mx-auto flex items-center justify-between">
+            <p className="font-semibold">{selectedFiles.length} file(s) selected</p>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setSelectedFiles([])}>
+                <X className="mr-2 h-4 w-4" /> Deselect All
+              </Button>
+               <AlertDialog open={isBulkDeleting} onOpenChange={setIsBulkDeleting}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selectedFiles.length} files?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the selected files from Google Drive. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteSelected}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       <AlertDialog
         open={!!deletingFile}

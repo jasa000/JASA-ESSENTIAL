@@ -51,7 +51,10 @@ const getFileIdFromUrl = (url: string): string | null => {
     if (!url) return null;
     try {
         const urlObj = new URL(url);
-        return urlObj.searchParams.get('id');
+        if (urlObj.hostname === 'drive.google.com' && urlObj.pathname.startsWith('/uc')) {
+            return urlObj.searchParams.get('id');
+        }
+        return null;
     } catch (e) {
         return null;
     }
@@ -129,4 +132,16 @@ export async function deleteDriveFileAction(fileId: string) {
     console.error('Error deleting Drive file:', error);
     throw new Error('Could not delete file from Google Drive.');
   }
+}
+
+export async function deleteDriveFilesAction(fileIds: string[]) {
+    const drive = getDriveClient();
+    try {
+        const promises = fileIds.map(fileId => drive.files.delete({ fileId }));
+        await Promise.all(promises);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting multiple Drive files:', error);
+        throw new Error('Could not delete all selected files from Google Drive. ' + error.message);
+    }
 }
